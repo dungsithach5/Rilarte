@@ -42,7 +42,7 @@ export default function LoginPage() {
                   Don&apos;t have an account?{" "}
                   <button
                     onClick={toggleMode}
-                    className="text-primary hover:underline"
+                    className="text-primary hover:underline cursor-pointer"
                   >
                     Sign up
                   </button>
@@ -52,7 +52,7 @@ export default function LoginPage() {
                   Already have an account?{" "}
                   <button
                     onClick={toggleMode}
-                    className="text-primary hover:underline"
+                    className="text-primary hover:underline cursor-pointer"
                   >
                     Login
                   </button>

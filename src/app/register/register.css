@@ -1,0 +1,101 @@
+/* Reset (nếu chưa có ở global) */
+* {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  box-sizing: border-box;
+}
+
+/* Register Styles */
+.register-wrapper {
+  display: flex;
+  height: 100vh;
+  background-color: #0f0f0f;
+  color: white;
+}
+
+.register-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.register-form {
+  max-width: 400px;
+  width: 100%;
+  padding: 40px;
+  background-color: #181818;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(255,255,255,0.05);
+}
+
+.register-form h2 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.register-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.register-form input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background-color: #101010;
+  color: white;
+}
+
+.register-form button {
+  width: 100%;
+  padding: 12px;
+  background-color: #2563eb;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.register-form button:hover {
+  background-color: #1d4ed8;
+}
+
+.login-link {
+  margin-top: 16px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.login-link a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+/* Right Side */
+.register-right {
+  flex: 1;
+  overflow: hidden;
+}
+
+.register-right video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  padding-top: 80px;
+  padding-bottom: 10px;
+  padding-right: 50px;
+  width: 90%;
+  height: 90%;
+  border-radius: 10px;
+  margin: auto;
+
+
+}
+

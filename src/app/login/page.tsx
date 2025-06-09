@@ -50,19 +50,19 @@ export default function LoginPage() {
           />
           <button type="submit">Login now</button>
           <p className="signup-link">
-            Don’t Have An Account? <a href="#">Sign Up</a>
+            Don’t Have An Account? <a href="/register">Register</a>
           </p>
         </form>
       </div>
       <div className="login-right">
-        <video src="https://media.istockphoto.com/id/1363217414/vi/video/m%C3%A0u-x%C3%A1m-tr%E1%BA%AFng-m%E1%BB%8Bn-b%C3%B3ng-g%E1%BB%A3n-s%C3%B3ng-n%E1%BB%81n-chuy%E1%BB%83n-%C4%91%E1%BB%99ng-tr%E1%BB%ABu-t%C6%B0%E1%BB%A3ng.mp4?s=mp4-640x640-is&k=20&c=EtiPqCTKqisjTxOD3srqWbHGaJ007oa0n4bcFIb7b7c=" />
+        <video  
+            autoPlay
+            loop
+            muted src="https://media.istockphoto.com/id/1363217414/vi/video/m%C3%A0u-x%C3%A1m-tr%E1%BA%AFng-m%E1%BB%8Bn-b%C3%B3ng-g%E1%BB%A3n-s%C3%B3ng-n%E1%BB%81n-chuy%E1%BB%83n-%C4%91%E1%BB%99ng-tr%E1%BB%ABu-t%C6%B0%E1%BB%A3ng.mp4?s=mp4-640x640-is&k=20&c=EtiPqCTKqisjTxOD3srqWbHGaJ007oa0n4bcFIb7b7c=" />
       </div>
     </div>
 
     )   
-
-    
-
     };
 
 

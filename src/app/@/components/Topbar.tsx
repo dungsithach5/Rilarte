@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function Topbar() {
   return (
-    <header className="fixed top-0 left-20 right-0 h-16 bg-zinc-900 flex items-center justify-between text-white shadow z-10 px-6">
+    <header className="fixed top-0 left-20 right-0 h-16 bg-[#101315] flex items-center justify-between text-white shadow z-10 px-6 border-b border-[#2C343A]">
   <div className="flex items-center">
    
   </div>
@@ -11,7 +11,7 @@ export default function Topbar() {
     <input
       type="text"
       placeholder="Search"
-      className="bg-zinc-800 text-sm px-4 py-2 w-full rounded-full outline-none"
+      className="bg-[#20262A] text-sm px-4 py-2 w-full rounded-full outline-none"
     />
   </div>
 

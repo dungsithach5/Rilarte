@@ -1,8 +1,8 @@
 import { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import TopBar from "./@/components/ui/Topbar";
-import Sidebar from "./@/components/ui/Sidebar";
+import TopBar from "./@/components/Topbar";
+import Sidebar from "./@/components/Sidebar";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -28,9 +28,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="flex bg-background text-foreground min-h-screen">
+        <div className="flex min-h-screen">
           <Sidebar />
-          <div className="flex flex-col flex-1 ml-16">
+          <div className="bg-[#101315] flex flex-col flex-1 ml-16">
             <TopBar />
             <main className="pt-14 p-4">{children}</main>
           </div>

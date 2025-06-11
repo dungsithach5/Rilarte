@@ -2,7 +2,7 @@ import { Home, MessageSquare, User, Search, Settings, Bell, Plus } from "lucide-
 
 export default function Sidebar() {
   return (
-    <aside className="fixed top-0 left-0 h-screen w-20 bg-zinc-900 flex flex-col items-center py-4 gap-6 text-white">
+    <aside className="fixed top-0 left-0 h-screen w-20 bg-[#101315] flex flex-col items-center py-4 gap-6 text-white border-r border-[#2C343A]">
       <div className="" />
       <NavIcon icon={<Home size={24} />} />
       <NavIcon icon={<MessageSquare size={24} />} />

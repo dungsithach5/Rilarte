@@ -30,9 +30,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       >
         <div className="flex min-h-screen">
           <Sidebar />
-          <div className="bg-[#101315] flex flex-col flex-1 ml-16">
+          <div className="bg-[#101315] flex flex-col flex-1 ml-20">
             <TopBar />
-            <main className="pt-14 p-4">{children}</main>
+            <main className="">{children}</main>
           </div>
         </div>
       </body>

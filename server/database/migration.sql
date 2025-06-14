@@ -1,104 +1,59 @@
+Table users {
+  id int [pk, increment]
+  username varchar(50) [unique, not null]
+  email varchar(100) [unique, not null]
+  password varchar(255) [not null]
+  bio text
+  avatar_url varchar(255)
+  created_at datetime [default: `now()`]
+  updated_at datetime
+}
 
--- Database: social_media_app
+Table posts {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  content text
+  image_url varchar(255)
+  created_at datetime [default: `now()`]
+  updated_at datetime
+}
 
--- Database tạm thời (có thể thay đổi trong tương lai)
+Table comments {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  post_id int [ref: > posts.id]
+  content text [not null]
+  created_at datetime [default: `now()`]
+}
 
+Table likes {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  post_id int [ref: > posts.id]
+  created_at datetime [default: `now()`]
+}
 
--- Drop tables if they exist
-DROP TABLE IF EXISTS notifications, resources, friends, likes, comments, posts, users;
+Table follows {
+  id int [pk, increment]
+  follower_id int [ref: > users.id]
+  following_id int [ref: > users.id]
+  created_at datetime [default: `now()`]
+}
 
--- USERS
-CREATE TABLE users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(50) UNIQUE NOT NULL,
-  email VARCHAR(100) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  avatar_url VARCHAR(255),
-  bio TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+Table messages {
+  id int [pk, increment]
+  sender_id int [ref: > users.id]
+  receiver_id int [ref: > users.id]
+  content text
+  is_read boolean [default: false]
+  created_at datetime [default: `now()`]
+}
 
--- POSTS
-CREATE TABLE posts (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  content TEXT,
-  image_url VARCHAR(255),
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
--- COMMENTS
-CREATE TABLE comments (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  post_id INT NOT NULL,
-  user_id INT NOT NULL,
-  content TEXT NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
--- LIKES
-CREATE TABLE likes (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  post_id INT NOT NULL,
-  user_id INT NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  UNIQUE(post_id, user_id)
-);
-
--- FRIENDS
-CREATE TABLE friends (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  friend_id INT NOT NULL,
-  status ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
-  UNIQUE(user_id, friend_id)
-);
-
--- RESOURCES
-CREATE TABLE resources (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  post_id INT,
-  file_url VARCHAR(255) NOT NULL,
-  type ENUM('image', 'pdf', 'docx', 'other') DEFAULT 'other',
-  uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL
-);
-
--- NOTIFICATIONS
-CREATE TABLE notifications (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  content VARCHAR(255),
-  is_read BOOLEAN DEFAULT FALSE,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-
--- ALTER USERS: Thêm role
-ALTER TABLE users ADD COLUMN role ENUM('user', 'admin', 'moderator') DEFAULT 'user';
-
--- MESSAGES (chat trực tiếp giữa người dùng)
-CREATE TABLE messages (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  sender_id INT NOT NULL,
-  receiver_id INT NOT NULL,
-  content TEXT NOT NULL,
-  is_read BOOLEAN DEFAULT FALSE,
-  sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
--- FULLTEXT INDEX cho tìm kiếm bài viết
-ALTER TABLE posts ADD FULLTEXT(content);
+Table notifications {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  type varchar(50) // e.g., 'like', 'comment', 'follow', 'message'
+  content text
+  is_read boolean [default: false]
+  created_at datetime [default: `now()`]
+}

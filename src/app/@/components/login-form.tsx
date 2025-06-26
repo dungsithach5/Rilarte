@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Cookies from "js-cookie"
 import { cn } from "../../../lib/utils"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -22,7 +23,7 @@ export function LoginForm({
       ...formData,
       [e.target.id]: e.target.value
     })
-    setError('') 
+    setError('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,11 +46,9 @@ export function LoginForm({
         throw new Error(data.message || 'Login failed')
       }
 
-      // Store token in localStorage
-      localStorage.setItem('token', data.token)
+      Cookies.set('token', data.token, { expires: 1, secure: false, sameSite: 'lax' })
       localStorage.setItem('user', JSON.stringify(data.user))
 
-      // Redirect to dashboard or home page
       window.location.href = '/dashboard'
       
     } catch (err) {

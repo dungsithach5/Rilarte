@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import ClientLayout from "./layout/ClientLayout";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,8 +29,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <div className="flex min-h-screen">
-          <div className="flex flex-col flex-1 ml-20">
-            <main className="">{children}</main>
+          <div className="flex flex-col flex-1">
+            <ClientLayout>{children}</ClientLayout>
           </div>
         </div>
       </body>

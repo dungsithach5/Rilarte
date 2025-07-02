@@ -1,41 +1,30 @@
-function ProfileHeader() {
-    return (
-      <div className="relative w-full bg-black text-white pb-10 mt-14">
-        <div className="w-full h-48">
-          <img
-            src="https://cellphones.com.vn/sforum/wp-content/uploads/2024/04/anh-bia-facebook-42.jpg"
-            alt="Cover"
-            className="w-full h-full object-cover"
-          />
-        </div>
-     
-        <button className="absolute top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm flex items-center gap-1">
-           Edit profile
-        </button>
 
-  
-        <div className="absolute left-1/2 top-32 transform -translate-x-1/2">
-          <img
-            src="/avatar.jpg"
-            alt="Avatar"
-            className="w-28 h-28 rounded-full border-4 border-black"
-          />
-        </div>
-  
-        <div className="mt-16 text-center">
-          <h2 className="text-xl font-semibold">Ethan Walker</h2>
-          <p className="text-gray-400">@ethanwalker</p>
-        </div>
-  
-        <div className="flex justify-center gap-4 mt-4">
-          <button className="bg-white text-black px-4 py-2 rounded">FOLLOW</button>
-          <button className="border border-white px-4 py-2 rounded">MESSAGE</button>
-        </div>
-  
-    
-    
+export default function ProfileHeader() {
+  return (
+    <section className="w-full">      
+      <img
+        src="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Z3JhZGllbnR8ZW58MHx8MHx8fDA%3D"
+        alt=""
+        className="w-full h-[300px] object-cover"
+      />
+
+      <div className="absolute top-60 left-1/2 transform -translate-x-1/2 w-48 h-48 rounded-full overflow-hidden">
+        <img
+          src="https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8cHJvZmlsZSUyMGltYWdlfGVufDB8fDB8fHww"
+          alt="Profile"
+          className="w-full h-full object-cover"
+        />
       </div>
-    );
-  }
-export default ProfileHeader;
+      <div className="mt-24 text-center">
+        <h2 className="text-xl font-semibold">Ethan Walker</h2>
+        <p className="text-gray-400">@ethanwalker</p>
+      </div>
+
+      <div className="flex justify-center gap-4 mt-4 text-center">
+        <button className="border px-4 py-2 rounded-full cursor-pointer hover:text-white hover:bg-black">Follow</button>
+        <button className="border px-4 py-2 rounded-full cursor-pointer hover:text-white hover:bg-black">Message</button>
+      </div>
+    </section>
+  );
+}
   

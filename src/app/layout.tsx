@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ReduxProvider from "./ReduxProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,17 +22,19 @@ type RootLayoutProps = {
   children: ReactNode;
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="flex min-h-screen">
-          <div className="flex flex-col flex-1 ml-20">
-            <main className="">{children}</main>
+        <ReduxProvider>
+          <div className="flex min-h-screen">
+            <div className="flex flex-col flex-1 ml-20">
+              <main>{children}</main>
+            </div>
           </div>
-        </div>
+        </ReduxProvider>
       </body>
     </html>
   );

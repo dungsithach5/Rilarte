@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import Cookies from "js-cookie"
+import { useDispatch } from "react-redux"
+import { loginSuccess } from "../../context/userSlice"
 import { cn } from "../../../lib/utils"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -17,6 +19,7 @@ export function LoginForm({
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const dispatch = useDispatch()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -49,7 +52,12 @@ export function LoginForm({
       Cookies.set('token', data.token, { expires: 1, secure: false, sameSite: 'lax' })
       localStorage.setItem('user', JSON.stringify(data.user))
 
-      window.location.href = '/dashboard'
+      dispatch(loginSuccess({ 
+        avatar: data.user.avatar || "/default-avatar.png", 
+        token: data.token 
+      }))
+
+      window.location.href = '/'
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')

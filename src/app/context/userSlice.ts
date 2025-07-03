@@ -16,9 +16,9 @@ const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
-    loginSuccess: (state, action: PayloadAction<{ avatar: string; token: string }>) => {
+    loginSuccess: (state, action: PayloadAction<{ avatar?: string; token: string }>) => {
       state.isAuthenticated = true;
-      state.avatar = action.payload.avatar;
+      state.avatar = action.payload.avatar ?? "/img/user.png";
       state.token = action.payload.token;
     },
     logout: (state) => {

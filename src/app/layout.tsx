@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import ClientLayout from "./layout/ClientLayout";
 import "./globals.css";
-import ReduxProvider from "./ReduxProvider";
+import ReduxProvider from "./context/ReduxProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,11 +30,11 @@ export default function RootLayout({ children }: RootLayoutProps) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ReduxProvider>
-          <div className="flex min-h-screen">
-            <div className="flex flex-col flex-1 ml-20">
-              <main>{children}</main>
-            </div>
+        <div className="flex min-h-screen">
+          <div className="flex flex-col flex-1">
+            <ClientLayout>{children}</ClientLayout>
           </div>
+        </div>
         </ReduxProvider>
       </body>
     </html>

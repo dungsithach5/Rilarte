@@ -9,6 +9,7 @@ import {
   Plus,
 } from "lucide-react";
 import DrawerChat from "../@/components/message/DrawerChat";
+import DrawerNotification from "../@/components/notification/DrawerNotification";
 
 export default function BottomBar() {
   return (
@@ -20,7 +21,7 @@ export default function BottomBar() {
       } />
       <NavIcon icon={<DrawerChat />} />
       <NavIcon icon={<Plus size={24} />} />
-      <NavIcon icon={<Bell size={24} />} />
+      <NavIcon icon={<DrawerNotification />} />
       <NavIcon icon={
         <Link href="/auth">
           <User size={24} />

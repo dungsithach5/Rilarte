@@ -1,3 +1,5 @@
+"use client"
+
 import Image from "next/image";
 import { Search } from "lucide-react";
 import { ComposerComment } from "./@/components/model-comment/ComposerComment"

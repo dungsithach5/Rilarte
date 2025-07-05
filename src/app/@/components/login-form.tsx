@@ -2,10 +2,13 @@
 
 import { useState } from "react"
 import Cookies from "js-cookie"
+import { useDispatch } from "react-redux"
+import { loginSuccess } from "../../context/userSlice"
 import { cn } from "../../../lib/utils"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
+import { useRouter } from "next/navigation";
 
 export function LoginForm({
   className,
@@ -17,6 +20,8 @@ export function LoginForm({
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const dispatch = useDispatch()
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -49,7 +54,16 @@ export function LoginForm({
       Cookies.set('token', data.token, { expires: 1, secure: false, sameSite: 'lax' })
       localStorage.setItem('user', JSON.stringify(data.user))
 
-      window.location.href = '/dashboard'
+      const avatarUrl = data.user?.avatar && data.user.avatar !== ''
+        ? data.user.avatar
+        : '/img/user.png';
+
+      dispatch(loginSuccess({
+        avatar: avatarUrl,
+        token: data.token,
+      }));
+
+      router.push("/");
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')

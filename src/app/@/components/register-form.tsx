@@ -82,7 +82,7 @@ export function RegisterForm({
       localStorage.setItem('user', JSON.stringify(data.user))
 
       // Redirect to dashboard or home page
-      window.location.href = '/dashboard'
+      window.location.href = '/'
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')

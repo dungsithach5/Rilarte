@@ -30,7 +30,7 @@ export default function BottomBar() {
           <Plus size={24} />
         </Link>
       } />
-      <NavIcon icon={<Bell size={24} />} />
+
       <NavIcon icon={<DrawerNotification />} />
       <NavIcon icon={
         isAuthenticated ? (

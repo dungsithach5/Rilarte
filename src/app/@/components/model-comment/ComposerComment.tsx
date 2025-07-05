@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "../ui/dialog"
 import { InputComment } from "../ui/input-comment"
+import HoverCardUser from "../hover-card-user"
 import { Label } from "../ui/label"
 
 interface Post {
@@ -81,42 +82,16 @@ export function ComposerComment({ post }: { post: Post }) {
               <p className="text-sm font-semibold">Comments</p>
               <p className="text-sm text-gray-500">3 comments</p>
             </Label>
-            {/* Comment 1 */}
+            {/* User Comment */}
             <div className="flex items-start gap-3">
-              <img
-                src="https://randomuser.me/api/portraits/women/44.jpg"
-                alt="User 1"
-                className="w-8 h-8 rounded-full object-cover"
+              <HoverCardUser 
+                avatarUrl="https://randomuser.me/api/portraits/women/44.jpg"
+                name="Alice"
+                username="alice_wonderland"
               />
               <div>
                 <p className="text-sm font-medium">Alice</p>
-                <p className="text-sm text-gray-700">This is so beautiful! 😍</p>
-              </div>
-            </div>
-
-            {/* Comment 2 */}
-            <div className="flex items-start gap-3">
-              <img
-                src="https://randomuser.me/api/portraits/men/36.jpg"
-                alt="User 2"
-                className="w-8 h-8 rounded-full object-cover"
-              />
-              <div>
-                <p className="text-sm font-medium">John</p>
                 <p className="text-sm text-gray-700">Amazing work, keep it up!</p>
-              </div>
-            </div>
-
-            {/* Comment 3 */}
-            <div className="flex items-start gap-3">
-              <img
-                src="https://randomuser.me/api/portraits/women/65.jpg"
-                alt="User 3"
-                className="w-8 h-8 rounded-full object-cover"
-              />
-              <div>
-                <p className="text-sm font-medium">Emma</p>
-                <p className="text-sm text-gray-700">I really love this style 💖</p>
               </div>
             </div>
           </div>

@@ -1,6 +1,6 @@
+import Image from "next/image";
 import { Search } from "lucide-react";
-import BentoGrid from "./@/components/post/BentoGrid";
-
+import { ComposerComment } from "./@/components/model-comment/ComposerComment"
 const posts = [
   {
     id: 1,
@@ -118,11 +118,15 @@ export default function Home() {
             </select>
           </div>
         </div>
-
-        {/* Post */}
-        <section className="">
-          <BentoGrid posts={posts} />
-        </section>
+      </section>
+      
+      {/* Post */}
+      <section className="px-6 mt-6 columns-1 sm:columns-2 md:columns-5 gap-4">
+        {posts.map((post) => (
+          <div key={post.id}>
+            <ComposerComment post={post} />
+          </div>
+        ))}
       </section>
     </div>
   );

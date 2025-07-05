@@ -1,3 +1,5 @@
+"use-client"
+
 import { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import ClientLayout from "./layout/ClientLayout";

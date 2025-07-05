@@ -13,6 +13,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu"
+import Link from "next/link";
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
 
@@ -33,7 +34,12 @@ export default function DropdownMenuDemo({ avatar }: Props) {
       <DropdownMenuTrigger asChild>
         <Button variant="outline">{avatar}</Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent >
+      <DropdownMenuContent>
+        <DropdownMenuItem>
+          <Link href="/profile">
+            Profile
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={handleLogout}>
           Log out
         </DropdownMenuItem>

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/tabs';
-import BentoGrid from "./post/BentoGrid";
+import { ComposerComment } from './model-comment/ComposerComment';
 
 const posts = [
   {
@@ -106,8 +106,12 @@ export default function ProfileTabs() {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="post" className="mt-6">
-        <BentoGrid posts={posts} />
+      <TabsContent value="post" className="px-6 mt-6 columns-1 sm:columns-2 md:columns-5 gap-4">
+        {posts.map((post) => (
+          <div key={post.id}>
+            <ComposerComment post={post} />
+          </div>
+        ))}
       </TabsContent>
 
       <TabsContent value="following" className="mt-6 mx-auto">

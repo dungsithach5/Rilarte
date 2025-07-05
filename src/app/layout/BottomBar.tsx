@@ -19,7 +19,11 @@ export default function BottomBar() {
         </Link>
       } />
       <NavIcon icon={<DrawerChat />} />
-      <NavIcon icon={<Plus size={24} />} />
+      <NavIcon icon={
+        <Link href="/post">
+          <Plus size={24} />
+        </Link>
+      } />
       <NavIcon icon={<Bell size={24} />} />
       <NavIcon icon={
         <Link href="/auth">

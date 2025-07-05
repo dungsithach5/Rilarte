@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog"
-import { Input } from "../ui/input"
+import { InputComment } from "../ui/input-comment"
 import { Label } from "../ui/label"
 
 interface Post {
@@ -138,7 +138,7 @@ export function ComposerComment({ post }: { post: Post }) {
         </div>
 
         <DialogFooter className="flex items-center gap-3">
-          <Input
+          <InputComment
             id="comment"
             typeof="submit"
             placeholder="Write your comment..."

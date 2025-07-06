@@ -16,15 +16,20 @@ import {
 import Link from "next/link";
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
+import { useDispatch } from "react-redux"
+import { logout } from "../../context/userSlice"
+
 
 interface Props {
   avatar: React.ReactNode;
 }
 
 export default function DropdownMenuDemo({ avatar }: Props) {
+  const dispatch = useDispatch()
   const router = useRouter();
 
   const handleLogout = () => {
+    dispatch(logout());
     Cookies.remove("token");
     router.push("/auth");
   };

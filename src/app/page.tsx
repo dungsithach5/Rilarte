@@ -123,7 +123,7 @@ export default function Home() {
       </section>
       
       {/* Post */}
-      <section className="px-6 mt-6 columns-1 sm:columns-2 md:columns-5 gap-4">
+      <section className="px-6 mt-6 columns-2 sm:columns-2 md:columns-5 gap-4">
         {posts.map((post) => (
           <div key={post.id}>
             <ComposerComment post={post} />

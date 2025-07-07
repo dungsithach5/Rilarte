@@ -15,6 +15,7 @@ import {
 import { InputComment } from "../ui/input-comment"
 import HoverCardUser from "../hover-card-user"
 import { Label } from "../ui/label"
+import Link from 'next/link'
 
 interface Post {
   id: number
@@ -31,19 +32,30 @@ export function ComposerComment({ post }: { post: Post }) {
       <DialogTrigger asChild>
         <div key={post.id} className="mb-4 break-inside-avoid">
           <div className="mx-auto">
-            <img
-              src={post.image}
-              alt="Post"
-              className="w-full rounded-lg object-cover cursor-pointer"
-            />
-            <div className="grid grid-cols-1 gap-3 mt-2">
-              <div className="flex items-center gap-2">
-                <img
-                  src="https://www.parents.com/thmb/lmejCapkkBYa0LQoezl2RxBi1Z0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/GettyImages-911983386-d50a1de241d44f829b17053ace814f4e.jpg"
-                  alt={post.name}
-                  className="w-10 h-10 rounded-full object-cover"
-                /> 
-                <strong>{post.name}</strong>
+            <div className="relative group cursor-pointer">
+              <img
+                src={post.image}
+                alt="Post"
+                className="w-full rounded-lg object-cover"
+              />
+              
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/30 rounded-lg opacity-0 group-hover:opacity-100 flex items-end p-4 transition-opacity duration-300">
+                {/* Avatar + Name */}
+                <div className="w-full flex items-center justify-between gap-2">
+                  <Link href="/profile" className="flex items-center gap-2">
+                    <img
+                      src="https://www.parents.com/thmb/lmejCapkkBYa0LQoezl2RxBi1Z0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/GettyImages-911983386-d50a1de241d44f829b17053ace814f4e.jpg"
+                      alt={post.name}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                    />
+                    <strong className="text-white">{post.name}</strong>
+                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Heart size={24} color="white"/>
+                    <MessageCircle size={24} color="white"/>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -18,7 +18,7 @@ import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
 import { logout } from "../../context/userSlice"
-
+import { signOut, useSession } from "next-auth/react"
 
 interface Props {
   avatar: React.ReactNode;
@@ -28,8 +28,9 @@ export default function DropdownMenuDemo({ avatar }: Props) {
   const dispatch = useDispatch()
   const router = useRouter();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     dispatch(logout());
+    await signOut({ callbackUrl: '/auth' })
     Cookies.remove("token");
     router.push("/auth");
   };

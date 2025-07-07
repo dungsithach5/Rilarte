@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import ClientLayout from "./layout/ClientLayout";
 import "./globals.css";
 import ReduxProvider from "./context/ReduxProvider";
+import { SessionProvider } from "./context/SessionProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,13 +32,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ReduxProvider>
-        <div className="flex min-h-screen">
-          <div className="flex flex-col flex-1">
-            <ClientLayout>{children}</ClientLayout>
-          </div>
-        </div>
-        </ReduxProvider>
+        <SessionProvider>
+          <ReduxProvider>
+            <div className="flex min-h-screen">
+              <div className="flex flex-col flex-1">
+                <ClientLayout>{children}</ClientLayout>
+              </div>
+            </div>
+          </ReduxProvider>
+        </SessionProvider>
       </body>
     </html>
   );

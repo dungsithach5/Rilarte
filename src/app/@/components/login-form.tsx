@@ -8,7 +8,8 @@ import { cn } from "../../../lib/utils"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation"
+import { signIn, useSession } from "next-auth/react"
 
 export function LoginForm({
   className,
@@ -21,7 +22,14 @@ export function LoginForm({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const dispatch = useDispatch()
-  const router = useRouter();
+  const router = useRouter()
+  const { data: session } = useSession()
+
+  // Redirect if already logged in
+  if (session) {
+    router.push("/")
+    return null
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -69,6 +77,33 @@ export function LoginForm({
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    console.log('=== Google Login Debug ===')
+    console.log('1. Button clicked')
+    setLoading(true)
+    
+    try {
+      console.log('2. Calling signIn...')
+      const result = await signIn('google', { 
+        callbackUrl: '/' 
+      })
+      console.log('3. SignIn result:', result)
+      
+      if (result?.error) {
+        console.log('4. Error:', result.error)
+        setError('Google login failed: ' + result.error)
+      } else {
+        console.log('4. Success - redirecting...')
+      }
+    } catch (err) {
+      console.log('4. Exception:', err)
+      setError('Google login failed: ' + (err as Error).message)
+    } finally {
+      setLoading(false)
+      console.log('5. Loading finished')
     }
   }
 
@@ -125,7 +160,13 @@ export function LoginForm({
             Or continue with
           </span>
         </div>
-        <Button variant="outline" className="w-full" type="button">
+        <Button 
+          variant="outline" 
+          className="w-full" 
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={loading}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="18"
@@ -150,7 +191,7 @@ export function LoginForm({
               d="M24 47c6.4 0 11.8-2.1 15.7-5.7l-7-5.4c-2 1.4-4.8 2.3-8.7 2.3-6.3 0-11.6-3.6-13.8-8.7l-7.5 5.8C6.9 42.3 14.8 47 24 47z"
             />
           </svg>
-          Login with Google
+          {loading ? 'Signing in...' : 'Login with Google'}
         </Button>
       </div>
     </form>

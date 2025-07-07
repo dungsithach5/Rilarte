@@ -1,91 +1,120 @@
 "use client"
 
 import { useState } from "react"
-import { cn } from "../../../lib/utils"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
+import Cookies from "js-cookie"
+import { useDispatch } from "react-redux"
+import { loginSuccess } from "../../../context/userSlice"
+import { cn } from "../../../../lib/utils"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
+import { useRouter } from "next/navigation"
+import { signIn, useSession } from "next-auth/react"
+import { ForgotPasswordForm } from "./forgot-password-form"
+import { ArrowLeft } from 'lucide-react';
 
-export function RegisterForm({
+export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
-    password: '',
-    confirmPassword: ''
+    password: ''
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const dispatch = useDispatch()
+  const router = useRouter()
+  const { data: session } = useSession()
+  const [showForgot, setShowForgot] = useState(false);
+
+  if (showForgot) {
+    return (
+      <div>
+        <ForgotPasswordForm />
+        <button
+          className="mt-4 text-sm hover:underline-offset-1 hover:underline cursor-pointer flex items-center justify-center gap-2"
+          onClick={() => setShowForgot(false)}
+          type="button"
+        >
+          <ArrowLeft size={15} />
+          Back to login
+        </button>
+      </div>
+    );
+  }
+
+  if (session) {
+    router.push("/")
+    return null
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.id]: e.target.value
     })
-    setError('') 
-  }
-
-  const validateForm = () => {
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
-      return false
-    }
-    
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long')
-      return false
-    }
-    
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/
-    if (!passwordRegex.test(formData.password)) {
-      setError('Password must contain both letters and numbers')
-      return false
-    }
-    
-    return true
+    setError('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!validateForm()) {
-      return
-    }
-    
     setLoading(true)
     setError('')
 
     try {
-      const response = await fetch('  http://localhost:5000/api/users/register', {
+      const response = await fetch('http://localhost:5000/api/users/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          confirmPassword: formData.confirmPassword
-        }),
+        body: JSON.stringify(formData),
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed')
+        throw new Error(data.message || 'Login failed')
       }
 
-      // Store token in localStorage
-      localStorage.setItem('token', data.token)
+      Cookies.set('token', data.token, { expires: 1, secure: false, sameSite: 'lax' })
       localStorage.setItem('user', JSON.stringify(data.user))
 
-      // Redirect to dashboard or home page
-      window.location.href = '/'
+      const avatarUrl = data.user?.avatar && data.user.avatar !== ''
+        ? data.user.avatar
+        : '/img/user.png';
+
+      dispatch(loginSuccess({
+        avatar: avatarUrl,
+        token: data.token,
+      }));
+
+      router.push("/");
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed')
+      setError(err instanceof Error ? err.message : 'Login failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    setLoading(true)
+    
+    try {
+      console.log('2. Calling signIn...')
+      const result = await signIn('google', { 
+        callbackUrl: '/' 
+      })
+      
+      if (result?.error) {
+        console.log('4. Error:', result.error)
+        setError('Google login failed: ' + result.error)
+      } else {
+        console.log('4. Success - redirecting...')
+      }
+    } catch (err) {
+      setError('Google login failed: ' + (err as Error).message)
     } finally {
       setLoading(false)
     }
@@ -94,9 +123,9 @@ export function RegisterForm({
   return (
     <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit} {...props}>
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">Create an account</h1>
+        <h1 className="text-2xl font-bold">Login to your account</h1>
         <p className="text-muted-foreground text-sm text-balance">
-          Enter your details below to create a new account
+          Enter your email below to login to your account
         </p>
       </div>
       
@@ -107,17 +136,6 @@ export function RegisterForm({
       )}
 
       <div className="grid gap-6">
-        <div className="grid gap-3">
-          <Label htmlFor="username">Username</Label>
-          <Input 
-            id="username" 
-            type="text" 
-            placeholder="johndoe" 
-            value={formData.username}
-            onChange={handleChange}
-            required 
-          />
-        </div>
         <div className="grid gap-3">
           <Label htmlFor="email">Email</Label>
           <Input 
@@ -130,7 +148,16 @@ export function RegisterForm({
           />
         </div>
         <div className="grid gap-3">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center">
+            <Label htmlFor="password">Password</Label>
+            <button
+              type="button"
+              className="ml-auto text-sm underline-offset-4 hover:underline cursor-pointer"
+              onClick={() => setShowForgot(true)}
+            >
+              Forgot your password?
+            </button>
+          </div>
           <Input 
             id="password" 
             type="password" 
@@ -139,25 +166,21 @@ export function RegisterForm({
             required 
           />
         </div>
-        <div className="grid gap-3">
-          <Label htmlFor="confirmPassword">Confirm Password</Label>
-          <Input 
-            id="confirmPassword" 
-            type="password" 
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required 
-          />
-        </div>
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? 'Creating account...' : 'Sign Up'}
+          {loading ? 'Logging in...' : 'Login'}
         </Button>
         <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
           <span className="bg-background text-muted-foreground relative z-10 px-2">
             Or continue with
           </span>
         </div>
-        <Button variant="outline" className="w-full" type="button">
+        <Button 
+          variant="outline" 
+          className="w-full cursor-pointer" 
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={loading}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="18"
@@ -182,9 +205,9 @@ export function RegisterForm({
               d="M24 47c6.4 0 11.8-2.1 15.7-5.7l-7-5.4c-2 1.4-4.8 2.3-8.7 2.3-6.3 0-11.6-3.6-13.8-8.7l-7.5 5.8C6.9 42.3 14.8 47 24 47z"
             />
           </svg>
-          Login with Google
+          {loading ? 'Signing in...' : 'Login with Google'}
         </Button>
       </div>
     </form>
   )
-} 
+}

@@ -1,88 +1,98 @@
 "use client"
 
 import { useState } from "react"
-import Cookies from "js-cookie"
-import { useDispatch } from "react-redux"
-import { loginSuccess } from "../../context/userSlice"
-import { cn } from "../../../lib/utils"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
-import { useRouter } from "next/navigation"
+import { cn } from "../../../../lib/utils"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
 import { signIn, useSession } from "next-auth/react"
 
-export function LoginForm({
+export function RegisterForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
   const [formData, setFormData] = useState({
+    username: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const dispatch = useDispatch()
-  const router = useRouter()
-  const { data: session } = useSession()
-
-  // Redirect if already logged in
-  if (session) {
-    router.push("/")
-    return null
-  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.id]: e.target.value
     })
-    setError('')
+    setError('') 
+  }
+
+  const validateForm = () => {
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
+      return false
+    }
+    
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long')
+      return false
+    }
+    
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/
+    if (!passwordRegex.test(formData.password)) {
+      setError('Password must contain both letters and numbers')
+      return false
+    }
+    
+    return true
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!validateForm()) {
+      return
+    }
+    
     setLoading(true)
     setError('')
 
     try {
-      const response = await fetch('http://localhost:5000/api/users/login', {
+      const response = await fetch('  http://localhost:5000/api/users/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword
+        }),
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed')
+        throw new Error(data.message || 'Registration failed')
       }
 
-      Cookies.set('token', data.token, { expires: 1, secure: false, sameSite: 'lax' })
+      // Store token in localStorage
+      localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
 
-      const avatarUrl = data.user?.avatar && data.user.avatar !== ''
-        ? data.user.avatar
-        : '/img/user.png';
-
-      dispatch(loginSuccess({
-        avatar: avatarUrl,
-        token: data.token,
-      }));
-
-      router.push("/");
+      // Redirect to dashboard or home page
+      window.location.href = '/'
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
       setLoading(false)
     }
   }
 
   const handleGoogleLogin = async () => {
-    console.log('=== Google Login Debug ===')
-    console.log('1. Button clicked')
     setLoading(true)
     
     try {
@@ -90,7 +100,6 @@ export function LoginForm({
       const result = await signIn('google', { 
         callbackUrl: '/' 
       })
-      console.log('3. SignIn result:', result)
       
       if (result?.error) {
         console.log('4. Error:', result.error)
@@ -99,20 +108,18 @@ export function LoginForm({
         console.log('4. Success - redirecting...')
       }
     } catch (err) {
-      console.log('4. Exception:', err)
       setError('Google login failed: ' + (err as Error).message)
     } finally {
       setLoading(false)
-      console.log('5. Loading finished')
     }
   }
 
   return (
     <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit} {...props}>
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">Login to your account</h1>
+        <h1 className="text-2xl font-bold">Create an account</h1>
         <p className="text-muted-foreground text-sm text-balance">
-          Enter your email below to login to your account
+          Enter your details below to create a new account
         </p>
       </div>
       
@@ -123,6 +130,17 @@ export function LoginForm({
       )}
 
       <div className="grid gap-6">
+        <div className="grid gap-3">
+          <Label htmlFor="username">Username</Label>
+          <Input 
+            id="username" 
+            type="text" 
+            placeholder="johndoe" 
+            value={formData.username}
+            onChange={handleChange}
+            required 
+          />
+        </div>
         <div className="grid gap-3">
           <Label htmlFor="email">Email</Label>
           <Input 
@@ -135,15 +153,7 @@ export function LoginForm({
           />
         </div>
         <div className="grid gap-3">
-          <div className="flex items-center">
-            <Label htmlFor="password">Password</Label>
-            <a
-              href="#"
-              className="ml-auto text-sm underline-offset-4 hover:underline"
-            >
-              Forgot your password?
-            </a>
-          </div>
+          <Label htmlFor="password">Password</Label>
           <Input 
             id="password" 
             type="password" 
@@ -152,8 +162,18 @@ export function LoginForm({
             required 
           />
         </div>
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? 'Logging in...' : 'Login'}
+        <div className="grid gap-3">
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Input 
+            id="confirmPassword" 
+            type="password" 
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            required 
+          />
+        </div>
+        <Button type="submit" className="w-full cursor-pointer" disabled={loading}>
+          {loading ? 'Creating account...' : 'Sign Up'}
         </Button>
         <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
           <span className="bg-background text-muted-foreground relative z-10 px-2">
@@ -162,7 +182,7 @@ export function LoginForm({
         </div>
         <Button 
           variant="outline" 
-          className="w-full" 
+          className="w-full cursor-pointer" 
           type="button"
           onClick={handleGoogleLogin}
           disabled={loading}
@@ -196,4 +216,4 @@ export function LoginForm({
       </div>
     </form>
   )
-}
+} 

@@ -3,8 +3,8 @@
 import { useRouter, useSearchParams } from "next/navigation"
 import { GalleryVerticalEnd } from "lucide-react"
 import { useState, useEffect } from "react"
-import { LoginForm } from "../@/components/login-form"
-import { RegisterForm } from "../@/components/register-form"
+import { LoginForm } from "../@/components/auth-form/login-form"
+import { RegisterForm } from "../@/components/auth-form/register-form"
 
 export default function LoginPage() {
   const searchParams = useSearchParams()

@@ -1,6 +1,13 @@
 "use client"
 
-import { Heart, MessageCircle, Bookmark, Smile } from "lucide-react"
+import { 
+  Heart,
+  MessageCircle,
+  Bookmark,
+  Smile,
+  Ellipsis,
+  Maximize2
+} from "lucide-react"
 import { Button } from "../ui/button"
 import {
   Dialog,
@@ -12,8 +19,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog"
+import { useState } from "react"
 import { InputComment } from "../ui/input-comment"
+import DropdownMenuEllipsis from "../dropdown-ellipsis"
 import HoverCardUser from "../hover-card-user"
+import { ZoomImage } from '../zoom-image'
 import { Label } from "../ui/label"
 import Link from 'next/link'
 
@@ -26,51 +36,64 @@ interface Post {
 }
 
 export function ComposerComment({ post }: { post: Post }) {
-
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   return (
     <Dialog>
       <DialogTrigger asChild>
         <div key={post.id} className="mb-4 break-inside-avoid">
-          <div className="mx-auto">
-            <div className="relative group cursor-pointer">
-              <img
-                src={post.image}
-                alt="Post"
-                className="w-full rounded-lg object-cover"
-              />
-              
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-black/30 rounded-lg opacity-0 group-hover:opacity-100 flex items-end p-4 transition-opacity duration-300">
-                {/* Avatar + Name */}
-                <div className="w-full flex items-center justify-between gap-2">
-                  <Link href="/profile" className="flex items-center gap-2">
-                    <img
-                      src="https://www.parents.com/thmb/lmejCapkkBYa0LQoezl2RxBi1Z0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/GettyImages-911983386-d50a1de241d44f829b17053ace814f4e.jpg"
-                      alt={post.name}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-white"
-                    />
-                    <strong className="text-white">{post.name}</strong>
-                  </Link>
-                  <div className="flex items-center gap-2">
-                    <Heart size={24} color="white"/>
-                    <MessageCircle size={24} color="white"/>
+            <div className="mx-auto">
+              <div className="relative group cursor-pointer">
+                <img
+                  src={post.image}
+                  alt="Post"
+                  className="w-full rounded-lg object-cover"
+                />
+
+                {/* Overlay */}
+                <div
+                  className={`absolute inset-0 bg-black/30 rounded-lg transition-opacity duration-300 flex items-end p-4
+                    ${isDropdownOpen ? "opacity-100" : "group-hover:opacity-100 opacity-0"}`}
+                >
+                  <DropdownMenuEllipsis
+                    imageUrl={post.image}
+                    fileName="downloaded-image.jpg"
+                    onOpenChange={(open) => setIsDropdownOpen(open)}
+                  />
+
+                  <div className="w-full flex items-center justify-between gap-2 z-0">
+                    <Link href="/profile" className="flex items-center gap-2">
+                      <img
+                        src="https://www.parents.com/thmb/lmejCapkkBYa0LQoezl2RxBi1Z0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/GettyImages-911983386-d50a1de241d44f829b17053ace814f4e.jpg"
+                        alt={post.name}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                      />
+                      <strong className="text-white">{post.name}</strong>
+                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Heart size={24} color="white" />
+                      <Bookmark size={24} color="white" />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-5xl grid grid-cols-2">
         <DialogHeader>
-          <DialogDescription>
+          <div className="relative">
             <img
               src={post.image}
               alt="Post"
-              className="object-contain h-full rounded-sm"
+              className="object-cover h-full w-full rounded-sm"
             />
-          </DialogDescription>
+
+            {/* <div className="absolute bottom-2 right-2 z-10 bg-black/50 p-2 rounded-full cursor-pointer">
+              <Maximize2 size={24} color="white"  />
+            </div>   */}
+            <ZoomImage image={post.image}/>
+          </div>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 px-2">
@@ -121,6 +144,10 @@ export function ComposerComment({ post }: { post: Post }) {
 
           <button className="hover:text-green-600 transition-colors cursor-pointer">
             <Bookmark className="w-6 h-6" />
+          </button>
+
+          <button className="hover:text-green-600 transition-colors cursor-pointer">
+            <  Ellipsis className="w-6 h-6" />
           </button>
         </div>
 

@@ -1,8 +1,18 @@
 "use client"
 
 import Image from "next/image";
+import Masonry from "react-masonry-css";
 import { Search } from "lucide-react";
 import { ComposerComment } from "./@/components/model-comment/ComposerComment"
+import { useEffect, useState } from "react";
+import SkeletonPost from "./@/components/skeleton-post"
+
+const breakpointColumnsObj = {
+  default: 6,
+  1024: 2,
+  640: 2,
+};
+
 const posts = [
   {
     id: 1,
@@ -82,9 +92,20 @@ const posts = [
     image: "https://images.unsplash.com/photo-1750174549347-2a3f92753738?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHw2Nnx8fGVufDB8fHx8fA%3D%3D",
   },
 ];
+
 export default function Home() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timeout);
+  }, []);
+
   return (
-    <div>
+    <section>
       {/* Banner */}
       <section>
         <div className="flex flex-col items-center justify-center mt-10 text-center">
@@ -123,13 +144,21 @@ export default function Home() {
       </section>
       
       {/* Post */}
-      <section className="px-6 mt-6 columns-2 sm:columns-2 md:columns-5 gap-4">
-        {posts.map((post) => (
-          <div key={post.id}>
-            <ComposerComment post={post} />
-          </div>
-        ))}
+      <section className="px-6 mt-6 pb-20">
+        {isLoading ? (
+          Array.from({ length: 10 }).map((_, i) => <SkeletonPost key={i} />)
+        ) : (
+          <Masonry
+            breakpointCols={breakpointColumnsObj}
+            className="flex gap-4"
+            columnClassName="flex flex-col"
+          >
+            {posts.map((post) => (
+              <ComposerComment key={post.id} post={post} />
+            ))}
+          </Masonry>
+        )}
       </section>
-    </div>
+    </section>
   );
 }

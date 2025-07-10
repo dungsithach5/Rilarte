@@ -1,6 +1,7 @@
 "use client"
 import React, { useState, useRef } from "react"
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud, Crop } from 'lucide-react';
+import Cropper, { Area } from 'react-easy-crop';
 
 interface FileChangeEvent extends React.ChangeEvent<HTMLInputElement> {}
 interface DragEvent extends React.DragEvent<HTMLDivElement> {}
@@ -27,9 +28,11 @@ export default function Post() {
   const [link, setLink] = useState("")
   const [image, setImage] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
-
+  const [isCropOpen, setIsCropOpen] = useState(false);
+  const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const inputFileRef = useRef<HTMLInputElement>(null)
-
 
 
   const handleImageChange: HandleImageChange = (file) => {
@@ -85,6 +88,46 @@ export default function Post() {
     // TODO: Gửi dữ liệu đến server (API)
   }
 
+  const getCroppedImg = async (imageSrc: string, cropPixels: Area): Promise<string> => {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement('canvas');
+    canvas.width = cropPixels.width;
+    canvas.height = cropPixels.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas context is null');
+    ctx.drawImage(
+      image,
+      cropPixels.x,
+      cropPixels.y,
+      cropPixels.width,
+      cropPixels.height,
+      0,
+      0,
+      cropPixels.width,
+      cropPixels.height
+    );
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) return reject(new Error('Canvas is empty'));
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      }, 'image/jpeg');
+    });
+  };
+
+  function createImage(url: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image();
+      img.addEventListener('load', () => resolve(img));
+      img.addEventListener('error', (error) => reject(error));
+      img.setAttribute('crossOrigin', 'anonymous');
+      img.src = url;
+    });
+  }
+
   return (
     <section className="w-full">
       <div className="px-90">
@@ -105,11 +148,13 @@ export default function Post() {
             onDrop={handleDrop}
           >
             {image ? (
-              <img
-                src={image}
-                alt="Preview"
-                className="h-full w-full object-cover"
-              />
+              <>
+                <img
+                  src={image}
+                  alt="Preview"
+                  className="h-full w-full object-cover"
+                />
+              </>
             ) : (
               <div className="space-y-6">
                 <div className="flex flex-col items-center justify-center mt-4">
@@ -161,6 +206,17 @@ export default function Post() {
                 className="border p-2 rounded-lg h-24 resize-none focus:outline-pink-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 disabled={!image}
               />
+              {image && (
+                <button
+                type="button"
+                className="text-black p-2 rounded-lg w-fit self-start cursor-pointer border hover:bg-gray-200"
+                title="Cắt ảnh"
+                onClick={() => setIsCropOpen(true)}
+              >
+                <Crop className="w-5 h-5" />
+              </button>
+
+              )}
             </div>
 
             {/* Submit Button */}
@@ -172,9 +228,46 @@ export default function Post() {
               Post
             </button>
           </div>
-
-
         </form>
+
+        {/* Crop Modal */}
+        {isCropOpen && image && (
+          <div className="fixed inset-0 flex items-center justify-center pb-12">
+            <div className="w-[90vw] h-[90vh] rounded-xl overflow-hidden flex flex-col items-center justify-center">
+              <div className="relative w-[80vw] h-[80vh] bg-zinc-900">
+                <Cropper
+                  image={image}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={(_, area: Area) => setCroppedAreaPixels(area)}
+                />
+              </div>
+              <div className="flex gap-4 mt-4">
+                <button
+                  className="bg-gray-300 px-4 py-2 rounded-lg"
+                  onClick={() => setIsCropOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="bg-black text-white px-4 py-2 rounded-lg cursor-pointer"
+                  onClick={async () => {
+                    if (image && croppedAreaPixels) {
+                      const cropped = await getCroppedImg(image, croppedAreaPixels);
+                      setImage(cropped);
+                    }
+                    setIsCropOpen(false);
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   )

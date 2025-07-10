@@ -1,10 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
 
 export default function EditProfile() {
+  const { session, status } = useAuth(true);
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const [name, setName] = useState("");
+  const [bio, setBio] = useState("");
+  const [username, setUsername] = useState("");
 
   useEffect(() => {
     if (!selectedFile) {
@@ -24,58 +31,89 @@ export default function EditProfile() {
     }
   };
 
+  const handleSubmit = () => {
+    console.log({
+      name,
+      bio,
+      username,
+      avatar: selectedFile,
+    });
+    alert("Profile updated!");
+  };
+
+  if (status === "loading") return <div>Loading...</div>;
+  if (!session) return null;
+
   return (
-    <section>
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-800">Edit Profile</h2>
+    <section className="max-w-xl mx-auto">
+      <div className="space-y-6">
+        <h2 className="text-2xl font-semibold text-gray-800">Edit Profile</h2>
 
-        <div className="space-y-4">
-          <label className="block text-sm font-medium text-gray-600 mb-2">Avatar</label>
-            <div className="flex items-center space-x-2">
-                <img
-                    src={previewUrl || "/img/user.png"}
-                    alt="Avatar Preview"
-                    className="h-20 w-20 rounded-full object-cover border"
-                />
-
-                <div className="mt-2 space-x-2">
-                    <label
-                        htmlFor="avatar-upload"
-                        className="inline-block bg-gray-100 text-sm text-gray-700 px-4 py-2 rounded-lg cursor-pointer hover:bg-gray-200 transition"
-                    >
-                    Change Avatar
-                    </label>
-
-                    <input
-                        id="avatar-upload"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                    />
-                </div>
+        {/* Avatar */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-600">Avatar</label>
+          <div className="flex items-center gap-4">
+            <img
+              src={previewUrl || session.user?.image || "/img/user.png"}
+              alt="Avatar Preview"
+              className="h-20 w-20 rounded-full object-cover border"
+            />
+            <div>
+              <label
+                htmlFor="avatar-upload"
+                className="inline-block bg-gray-100 text-sm text-gray-700 px-4 py-2 rounded-lg cursor-pointer hover:bg-gray-200 transition"
+              >
+                Change Avatar
+              </label>
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
             </div>
+          </div>
         </div>
 
+        {/* Name */}
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">Name</label>
-          <input className="w-full rounded-xl border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-black" />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-black"
+          />
         </div>
 
+        {/* Bio */}
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">Bio</label>
-          <textarea className="w-full rounded-xl border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-black" />
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-black"
+          />
         </div>
 
+        {/* Username */}
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">Username</label>
-          <input className="w-full rounded-xl border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-black" />
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-black"
+          />
         </div>
-      </div>
 
-      <button className="mt-6 bg-black text-white text-sm font-semibold py-2 px-4 rounded-full hover:bg-gray-800 transition cursor-pointer">
-        Save Changes
-      </button>
+        {/* Submit */}
+        <button
+          onClick={handleSubmit}
+          className="mt-4 bg-black text-white text-sm font-semibold py-2 px-4 rounded-full hover:bg-gray-800 transition cursor-pointer"
+        >
+          Save Changes
+        </button>
+      </div>
     </section>
   );
 }

@@ -1,24 +1,35 @@
 "use client"
 
 import * as React from "react"
-import { Bell } from "lucide-react"
 import {
   Drawer,
   DrawerContent,
   DrawerTrigger,
 } from "../ui/drawer"
 
+import {
+  BellIcon as BellOutline,
+} from "@heroicons/react/24/outline"
+import {
+  BellIcon as BellSolid,
+} from "@heroicons/react/24/solid"
+
 export default function DrawerChat() {
   const [open, setOpen] = React.useState(false)
 
   return (
     <Drawer direction="left" open={open} onOpenChange={setOpen}>
-      <DrawerTrigger type="button"  asChild>
+      <DrawerTrigger type="button" asChild>
         <button className="relative cursor-pointer">
-          <Bell size={24} />
+          {open ? (
+            <BellSolid className="w-7 h-7 text-gray-800" />
+          ) : (
+            <BellOutline className="w-7 h-7 text-gray-800" />
+          )}
           <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
         </button>
       </DrawerTrigger>
+
       <DrawerContent className="bg-white w-[360px] p-4 overflow-y-auto border-r border-gray-200">
         <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
@@ -45,7 +56,7 @@ export default function DrawerChat() {
         </div>
 
         <div className="space-y-4">
-        <h3 className="text-xl font-semibold text-gray-800">Notification</h3>
+          <h3 className="text-xl font-semibold text-gray-800">Notification</h3>
           {[
             {
               user: 'Phong To',

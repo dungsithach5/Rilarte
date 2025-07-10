@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { MessageSquare, ArrowLeft, ArrowUp } from "lucide-react"
+import { ArrowLeft, ArrowUp } from "lucide-react"
 import {
   Drawer,
   DrawerContent,
@@ -10,6 +10,13 @@ import {
 import { ChatUserItem } from "./ChatUserItem"
 import { ChatHeader } from "./ChatHeader"
 import { ChatBubble } from "./ChatBubble"
+
+import {
+  ChatBubbleOvalLeftIcon as ChatOutline,
+} from "@heroicons/react/24/outline"
+import {
+  ChatBubbleOvalLeftIcon as ChatSolid,
+} from "@heroicons/react/24/solid"
 
 const users = [
   {
@@ -31,8 +38,15 @@ export default function DrawerChat() {
   return (
     <Drawer direction="right" open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <MessageSquare onClick={() => setSelected(null)} />
+        <button onClick={() => setSelected(null)} className="cursor-pointer">
+          {open ? (
+            <ChatSolid className="w-7 h-7 text-gray-800" />
+          ) : (
+            <ChatOutline className="w-7 h-7 text-gray-800" />
+          )}
+        </button>
       </DrawerTrigger>
+
       <DrawerContent>
         <div className="flex w-full h-screen overflow-hidden">
           {selected === null ? (
@@ -52,10 +66,7 @@ export default function DrawerChat() {
           ) : (
             <div className="flex-1 flex flex-col">
               <div className="flex items-center gap-2 px-4 py-3 border-gray-500">
-                <button
-                  className="mr-2"
-                  onClick={() => setSelected(null)}
-                >
+                <button className="mr-2" onClick={() => setSelected(null)}>
                   <ArrowLeft size={30} className="cursor-pointer" />
                 </button>
                 <ChatHeader

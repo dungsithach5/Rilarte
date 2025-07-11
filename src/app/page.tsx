@@ -6,6 +6,9 @@ import { Search } from "lucide-react";
 import { ComposerComment } from "./@/components/model-comment/ComposerComment"
 import { useEffect, useState } from "react";
 import SkeletonPost from "./@/components/skeleton-post"
+import OnboardModal from "./@/components/OnboardModal";
+
+
 
 const breakpointColumnsObj = {
   default: 6,
@@ -94,6 +97,7 @@ const posts = [
 ];
 
 export default function Home() {
+
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -103,6 +107,7 @@ export default function Home() {
 
     return () => clearTimeout(timeout);
   }, []);
+
 
   return (
     <section>
@@ -157,7 +162,10 @@ export default function Home() {
               <ComposerComment key={post.id} post={post} />
             ))}
           </Masonry>
+          
         )}
+        <OnboardModal user={{ firstLogin: true }} />
+
       </section>
     </section>
   );

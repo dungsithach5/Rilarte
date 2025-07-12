@@ -53,3 +53,8 @@ node_modules
 dist
 dist-ssr
 *.local
+
+*.png
+*.jpg
+*.jpeg
+*.gif

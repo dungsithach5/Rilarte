@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog"
+import { useAuth } from "../../../hooks/useAuth";
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { InputComment } from "../ui/input-comment"
@@ -35,9 +36,8 @@ import Link from 'next/link'
 interface Post {
   id: number
   name: string
-  time: string
   text: string
-  image: string
+  image_url: string
 }
 
 export function ComposerComment({ post }: { post: Post }) {
@@ -46,6 +46,16 @@ export function ComposerComment({ post }: { post: Post }) {
   const [comment, setComment] = useState('')
   const [liked, setLiked] = useState(false)
   const [bookmarked, setBookmarked] = useState(false)
+  const { session, status } = useAuth(true);
+
+  // Extract Google user information
+  const googleUser = session?.user;
+  const userName = googleUser?.name || 'Unknown User';
+  const userEmail = googleUser?.email || '';
+  const userAvatar = googleUser?.image || '/img/user.png';
+  
+  // Extract username from email (before @gmail.com)
+  const username = userEmail ? userEmail.split('@')[0] : 'unknown';
 
   const addEmoji = (emojiData: any) => {
     setComment((prev) => prev + emojiData.emoji)
@@ -58,7 +68,7 @@ export function ComposerComment({ post }: { post: Post }) {
           <div className="mx-auto">
             <div className="relative group cursor-pointer">
               <img
-                src={post.image}
+                src={post.image_url}
                 alt="Post"
                 className="w-full rounded-lg object-cover"
               />
@@ -69,7 +79,7 @@ export function ComposerComment({ post }: { post: Post }) {
                 {/* Dropdown */}
                 <div onClick={(e) => e.stopPropagation()}>
                   <DropdownMenuEllipsis
-                    imageUrl={post.image}
+                    imageUrl={post.image_url}
                     fileName="downloaded-image.jpg"
                     onOpenChange={(open) => setIsDropdownOpen(open)}
                   />
@@ -82,11 +92,11 @@ export function ComposerComment({ post }: { post: Post }) {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <img
-                      src="https://www.parents.com/thmb/lmejCapkkBYa0LQoezl2RxBi1Z0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/GettyImages-911983386-d50a1de241d44f829b17053ace814f4e.jpg"
-                      alt={post.name}
+                      src={userAvatar}
+                      alt={userName}
                       className="w-10 h-10 rounded-full object-cover border-2 border-white"
                     />
-                    <strong className="text-white">{post.name}</strong>
+                    <strong className="text-white">{userName}</strong>
                   </Link>
 
                   {/* Heart + Bookmark */}
@@ -142,13 +152,15 @@ export function ComposerComment({ post }: { post: Post }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <img
-              src="https://www.parents.com/thmb/lmejCapkkBYa0LQoezl2RxBi1Z0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/GettyImages-911983386-d50a1de241d44f829b17053ace814f4e.jpg"
-              alt={post.name}
+              src={userAvatar}
+              alt={userName}
               className="w-10 h-10 rounded-full object-cover"
             />
             <div>
-              <p className="text-sm font-semibold">{post.name}</p>
-              <p className="text-xs text-gray-500">@{post.name.toLowerCase().replace(/\s+/g, '')}</p>
+              <p className="text-sm font-semibold">{userName}</p>
+              <p className="text-xs text-gray-500">
+                @{username}
+              </p>
             </div>
           </DialogTitle>
 
@@ -156,11 +168,11 @@ export function ComposerComment({ post }: { post: Post }) {
 
           <div className="relative">
             <img
-              src={post.image}
+              src={post.image_url}
               alt="Post"
               className="object-cover h-full w-full rounded-sm"
             />
-            <ZoomImage image={post.image} />
+            <ZoomImage image={post.image_url} />
           </div>
         </DialogHeader>
 

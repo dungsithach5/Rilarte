@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image";
+import axios from 'axios'
 import Masonry from "react-masonry-css";
 import { Search } from "lucide-react";
 import { ComposerComment } from "./@/components/model-comment/ComposerComment"
@@ -13,95 +13,29 @@ const breakpointColumnsObj = {
   640: 2,
 };
 
-const posts = [
-  {
-    id: 1,
-    name: "Anna Smith",
-    time: "2 hours ago",
-    text: "Enjoying a quiet afternoon 🌿",
-    image: "https://images.unsplash.com/photo-1659959103870-c4beea371a9b?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyfHx8ZW58MHx8fHx8",
-  },
-  {
-    id: 2,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1747767763480-a5b4c7a82aef?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwzfHx8ZW58MHx8fHx8",
-  },
-  {
-    id: 3,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1586788224331-947f68671cf1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzZ8fGNvbG9yfGVufDB8MXwwfHx8MA%3D%3D",
-  },
-    {
-    id: 4,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1751209978666-c1007795154e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyOHx8fGVufDB8fHx8fA%3D%3D",
-  },
-    {
-    id: 5,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1748392029321-58793571f850?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwzMHx8fGVufDB8fHx8fA%3D%3D",
-  },
-    {
-    id: 6,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1749497683202-d3073573d996?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwzMXx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    id: 7,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1750711642160-efc6e052751a?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwzOHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    id: 8,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1743623173827-45535f2173a0?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHw1MHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    id: 9,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1750636032555-87ff65188516?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHw2M3x8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    id: 10,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1750174549347-2a3f92753738?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHw2Nnx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    id: 11,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1750174549347-2a3f92753738?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHw2Nnx8fGVufDB8fHx8fA%3D%3D",
-  },
-];
-
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
-
+  const [posts, setPosts] = useState<any[]>([]);
+  
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+    const fetchPosts = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/posts');
+        const mappedPosts = res.data.map((item: any) => ({
+          id: item.id,
+          name: item.user_name,
+          text: item.content,
+          image_url: item.image_url
+        }));
+        setPosts(mappedPosts);
+      } catch (error) {
+        console.error("Failed to fetch posts:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timeout);
+    fetchPosts();
   }, []);
 
   return (
@@ -109,8 +43,12 @@ export default function Home() {
       {/* Banner */}
       <section>
         <div className="flex flex-col items-center justify-center mt-10 text-center">
-          <h1 className="text-5xl font-bold mb-4">Unleash Your Creativity <br /> One Image at a Time</h1>
-          <p className="text-lg text-gray-600">Step into a world where visuals speak louder than words — a place to explore <br /> share, and get lost in the boundless beauty of creative freedom.</p>
+          <h1 className="text-5xl font-bold mb-4">
+            Unleash Your Creativity <br /> One Image at a Time
+          </h1>
+          <p className="text-lg text-gray-600">
+            Step into a world where visuals speak louder than words — a place to explore <br /> share, and get lost in the boundless beauty of creative freedom.
+          </p>
         </div>
       </section>
 
@@ -142,8 +80,8 @@ export default function Home() {
           </div>
         </div>
       </section>
-      
-      {/* Post */}
+
+      {/* Posts */}
       <section className="px-6 mt-6 pb-20">
         {isLoading ? (
           Array.from({ length: 10 }).map((_, i) => <SkeletonPost key={i} />)

@@ -2,6 +2,7 @@ const express = require('express');
 const router = require('./routes/index');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 
 dotenv.config();
 
@@ -18,6 +19,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from public/uploads
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 
 router(app);

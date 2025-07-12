@@ -2,7 +2,9 @@ const { Post } = require('../models');
 
 exports.getAllPosts = async (req, res) => {
     try {
-        const posts = await Post.findAll();
+        const posts = await Post.findAll({
+            attributes: ['id', 'user_name', 'title', 'content', 'image_url', 'createdAt', 'updatedAt']
+        });
         res.status(200).json(posts);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching posts', error });

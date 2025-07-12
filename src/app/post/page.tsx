@@ -1,7 +1,9 @@
 "use client"
+import axios from 'axios'
 import React, { useState, useRef } from "react"
 import { UploadCloud, Crop } from 'lucide-react';
 import Cropper, { Area } from 'react-easy-crop';
+import { useAuth } from "../hooks/useAuth";
 
 interface FileChangeEvent extends React.ChangeEvent<HTMLInputElement> {}
 interface DragEvent extends React.DragEvent<HTMLDivElement> {}
@@ -11,22 +13,17 @@ interface DropEvent extends React.DragEvent<HTMLDivElement> {}
 interface DragOverEvent extends React.DragEvent<HTMLDivElement> {}
 
 interface HandleSubmitEvent extends React.FormEvent<HTMLFormElement> {}
-interface NewPost {
-  title: string;
-  description: string;
-  link: string;
-  image: string | null;
-}
-
 interface ImageFile extends File {}
 interface HandleImageChange {
   (file: ImageFile | null): void;
 }
 export default function Post() {
+  const { session, status } = useAuth(true);
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [link, setLink] = useState("")
   const [image, setImage] = useState<string | null>(null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isCropOpen, setIsCropOpen] = useState(false);
   const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -41,6 +38,7 @@ export default function Post() {
         alert("Ảnh vượt quá 20MB. Vui lòng chọn ảnh nhỏ hơn.");
         return;
       }
+      setImageFile(file);
       setImage(URL.createObjectURL(file));
     }
   };
@@ -81,12 +79,54 @@ export default function Post() {
     }
   };
 
-  const handleSubmit = (e: HandleSubmitEvent) => {
-    e.preventDefault()
-    const newPost: NewPost = { title, description, link, image }
-    console.log("Post Created:", newPost)
-    // TODO: Gửi dữ liệu đến server (API)
+const handleSubmit = async (e: HandleSubmitEvent) => {
+  e.preventDefault();
+
+  if (!imageFile) {
+    alert('Vui lòng chọn một ảnh');
+    return;
   }
+
+  try {
+    // Upload image first
+    const formData = new FormData();
+    formData.append('image', imageFile);
+
+    const uploadResponse = await axios.post('http://localhost:5000/api/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    const imageUrl = uploadResponse.data.imageUrl;
+
+    // Create post with uploaded image URL
+    const newPost = {
+      user_name: session?.user?.email,
+      title,
+      content: description,
+      image_url: imageUrl
+    };
+
+    const res = await axios.post('http://localhost:5000/api/posts', newPost, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    console.log('Post Created:', res.data);
+    
+    setTitle('');
+    setDescription('');
+    setImage(null);
+    setImageFile(null);
+    if (inputFileRef.current) {
+      inputFileRef.current.value = '';
+    }
+  } catch (err) {
+    console.error('Error creating post:', err);
+    alert('Có lỗi xảy ra khi tạo bài đăng');
+  }
+};
 
   const getCroppedImg = async (imageSrc: string, cropPixels: Area): Promise<string> => {
     const image = await createImage(imageSrc);
@@ -258,6 +298,12 @@ export default function Post() {
                     if (image && croppedAreaPixels) {
                       const cropped = await getCroppedImg(image, croppedAreaPixels);
                       setImage(cropped);
+                      
+                      // Convert cropped image back to File object
+                      const response = await fetch(cropped);
+                      const blob = await response.blob();
+                      const croppedFile = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' });
+                      setImageFile(croppedFile);
                     }
                     setIsCropOpen(false);
                   }}

@@ -6,4 +6,5 @@ module.exports = (app) => {
     app.use('/api/follows', require('./follow.route'));
     app.use('/api/messages', require('./message.route'));
     app.use('/api/notifications', require('./notification.route'));
+    app.use('/api/upload', require('./upload.js'));
 }

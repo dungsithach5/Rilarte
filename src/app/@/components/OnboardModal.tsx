@@ -40,13 +40,14 @@ export default function OnboardModal({ user }: { user: any }) {
     try {
       setLoading(true);
 
-      await fetch("/api/users/onboarding", {
+      await fetch("http://localhost:5000/api/users/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, gender, topics }),
       });
 
       setOpen(false);
+      window.location.reload(); // Đảm bảo session/user được cập nhật
 
     } catch (err) {
       console.error("Failed to submit onboarding info", err);

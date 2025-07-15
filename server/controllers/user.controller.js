@@ -291,3 +291,12 @@ exports.deleteUser = async (req, res) => {
 
 // Thêm alias cho register
 exports.createUser = exports.register;
+
+exports.onboarding = async (req, res) => {
+  const { userId, gender, topics } = req.body;
+  await User.update(
+    { gender, topics: JSON.stringify(topics), firstLogin: false },
+    { where: { id: userId } }
+  );
+  res.json({ success: true });
+};

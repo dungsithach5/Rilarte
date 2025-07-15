@@ -82,4 +82,15 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// Route onboarding
+const userController = require("../controllers/user.controller");
+router.post("/onboarding", userController.onboarding);
+
+router.get("/by-email", async (req, res) => {
+  const { email } = req.query;
+  const user = await User.findOne({ where: { email } });
+  if (!user) return res.status(404).json({ error: "User not found" });
+  res.json(user);
+});
+
 module.exports = router;

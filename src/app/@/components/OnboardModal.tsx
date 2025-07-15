@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 const TOPICS = [
     { label: "Art", image: "https://www.kiettacnghethuat.com/wp-content/uploads/The-Starry-Night.jpg" },

@@ -294,9 +294,18 @@ exports.createUser = exports.register;
 
 exports.onboarding = async (req, res) => {
   const { userId, gender, topics } = req.body;
-  await User.update(
-    { gender, topics: JSON.stringify(topics), firstLogin: false },
-    { where: { id: userId } }
-  );
-  res.json({ success: true });
+  try {
+    await User.update(
+      {
+        gender,
+        topics: JSON.stringify(topics), // nếu topics là array
+        firstLogin: false,
+      },
+      { where: { id: userId } }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Onboarding error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };

@@ -36,6 +36,10 @@ module.exports = (sequelize, DataTypes) => {
       }
     
     },
+    gender: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
     topics: {
       type: DataTypes.JSON,
       allowNull: false,
@@ -48,17 +52,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     password: {
       type: DataTypes.STRING(255),
-      allowNull: false,
+      allowNull: true,
       validate: {
         len: [6, 255],
-       },
-    },
-    password: {
-      type: DataTypes.STRING(255),
-      allowNull: false,
-      validate: {
-        len: [6, 255]
-      }
+      },
     },
     bio: DataTypes.TEXT,
     avatar_url: DataTypes.STRING(255)

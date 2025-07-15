@@ -17,7 +17,7 @@ const corsOptions = {
 };
 
 // Middleware
-app.use(cors(corsOptions));
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/api/users", userRoutes);

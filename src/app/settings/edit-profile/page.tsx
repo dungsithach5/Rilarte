@@ -45,75 +45,83 @@ export default function EditProfile() {
   if (!session) return null;
 
   return (
-    <section className="max-w-xl mx-auto">
-      <div className="space-y-6">
-        <h2 className="text-2xl font-semibold text-gray-800">Edit Profile</h2>
-
-        {/* Avatar */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-600">Avatar</label>
-          <div className="flex items-center gap-4">
-            <img
-              src={previewUrl || session.user?.image || "/img/user.png"}
-              alt="Avatar Preview"
-              className="h-20 w-20 rounded-full object-cover border"
+    <section className="max-w-md sm:max-w-lg lg:max-w-xl mx-auto px-4 sm:px-6 py-6 bg-white ">
+    <div className="space-y-6">
+      {/* Title */}
+      <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Edit Profile</h2>
+  
+      {/* Avatar */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">Avatar</label>
+        <div className="flex items-center gap-4">
+          <img
+            src={previewUrl || session.user?.image || "/img/user.png"}
+            alt="Avatar Preview"
+            className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover ring-2 ring-gray-200"
+          />
+          <div>
+            <label
+              htmlFor="avatar-upload"
+              className="inline-block bg-gray-100 text-sm text-gray-800 px-3 py-1 sm:px-4 sm:py-2 rounded-lg cursor-pointer hover:bg-gray-200 transition"
+            >
+              Change
+            </label>
+            <input
+              id="avatar-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
             />
-            <div>
-              <label
-                htmlFor="avatar-upload"
-                className="inline-block bg-gray-100 text-sm text-gray-700 px-4 py-2 rounded-lg cursor-pointer hover:bg-gray-200 transition"
-              >
-                Change Avatar
-              </label>
-              <input
-                id="avatar-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </div>
           </div>
         </div>
-
-        {/* Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">Name</label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-black"
-          />
-        </div>
-
-        {/* Bio */}
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">Bio</label>
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-black"
-          />
-        </div>
-
-        {/* Username */}
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">Username</label>
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-black"
-          />
-        </div>
-
-        {/* Submit */}
+      </div>
+  
+      {/* Name */}
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-gray-700">Name</label>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Your name"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-black transition"
+        />
+      </div>
+  
+      {/* Bio */}
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-gray-700">Bio</label>
+        <textarea
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          placeholder="Short description about you"
+          rows={3}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-black transition resize-none"
+        />
+      </div>
+  
+      {/* Username */}
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-gray-700">Username</label>
+        <input
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="e.g. johndoe"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-black transition"
+        />
+      </div>
+  
+      {/* Save */}
+      <div>
         <button
           onClick={handleSubmit}
-          className="mt-4 bg-black text-white text-sm font-semibold py-2 px-4 rounded-full hover:bg-gray-800 transition cursor-pointer"
+          className="w-full bg-black text-white text-sm sm:text-base font-semibold py-2 sm:py-3 rounded-full hover:bg-gray-800 transition"
         >
           Save Changes
         </button>
       </div>
-    </section>
+    </div>
+  </section>  
+
   );
 }

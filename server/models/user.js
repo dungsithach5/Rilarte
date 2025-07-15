@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.Message, { foreignKey: 'sender_id', as: 'SentMessages' });
       User.hasMany(models.Message, { foreignKey: 'receiver_id', as: 'ReceivedMessages' });
       User.hasMany(models.Notification, { foreignKey: 'user_id' });
+      
     }
   }
   User.init({
@@ -33,6 +34,24 @@ module.exports = (sequelize, DataTypes) => {
         isEmail: true,
         notEmpty: true
       }
+    
+    },
+    topics: {
+      type: DataTypes.JSON,
+      allowNull: false,
+      defaultValue: [],
+    },
+    firstLogin: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    password: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      validate: {
+        len: [6, 255],
+       },
     },
     password: {
       type: DataTypes.STRING(255),

@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model comments {
+  id        Int      @id @default(autoincrement())
+  user_id   Int
+  post_id   Int
+  content   String   @db.Text
+  createdAt DateTime @db.DateTime(0)
+  updatedAt DateTime @db.DateTime(0)
+  users     users?   @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "comments_ibfk_1")
+  posts     posts?   @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "comments_ibfk_2")
+
+  @@index([post_id], map: "post_id")
+  @@index([user_id], map: "user_id")
+}
+
+model follows {
+  id                                Int      @id @default(autoincrement())
+  follower_id                       Int
+  following_id                      Int
+  createdAt                         DateTime @db.DateTime(0)
+  updatedAt                         DateTime @db.DateTime(0)
+  users_follows_follower_idTousers  users  @relation("follows_follower_idTousers", fields: [follower_id], references: [id], onDelete: Cascade, map: "follows_ibfk_1")
+  users_follows_following_idTousers users   @relation("follows_following_idTousers", fields: [following_id], references: [id], onDelete: Cascade, map: "follows_ibfk_2")
+
+  @@index([follower_id], map: "follower_id")
+  @@index([following_id], map: "following_id")
+}
+
+model likes {
+  id        Int      @id @default(autoincrement())
+  user_id   Int
+  post_id   Int
+  createdAt DateTime @db.DateTime(0)
+  updatedAt DateTime @db.DateTime(0)
+  users     users   @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "likes_ibfk_1")
+  posts     posts   @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "likes_ibfk_2")
+
+  @@index([post_id], map: "post_id")
+  @@index([user_id], map: "user_id")
+}
+
+model messages {
+  id                                Int      @id @default(autoincrement())
+  sender_id                         Int?
+  receiver_id                       Int?
+  content                           String?  @db.Text
+  is_read                           Boolean? @default(false)
+  createdAt                         DateTime @db.DateTime(0)
+  updatedAt                         DateTime @db.DateTime(0)
+  users_messages_sender_idTousers   users?   @relation("messages_sender_idTousers", fields: [sender_id], references: [id], onDelete: Cascade, map: "messages_ibfk_1")
+  users_messages_receiver_idTousers users?   @relation("messages_receiver_idTousers", fields: [receiver_id], references: [id], onDelete: Cascade, map: "messages_ibfk_2")
+
+  @@index([receiver_id], map: "receiver_id")
+  @@index([sender_id], map: "sender_id")
+}
+
+model notifications {
+  id        Int      @id @default(autoincrement())
+  user_id   Int
+  type      String  @db.VarChar(50)
+  content   String  @db.Text
+  is_read   Boolean @default(false)
+  createdAt DateTime @db.DateTime(0)
+  updatedAt DateTime @db.DateTime(0)
+  users     users   @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "notifications_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+}
+
+model posts {
+  id        Int        @id @default(autoincrement())
+  user_name String    @db.VarChar(45)
+  title     String    @db.Text
+  content   String   @db.Text
+  image_url String   @db.VarChar(255)
+  createdAt DateTime   @db.DateTime(0)
+  updatedAt DateTime   @db.DateTime(0)
+  comments  comments[]
+  likes     likes[]
+
+}
+
+model sequelizemeta {
+  name String @id @unique(map: "name") @db.VarChar(255)
+}
+
+model users {
+  id                                   Int             @id @default(autoincrement())
+  username                             String          @unique(map: "username") @db.VarChar(50)
+  email                                String          @unique(map: "email") @db.VarChar(100)
+  password                             String          @db.VarChar(255)
+  bio                                  String?         @db.Text
+  avatar_url                           String         @db.VarChar(255)
+  createdAt                            DateTime        @db.DateTime(0)
+  updatedAt                            DateTime        @db.DateTime(0)
+  onboarded                           Boolean         @default(true)
+  comments                             comments[]
+  follows_follows_follower_idTousers   follows[]       @relation("follows_follower_idTousers")
+  follows_follows_following_idTousers  follows[]       @relation("follows_following_idTousers")
+  likes                                likes[]
+  messages_messages_sender_idTousers   messages[]      @relation("messages_sender_idTousers")
+  messages_messages_receiver_idTousers messages[]      @relation("messages_receiver_idTousers")
+  notifications                        notifications[]
+}

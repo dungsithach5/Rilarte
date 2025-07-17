@@ -77,16 +77,16 @@ export default function Post() {
         image_url: imageUrl
       };
 
-      const res = await axios.post('http://localhost:5000/api/posts', newPost, {
+      await axios.post('http://localhost:5000/api/posts', newPost, {
         headers: { 'Content-Type': 'application/json' },
       });
-
-      console.log('Post Created:', res.data);
+      
       setTitle('');
       setDescription('');
       setImage(null);
       setImageFile(null);
       if (inputFileRef.current) inputFileRef.current.value = '';
+      console.log('Data to send:', newPost);
     } catch (err) {
       console.error('Error creating post:', err);
     }

@@ -1,8 +1,9 @@
-const { Like } = require('../models');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 exports.getAllLikes = async (req, res) => {
     try {
-        const likes = await Like.findAll();
+        const likes = await prisma.like.findMany();
         res.status(200).json(likes);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching likes', error });
@@ -11,7 +12,7 @@ exports.getAllLikes = async (req, res) => {
 
 exports.getLikeById = async (req, res) => {
     try {
-        const like = await Like.findByPk(req.params.id);
+        const like = await prisma.like.findUnique({ where: { id: Number(req.params.id) } });
         if (!like) {
             return res.status(404).json({ message: 'Like not found' });
         }
@@ -23,7 +24,7 @@ exports.getLikeById = async (req, res) => {
 
 exports.createLike = async (req, res) => {
     try {
-        const newLike = await Like.create(req.body);
+        const newLike = await prisma.like.create({ data: req.body });
         res.status(201).json(newLike);
     } catch (error) {
         res.status(400).json({ message: 'Error creating like', error });
@@ -32,15 +33,10 @@ exports.createLike = async (req, res) => {
 
 exports.updateLike = async (req, res) => {
     try {
-        const [updatedRows] = await Like.update(req.body, {
-            where: { id: req.params.id }
+        const updatedLike = await prisma.like.update({
+            where: { id: Number(req.params.id) },
+            data: req.body
         });
-
-        if (updatedRows === 0) {
-            return res.status(404).json({ message: 'Like not found' });
-        }
-
-        const updatedLike = await Like.findByPk(req.params.id);
         res.status(200).json(updatedLike);
     } catch (error) {
         res.status(400).json({ message: 'Error updating like', error });
@@ -49,14 +45,7 @@ exports.updateLike = async (req, res) => {
 
 exports.deleteLike = async (req, res) => {
     try {
-        const deletedRows = await Like.destroy({
-            where: { id: req.params.id }
-        });
-
-        if (deletedRows === 0) {
-            return res.status(404).json({ message: 'Like not found' });
-        }
-
+        await prisma.like.delete({ where: { id: Number(req.params.id) } });
         res.status(200).json({ message: 'Like deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error deleting like', error });

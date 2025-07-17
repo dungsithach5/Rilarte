@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 const authMiddleware = async (req, res, next) => {
   try {
@@ -25,8 +26,9 @@ const authMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     
     // Check if user still exists
-    const user = await User.findByPk(decoded.id, {
-      attributes: { exclude: ['password'] }
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, email: true, username: true }
     });
     
     if (!user) {

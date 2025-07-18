@@ -100,7 +100,7 @@ CREATE TABLE `users` (
     `avatar_url` VARCHAR(255) NULL,
     `createdAt` DATETIME(0) NOT NULL,
     `updatedAt` DATETIME(0) NOT NULL,
-    `firstLogin` BOOLEAN NOT NULL DEFAULT true,
+    `onboarded` BOOLEAN NOT NULL DEFAULT true,
 
     UNIQUE INDEX `username`(`username`),
     UNIQUE INDEX `email`(`email`),

@@ -90,7 +90,7 @@ const topics = [
       id: 'fashion', 
       name: 'Fashion', 
       icon: '👗', 
-      image: 'https://anhvienpiano.com/wp-content/uploads/2018/08/dich-vu-chup-anh-thoi-trang-cho-shop-quan-ao-dep-gia-re.jpg'
+      image: 'https://m.media-amazon.com/images/I/61NduGwyh5L._UF1000,1000_QL80_.jpg'
     },
 ];
 
@@ -257,7 +257,7 @@ export default function OnboardingModal() {
       {showSuccess && confetti.map((piece) => (
         <div
           key={piece.id}
-          className="fixed w-2 h-2 rounded-full pointer-events-none animate-confetti"
+          className="fixed w-2 h-2 rounded-full pointer-events-none animate-confetti-fall"
           style={{
             left: `${piece.x}%`,
             top: `${piece.y}%`,
@@ -307,133 +307,7 @@ export default function OnboardingModal() {
       <div className={`bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden transition-all duration-500 ${
         showSuccess ? 'animate-fade-out scale-95 opacity-50' : ''
       }`}>
-        <style jsx>{`
-          @keyframes fadeInUp {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          
-          @keyframes slideIn {
-            from {
-              opacity: 0;
-              transform: translateX(-20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateX(0);
-            }
-          }
-          
-          @keyframes scaleIn {
-            from {
-              opacity: 0;
-              transform: scale(0.8);
-            }
-            to {
-              opacity: 1;
-              transform: scale(1);
-            }
-          }
-          
-          @keyframes shimmer {
-            0% {
-              transform: translateX(-100%);
-            }
-            100% {
-              transform: translateX(100%);
-            }
-          }
-          
-          @keyframes float {
-            0%, 100% {
-              transform: translateY(0px);
-            }
-            50% {
-              transform: translateY(-10px);
-            }
-          }
-          
-          @keyframes pulse {
-            0%, 100% {
-              opacity: 1;
-            }
-            50% {
-              opacity: 0.5;
-            }
-          }
-          
-          @keyframes rotate {
-            from {
-              transform: rotate(0deg);
-            }
-            to {
-              transform: rotate(360deg);
-            }
-          }
-          
-          .animate-shimmer {
-            animation: shimmer 2s infinite;
-          }
-          
-          .animate-float {
-            animation: float 3s ease-in-out infinite;
-          }
-          
-          .animate-rotate {
-            animation: rotate 2s linear infinite;
-          }
-          
-          @keyframes confettiFall {
-            0% {
-              transform: translateY(-10px) rotate(0deg);
-              opacity: 1;
-            }
-            100% {
-              transform: translateY(100vh) rotate(720deg);
-              opacity: 0;
-            }
-          }
-          
-          @keyframes successPulse {
-            0%, 100% {
-              transform: scale(1);
-              opacity: 1;
-            }
-            50% {
-              transform: scale(1.1);
-              opacity: 0.8;
-            }
-          }
-          
-          @keyframes fadeOut {
-            from {
-              opacity: 1;
-              transform: scale(1);
-            }
-            to {
-              opacity: 0;
-              transform: scale(0.8);
-            }
-          }
-          
-          .animate-confetti {
-            animation: confettiFall 3s ease-in forwards;
-          }
-          
-          .animate-success-pulse {
-            animation: successPulse 2s ease-in-out infinite;
-          }
-          
-          .animate-fade-out {
-            animation: fadeOut 0.5s ease-out forwards;
-          }
-        `}</style>
+
         {/* Header */}
         <div className="bg-gradient-to-r from-gray-800 to-black text-white p-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"></div>
@@ -446,15 +320,15 @@ export default function OnboardingModal() {
             <div className="flex justify-center items-center mt-6 space-x-4">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-500 ${
                 currentStep >= 1 ? 'bg-white text-gray-800 scale-110 shadow-lg' : 'bg-white/30 text-white'
-              }`} style={{ animation: currentStep >= 1 ? 'scaleIn 0.5s ease-out' : 'none' }}>
+              }`}>
                 1
               </div>
               <div className={`w-16 h-1 rounded-full transition-all duration-500 ${
                 currentStep >= 2 ? 'bg-white' : 'bg-white/30'
-              }`} style={{ animation: currentStep >= 2 ? 'slideIn 0.8s ease-out' : 'none' }}></div>
+              }`}></div>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-500 ${
                 currentStep >= 2 ? 'bg-white text-gray-800 scale-110 shadow-lg' : 'bg-white/30 text-white'
-              }`} style={{ animation: currentStep >= 2 ? 'scaleIn 0.5s ease-out' : 'none' }}>
+              }`}>
                 2
               </div>
             </div>
@@ -464,7 +338,7 @@ export default function OnboardingModal() {
         <div className="p-8">
           {currentStep === 1 ? (
             // Step 1: Gender Selection
-            <div className="space-y-6" style={{ animation: 'slideIn 0.5s ease-out' }}>
+            <div className="space-y-6 animate-slide-in">
               <div className="text-center">
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">You are...</h3>
                 <p className="text-gray-600">Select your gender</p>
@@ -480,10 +354,8 @@ export default function OnboardingModal() {
                     gender === 'male'
                       ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-lg scale-105'
                       : 'border-gray-200 hover:border-gray-300 text-gray-700 hover:shadow-md'
-                  }`}
-                  style={{ animationDelay: '0.1s', animation: 'fadeInUp 0.6s ease-out forwards' }}
-                >
-                  <div className="text-4xl mb-2 transition-transform duration-300 hover:scale-110 animate-bounce" style={{ animationDelay: '0.5s' }}>👨</div>
+                  }`}>
+                  <div className="text-4xl mb-2 transition-transform duration-300 hover:scale-110 animate-bounce">👨</div>
                   <div className="font-semibold">Male</div>
                 </button>
                 
@@ -496,10 +368,8 @@ export default function OnboardingModal() {
                     gender === 'female'
                       ? 'border-pink-500 bg-pink-50 text-pink-700 shadow-lg scale-105'
                       : 'border-gray-200 hover:border-gray-300 text-gray-700 hover:shadow-md'
-                  }`}
-                  style={{ animationDelay: '0.2s', animation: 'fadeInUp 0.6s ease-out forwards' }}
-                >
-                  <div className="text-4xl mb-2 transition-transform duration-300 hover:scale-110 animate-bounce" style={{ animationDelay: '0.6s' }}>👩</div>
+                  }`}>
+                  <div className="text-4xl mb-2 transition-transform duration-300 hover:scale-110 animate-bounce">👩</div>
                   <div className="font-semibold">Female</div>
                 </button>
               </div>
@@ -521,7 +391,7 @@ export default function OnboardingModal() {
             </div>
           ) : (
             // Step 2: Topics Selection
-            <div className="space-y-6" style={{ animation: 'scaleIn 0.5s ease-out' }}>
+            <div className="space-y-6 animate-scale-in">
               <div className="text-center">
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Interests</h3>
                 <p className="text-gray-600">Select topics you're interested in (you can choose multiple)</p>
@@ -536,12 +406,7 @@ export default function OnboardingModal() {
                       selectedTopics.includes(topic.id)
                         ? 'border-gray-800 ring-2 ring-gray-200 shadow-lg'
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                    }`}
-                    style={{
-                      animationDelay: `${index * 100}ms`,
-                      animation: 'fadeInUp 0.6s ease-out forwards'
-                    }}
-                  >
+                    }`}>
                     {/* Loading Skeleton */}
                     {!imageLoadStates[topic.id] && (
                       <div className="absolute inset-0 bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100">
@@ -549,7 +414,7 @@ export default function OnboardingModal() {
                         <div className="h-full flex flex-col items-center justify-center relative z-10">
                           <div className="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full mb-3 animate-pulse"></div>
                           <div className="w-20 h-3 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full animate-pulse"></div>
-                          <div className="w-16 h-2 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full mt-2 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-16 h-2 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full mt-2 animate-pulse"></div>
                         </div>
                       </div>
                     )}
@@ -593,9 +458,7 @@ export default function OnboardingModal() {
                       {/* Checkmark */}
                       {selectedTopics.includes(topic.id) && (
                         <div 
-                          className="absolute top-2 right-2 w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center shadow-lg animate-bounce"
-                          style={{ animationDelay: '0.1s' }}
-                        >
+                          className="absolute top-2 right-2 w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center shadow-lg animate-bounce">
                           <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>

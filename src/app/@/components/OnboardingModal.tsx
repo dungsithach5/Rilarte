@@ -58,40 +58,40 @@ const playSound = (type: 'click' | 'select' | 'success' | 'error') => {
 const topics = [
   { 
     id: 'music', 
-    name: 'Âm nhạc', 
+    name: 'Music', 
     icon: '🎵', 
-    image: 'https://picsum.photos/400/300?random=1'
+    image: 'https://cdn.pixabay.com/photo/2023/12/22/16/29/sheet-music-8463988_1280.jpg'
   },
   { 
     id: 'sports', 
-    name: 'Thể thao', 
+    name: 'Sports', 
     icon: '⚽', 
-    image: 'https://picsum.photos/400/300?random=2'
+    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS5t7DgML9dvoEAt09fUpLCzCUnMTpu8qEPug&s'
   },
   { 
     id: 'travel', 
-    name: 'Du lịch', 
+    name: 'Travel', 
     icon: '✈️', 
-    image: 'https://picsum.photos/400/300?random=3'
+    image: 'https://igotravel.vn/wwwroot/resources/upload/tong-hop-cac-hinh-thuc-du-lich-pho-bien-nhat-tai-viet-nam.png'
   },
-  { 
-    id: 'technology', 
-    name: 'Công nghệ', 
-    icon: '💻', 
-    image: 'https://picsum.photos/400/300?random=4'
-  },
-  { 
-    id: 'food', 
-    name: 'Ẩm thực', 
-    icon: '🍕', 
-    image: 'https://picsum.photos/400/300?random=5'
-  },
-  { 
-    id: 'fashion', 
-    name: 'Thời trang', 
-    icon: '👗', 
-    image: 'https://picsum.photos/400/300?random=6'
-  },
+      { 
+      id: 'technology', 
+      name: 'Technology', 
+      icon: '💻', 
+      image: 'https://hoanghamobile.com/tin-tuc/wp-content/uploads/2024/08/background-cong-nghe-25-1.jpg'
+    },
+    { 
+      id: 'food', 
+      name: 'Food', 
+      icon: '🍕', 
+      image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSnRaeSrU8T7sv9_m4m0fgqfG3bHAHBvnS2UA&s'
+    },
+      { 
+      id: 'fashion', 
+      name: 'Fashion', 
+      icon: '👗', 
+      image: 'https://anhvienpiano.com/wp-content/uploads/2018/08/dich-vu-chup-anh-thoi-trang-cho-shop-quan-ao-dep-gia-re.jpg'
+    },
 ];
 
 export default function OnboardingModal() {
@@ -181,7 +181,7 @@ export default function OnboardingModal() {
   const handleSubmit = async () => {
     if (!gender.trim() || selectedTopics.length === 0) {
       playSound('error');
-      alert('Vui lòng điền đầy đủ thông tin!');
+      alert('Please fill in all information!');
       return;
     }
 
@@ -243,7 +243,7 @@ export default function OnboardingModal() {
     } catch (err) {
       console.error('Onboarding failed:', err);
       playSound('error');
-      alert('Có lỗi xảy ra, vui lòng thử lại!');
+      alert('An error occurred, please try again!');
     } finally {
       setLoading(false);
     }
@@ -291,13 +291,13 @@ export default function OnboardingModal() {
             
             <div className="relative z-10">
               <div className="text-6xl mb-4 animate-bounce">🎉</div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Chúc mừng!</h2>
-              <p className="text-gray-600">Bạn đã hoàn thành onboarding thành công</p>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Congratulations!</h2>
+              <p className="text-gray-600">You have successfully completed onboarding</p>
               <div className="mt-4 text-sm text-gray-500 flex items-center justify-center">
                 <svg className="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Đang chuyển hướng...
+                Redirecting...
               </div>
             </div>
           </div>
@@ -438,8 +438,8 @@ export default function OnboardingModal() {
         <div className="bg-gradient-to-r from-gray-800 to-black text-white p-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"></div>
           <div className="relative z-10">
-            <h2 className="text-2xl font-bold text-center animate-float">Chào mừng bạn!</h2>
-            <p className="text-center text-gray-300 mt-2">Hãy cho chúng tôi biết thêm về bạn</p>
+            <h2 className="text-2xl font-bold text-center animate-float">Welcome!</h2>
+            <p className="text-center text-gray-300 mt-2">Tell us more about yourself</p>
           </div>
           
                       {/* Progress Steps */}
@@ -466,8 +466,8 @@ export default function OnboardingModal() {
             // Step 1: Gender Selection
             <div className="space-y-6" style={{ animation: 'slideIn 0.5s ease-out' }}>
               <div className="text-center">
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Bạn là...</h3>
-                <p className="text-gray-600">Chọn giới tính của bạn</p>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">You are...</h3>
+                <p className="text-gray-600">Select your gender</p>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -484,7 +484,7 @@ export default function OnboardingModal() {
                   style={{ animationDelay: '0.1s', animation: 'fadeInUp 0.6s ease-out forwards' }}
                 >
                   <div className="text-4xl mb-2 transition-transform duration-300 hover:scale-110 animate-bounce" style={{ animationDelay: '0.5s' }}>👨</div>
-                  <div className="font-semibold">Nam</div>
+                  <div className="font-semibold">Male</div>
                 </button>
                 
                 <button
@@ -500,7 +500,7 @@ export default function OnboardingModal() {
                   style={{ animationDelay: '0.2s', animation: 'fadeInUp 0.6s ease-out forwards' }}
                 >
                   <div className="text-4xl mb-2 transition-transform duration-300 hover:scale-110 animate-bounce" style={{ animationDelay: '0.6s' }}>👩</div>
-                  <div className="font-semibold">Nữ</div>
+                  <div className="font-semibold">Female</div>
                 </button>
               </div>
 
@@ -510,12 +510,12 @@ export default function OnboardingModal() {
                   disabled={!gender}
                   className="bg-gray-800 text-white px-8 py-3 rounded-xl font-semibold hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
                 >
-                  <span className="flex items-center">
-                    Tiếp theo
-                    <svg className="w-4 h-4 ml-2 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </span>
+                                      <span className="flex items-center">
+                      Next
+                      <svg className="w-4 h-4 ml-2 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </span>
                 </button>
               </div>
             </div>
@@ -523,8 +523,8 @@ export default function OnboardingModal() {
             // Step 2: Topics Selection
             <div className="space-y-6" style={{ animation: 'scaleIn 0.5s ease-out' }}>
               <div className="text-center">
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Sở thích của bạn</h3>
-                <p className="text-gray-600">Chọn những chủ đề bạn quan tâm (có thể chọn nhiều)</p>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Interests</h3>
+                <p className="text-gray-600">Select topics you're interested in (you can choose multiple)</p>
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -615,7 +615,7 @@ export default function OnboardingModal() {
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
-                    Quay lại
+                    Back
                   </span>
                 </button>
                 
@@ -630,11 +630,11 @@ export default function OnboardingModal() {
                         <svg className="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                        Đang lưu...
+                        Saving...
                       </>
                     ) : (
                       <>
-                        Hoàn thành
+                        Complete
                         <svg className="w-4 h-4 ml-2 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>

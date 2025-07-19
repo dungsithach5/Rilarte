@@ -1,11 +1,15 @@
-"use client"
+"use client";
 
-import axios from 'axios'
-import Masonry from "react-masonry-css";
-import { Search } from "lucide-react";
-import { ComposerComment } from "./@/components/model-comment/ComposerComment"
 import { useEffect, useState } from "react";
-import SkeletonPost from "./@/components/skeleton-post"
+import Masonry from "react-masonry-css";
+import { Search,Frown } from "lucide-react";
+
+import { fetchPosts } from "./services/Api/posts";
+import { fetchBannedKeywords } from "./services/Api/bannedKeywords";
+
+import { ComposerComment } from "./@/components/model-comment/ComposerComment";
+import SkeletonPost from "./@/components/skeleton-post";
+import { useAuth } from "./hooks/useAuth";
 
 const breakpointColumnsObj = {
   default: 6,
@@ -16,27 +20,79 @@ const breakpointColumnsObj = {
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
-  
+  const [searchInput, setSearchInput] = useState("");
+  const [bannedKeywords, setBannedKeywords] = useState<string[]>([]);
+  const [violation, setViolation] = useState(false);
+  const { session } = useAuth(true);
+
+  // Load banned keywords once
   useEffect(() => {
-    const fetchPosts = async () => {
+    const loadBanned = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/posts');
-        const mappedPosts = res.data.map((item: any) => ({
+        const words = await fetchBannedKeywords();
+        setBannedKeywords(words);
+      } catch (err) {
+        console.error("Error loading banned keywords", err);
+      }
+    };
+    loadBanned();
+  }, []);
+
+  // Load default posts on first load
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        const data = await fetchPosts("");
+        const mapped = data.map((item: any) => ({
           id: item.id,
-          name: item.user_name,
+          name: session?.user?.name,
           text: item.content,
-          image_url: item.image_url
+          image_url: item.image_url,
         }));
-        setPosts(mappedPosts);
-      } catch (error) {
-        console.error("Failed to fetch posts:", error);
+        setPosts(mapped);
+      } catch (err) {
+        console.error("Error loading posts", err);
       } finally {
         setIsLoading(false);
       }
     };
+    loadPosts();
+  }, [session]);
 
-    fetchPosts();
-  }, []);
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const keyword = searchInput.trim().toLowerCase();
+
+    // Check violation
+    const foundViolation = bannedKeywords.some((word) =>
+      keyword.includes(word)
+    );
+    if (foundViolation) {
+      setViolation(true);
+      setPosts([]);
+      return;
+    }
+
+    setViolation(false);
+    setIsLoading(true);
+
+    setTimeout(async () => {
+      try {
+        const data = await fetchPosts(keyword);
+        const mapped = data.map((item: any) => ({
+          id: item.id,
+          name: session?.user?.name,
+          text: item.content,
+          image_url: item.image_url,
+        }));
+        setPosts(mapped);
+      } catch (err) {
+        console.error("Error fetching posts", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 1000);
+  };
 
   return (
     <section>
@@ -52,13 +108,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Search & Filter section */}
+      {/* Search & Filter */}
       <section className="w-full px-6 mt-12 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div className="w-1/3">
-            <form action="" className="relative">
+            <form onSubmit={handleSearch} className="relative">
               <input
                 type="text"
+                name="search"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Search..."
                 className="w-full p-3 px-4 pr-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#2C343A]"
               />
@@ -71,7 +130,6 @@ export default function Home() {
             </form>
           </div>
 
-          {/* Filter Dropdown */}
           <div className="w-auto">
             <select className="p-2 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2C343A]">
               <option value="popular">Popular</option>
@@ -83,8 +141,26 @@ export default function Home() {
 
       {/* Posts */}
       <section className="px-6 mt-6 pb-20">
-        {isLoading ? (
-          Array.from({ length: 10 }).map((_, i) => <SkeletonPost key={i} />)
+        {violation ? (
+          <div className="mt-12 text-center w-full flex justify-center items-center">
+            <div className="flex flex-col justify-center items-center space-y-6">
+              <Frown className="text-gray-400" size={120}/>
+              <div>
+                The topic you are looking for violates our <strong>Community Guidelines</strong>, 
+                <br />so we are currently unable to display the search results.
+              </div>
+            </div>
+          </div>
+        ) : isLoading ? (
+            <Masonry
+              breakpointCols={breakpointColumnsObj}
+              className="flex gap-4"
+              columnClassName="flex flex-col gap-4"
+            >
+              {Array.from({ length: 20 }).map((_, i) => (
+                <SkeletonPost key={i} index={i} />
+              ))}
+            </Masonry>
         ) : (
           <Masonry
             breakpointCols={breakpointColumnsObj}

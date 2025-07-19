@@ -2,22 +2,39 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 exports.getAllPosts = async (req, res) => {
-    try {
-        const posts = await prisma.posts.findMany({
-            select: {
-                id: true,
-                user_name: true,
-                title: true,
-                content: true,
-                image_url: true,
-                createdAt: true,
-                updatedAt: true
-            }
-        });
-        res.status(200).json(posts);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching posts', error });
-    }
+  try {
+    const { search } = req.query;
+    const keyword = typeof search === 'string' ? search : '';
+
+    const where = keyword
+      ? {
+          OR: [
+            { user_name: { contains: keyword } },
+            { title: { contains: keyword } },
+            { content: { contains: keyword } },
+          ],
+        }
+      : {};
+
+    const posts = await prisma.posts.findMany({
+      where,
+      select: {
+        id: true,
+        user_name: true,
+        title: true,
+        content: true,
+        image_url: true,
+      },
+    });
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error("Error fetching posts:", error); // Log chi tiết lỗi
+    res.status(500).json({
+      message: 'Error fetching posts',
+      error: error.message || 'Unknown error',
+    });
+  }
 };
 
 exports.getPostById = async (req, res) => {

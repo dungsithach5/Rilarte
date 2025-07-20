@@ -30,6 +30,7 @@ import { InputComment } from "../ui/input-comment"
 import DropdownMenuEllipsis from "../dropdown-ellipsis"
 import HoverCardUser from "../hover-card-user"
 import { ZoomImage } from '../zoom-image'
+import { AILogo } from "../ai-logo"
 import { Label } from "../ui/label"
 import Link from 'next/link'
 
@@ -170,8 +171,9 @@ export function ComposerComment({ post }: { post: Post }) {
             <img
               src={post.image_url}
               alt="Post"
-              className="object-cover h-full w-full rounded-sm"
+              className="object-cover h-full w-full rounded-xl"
             />
+            <AILogo imageUrl={post.image_url} />
             <ZoomImage image={post.image_url} />
           </div>
         </DialogHeader>

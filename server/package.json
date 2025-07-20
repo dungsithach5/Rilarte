@@ -13,10 +13,12 @@
   "type": "commonjs",
   "description": "",
   "dependencies": {
+    "@huggingface/inference": "^4.5.3",
     "@prisma/client": "^6.12.0",
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
+    "colorthief": "^2.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
@@ -25,8 +27,10 @@
     "multer": "^2.0.1",
     "mysql2": "^3.14.1",
     "nodemon": "^3.1.10",
+    "openai": "^5.10.1",
     "prisma": "^6.12.0",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "sharp": "^0.34.3"
   },
   "devDependencies": {
     "sequelize-cli": "^6.6.3"

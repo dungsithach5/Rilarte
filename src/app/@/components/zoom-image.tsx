@@ -22,8 +22,8 @@ export function ZoomImage({ image }: ZoomImageProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <div className="absolute bottom-2 right-2 z-10 bg-black/50 p-2 rounded-full cursor-pointer hover:opacity-80">
-          <Maximize2 size={24} color="white" />
+        <div className="absolute bottom-4 right-4 z-10 bg-black/50 p-2 rounded-full cursor-pointer hover:opacity-80">
+          <Maximize2 size={20} color="white" />
         </div>
       </DialogTrigger>
       <DialogContent>

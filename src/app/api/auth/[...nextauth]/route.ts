@@ -16,6 +16,7 @@ const handler = NextAuth({
         if (session?.user && token?.sub) {
           session.user.id = token.sub;
           (session.user as any).onboarded = (token as any).onboarded || false;
+          (session.user as any).gender = (token as any).gender || "";
           console.log('Session updated:', session.user);
         }
         return session;
@@ -70,11 +71,13 @@ const handler = NextAuth({
             if (response.ok) {
               const userData = await response.json();
               (token as any).onboarded = userData.user.onboarded || false;
-              console.log('User onboarded status:', userData.user.onboarded);
+              (token as any).gender = userData.user.gender || "";
+              console.log('User data loaded:', userData.user);
             }
           } catch (error) {
             console.error('Failed to get user data:', error);
             (token as any).onboarded = false;
+            (token as any).gender = "";
           }
         }
         
@@ -85,7 +88,8 @@ const handler = NextAuth({
             if (response.ok) {
               const userData = await response.json();
               (token as any).onboarded = userData.user.onboarded || false;
-              console.log('Updated user onboarded status:', userData.user.onboarded);
+              (token as any).gender = userData.user.gender || "";
+              console.log('Updated user data:', userData.user);
             }
           } catch (error) {
             console.error('Failed to get updated user data:', error);

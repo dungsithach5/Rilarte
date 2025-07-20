@@ -358,4 +358,65 @@ router.get('/email/:email', async (req, res) => {
   }
 });
 
+// Update user by email
+router.put('/update', async (req, res) => {
+  try {
+    const { email, gender, password } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email là bắt buộc' 
+      });
+    }
+
+    // Tìm user theo email
+    const user = await prisma.users.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Không tìm thấy user' 
+      });
+    }
+
+    // Prepare update data
+    const updateData = {};
+    
+    if (gender !== undefined) {
+      updateData.gender = gender;
+    }
+    
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateData.password = hashedPassword;
+    }
+
+    // Update user
+    const updatedUser = await prisma.users.update({
+      where: { email },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        gender: true,
+        onboarded: true
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật thành công',
+      data: updatedUser
+    });
+
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Lỗi server khi cập nhật user' 
+    });
+  }
+});
+
 module.exports = router;

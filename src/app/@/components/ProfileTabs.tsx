@@ -90,7 +90,7 @@ export default function ProfileTabs() {
               </div>
             ))}
       </TabsContent>
-
+      {/* Following */}
       <TabsContent value="following" className="mt-6 mx-auto">
         <div className="flex items-center space-x-4">
           <div className="w-10 h-10 rounded-full overflow-hidden">

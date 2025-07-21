@@ -41,7 +41,13 @@ interface Post {
   image_url: string
 }
 
-export function ComposerComment({ post }: { post: Post }) {
+type ComposerCommentProps = {
+  post: any;
+  currentUserId?: number;
+  onDelete?: (id: number) => void;
+};
+
+export function ComposerComment({ post, currentUserId, onDelete }: ComposerCommentProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
   const [comment, setComment] = useState('')
@@ -61,6 +67,8 @@ export function ComposerComment({ post }: { post: Post }) {
   const addEmoji = (emojiData: any) => {
     setComment((prev) => prev + emojiData.emoji)
   }
+
+  const isOwner = post.userId === currentUserId;
 
   return (
     <Dialog>
@@ -83,6 +91,9 @@ export function ComposerComment({ post }: { post: Post }) {
                     imageUrl={post.image_url}
                     fileName="downloaded-image.jpg"
                     onOpenChange={(open) => setIsDropdownOpen(open)}
+                    isOwner={isOwner}
+                    onDelete={onDelete}
+                    postId={post.id}
                   />
                 </div>
 

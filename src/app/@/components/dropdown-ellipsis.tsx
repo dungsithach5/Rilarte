@@ -4,18 +4,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu"
-import { Ellipsis, Download } from "lucide-react"
+import { Ellipsis, Download, Trash2 } from "lucide-react"
 
 interface DropdownMenuEllipsisProps {
   imageUrl: string;
   fileName?: string;
   onOpenChange?: (open: boolean) => void;
+  isOwner?: boolean;
+  onDelete?: (id: number) => void;
+  postId?: number;
 }
 
 export default function DropdownMenuEllipsis ({
   imageUrl,
   fileName = "downloaded.jpg",
   onOpenChange,
+  isOwner = false,
+  onDelete,
+  postId,
 }: DropdownMenuEllipsisProps) {
   const handleDownload = async () => {
     const response = await fetch(imageUrl);
@@ -32,6 +38,12 @@ export default function DropdownMenuEllipsis ({
     window.URL.revokeObjectURL(url);
   };
 
+  const handleDelete = async () => {
+    if (window.confirm("Bạn có chắc muốn xoá bài này?")) {
+      await onDelete?.(postId!);
+    }
+  };
+
   return (
     <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
@@ -46,6 +58,12 @@ export default function DropdownMenuEllipsis ({
           <Download size={18} color="black"/>
           Download
         </DropdownMenuItem>
+        {isOwner && (
+          <DropdownMenuItem onClick={handleDelete} className="cursor-pointer text-red-500">
+            <Trash2 size={18} />
+            Delete
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

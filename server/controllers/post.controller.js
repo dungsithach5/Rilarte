@@ -94,21 +94,16 @@ exports.updatePost = async (req, res) => {
 };
 
 exports.deletePost = async (req, res) => {
-    try {
-        const existingPost = await prisma.posts.findUnique({
-            where: { id: Number(req.params.id) }
-        });
-
-        if (!existingPost) {
-            return res.status(404).json({ message: 'Post not found' });
-        }
-
-        await prisma.post.delete({
-            where: { id: Number(req.params.id) }
-        });
-
-        res.status(200).json({ message: 'Post deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ message: 'Error deleting post', error });
+  try {
+    const deletedPost = await prisma.posts.delete({
+      where: { id: Number(req.params.id) }
+    });
+    if (!deletedPost) {
+      return res.status(404).json({ message: 'Post not found' });
     }
+    res.status(200).json({ message: 'Post deleted successfully' });
+  } catch (error) {
+    console.error('Delete post error:', error);
+    res.status(500).json({ message: 'Error deleting post', error });
+  }
 };

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Masonry from "react-masonry-css";
-import { Search,Frown } from "lucide-react";
+import { Search,Frown, MoreVertical } from "lucide-react";
 
 import { fetchPosts } from "./services/Api/posts";
 import { fetchBannedKeywords } from "./services/Api/bannedKeywords";
@@ -10,6 +10,7 @@ import { fetchBannedKeywords } from "./services/Api/bannedKeywords";
 import { ComposerComment } from "./@/components/model-comment/ComposerComment";
 import SkeletonPost from "./@/components/skeleton-post";
 import { useAuth } from "./hooks/useAuth";
+import axios from "axios";
 
 const breakpointColumnsObj = {
   default: 6,
@@ -94,6 +95,16 @@ export default function Home() {
     }, 1000);
   };
 
+  // Hàm xoá post
+  const handleDeletePost = async (postId: number) => {
+    try {
+      await axios.delete(`http://localhost:5001/api/posts/${postId}`);
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+    } catch (err) {
+      alert("Xoá thất bại!");
+    }
+  };
+
   return (
     <section>
       {/* Banner */}
@@ -168,7 +179,12 @@ export default function Home() {
             columnClassName="flex flex-col"
           >
             {posts.map((post) => (
-              <ComposerComment key={post.id} post={post} />
+              <ComposerComment
+                key={post.id}
+                post={post}
+                currentUserId={session?.user?.id}
+                onDelete={handleDeletePost}
+              />
             ))}
           </Masonry>
         )}

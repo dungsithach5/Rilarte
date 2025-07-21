@@ -39,7 +39,7 @@ export default function DropdownMenuEllipsis ({
   };
 
   const handleDelete = async () => {
-    if (window.confirm("Bạn có chắc muốn xoá bài này?")) {
+    if (window.confirm("Are you sure you want to delete this post?")) {
       await onDelete?.(postId!);
     }
   };
@@ -61,7 +61,7 @@ export default function DropdownMenuEllipsis ({
         {isOwner && (
           <DropdownMenuItem onClick={handleDelete} className="cursor-pointer text-red-500">
             <Trash2 size={18} />
-            Delete
+            Delete post
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>

@@ -65,7 +65,7 @@ export default function Post() {
       const formData = new FormData();
       formData.append('image', imageFile);
 
-      const uploadResponse = await axios.post('http://localhost:5000/api/upload', formData, {
+      const uploadResponse = await axios.post('http://localhost:5001/api/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       const imageUrl = uploadResponse.data.imageUrl;
@@ -77,7 +77,7 @@ export default function Post() {
         image_url: imageUrl
       };
 
-      await axios.post('http://localhost:5000/api/posts', newPost, {
+      await axios.post('http://localhost:5001/api/posts', newPost, {
         headers: { 'Content-Type': 'application/json' },
       });
       

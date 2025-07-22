@@ -63,15 +63,14 @@ export function LoginForm({
     setError('')
 
     try {
-      const response = await fetch('http://localhost:5000/api/users/login', {
+      const response = await fetch('http://localhost:5001/api/users/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       })
 
       const data = await response.json()
+      console.log('Login response:', data)
 
       if (!response.ok) {
         throw new Error(data.message || 'Login failed')
@@ -88,8 +87,12 @@ export function LoginForm({
         avatar: avatarUrl,
         token: data.token,
       }));
+      console.log('Dispatching loginSuccess with:', {
+        avatar: avatarUrl,
+        token: data.token,
+      });
 
-      router.push("/");
+      window.location.href = "/";
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')

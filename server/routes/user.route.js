@@ -11,9 +11,9 @@ const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
 
 // Register
 router.post('/register', async (req, res) => {
-  const { email, name, password, confirmPassword } = req.body;
+  const { email, username, password, confirmPassword } = req.body;
 
-  if (!email || !name || !password || !confirmPassword) {
+  if (!email || !username || !password || !confirmPassword) {
     return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin' });
   }
 
@@ -26,18 +26,20 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.users.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ message: 'Email đã được sử dụng' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
+    const user = await prisma.users.create({
       data: {
         email,
-        username: name,
+        username,
         password: hashedPassword,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
     });
 
@@ -62,7 +64,7 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.users.findUnique({ where: { email } });
     if (!user) return res.status(400).json({ message: 'Email không tồn tại' });
 
     const valid = await bcrypt.compare(password, user.password);
@@ -74,7 +76,15 @@ router.post('/login', async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    res.json({ token, name: user.username });
+    res.json({ 
+      token, 
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        username: user.username, 
+        avatar: user.avatar_url // nếu có
+      } 
+    });
   } catch (err) {
     res.status(500).json({ message: 'Lỗi server', error: err.message });
   }
@@ -83,7 +93,7 @@ router.post('/login', async (req, res) => {
 // Get all users
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
+    const users = await prisma.users.findMany({
       select: {
         id: true,
         username: true,
@@ -102,7 +112,7 @@ router.get('/', authMiddleware, async (req, res) => {
 // Get user by ID
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: parseInt(req.params.id) },
       select: {
         id: true,
@@ -130,7 +140,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
     // Không cho update password trực tiếp qua API này
     delete updateData.password;
 
-    const user = await prisma.user.update({
+    const user = await prisma.users.update({
       where: { id: parseInt(id) },
       data: updateData,
       select: {
@@ -152,7 +162,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // Delete user
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    await prisma.user.delete({ where: { id: parseInt(req.params.id) } });
+    await prisma.users.delete({ where: { id: parseInt(req.params.id) } });
     res.status(200).json({ success: true, message: 'Xoá người dùng thành công' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi xoá người dùng', error: error.message });

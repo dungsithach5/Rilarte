@@ -69,7 +69,7 @@ ALTER TABLE `posts` DROP COLUMN `user_id`,
     MODIFY `image_url` VARCHAR(255) NOT NULL;
 
 -- AlterTable
-ALTER TABLE `users` MODIFY `avatar_url` VARCHAR(255) NOT NULL;
+ALTER TABLE `users` MODIFY `avatar_url` VARCHAR(255) NULL;
 
 -- CreateTable
 CREATE TABLE `banned_keywords` (

@@ -30,7 +30,6 @@ import { InputComment } from "../ui/input-comment"
 import DropdownMenuEllipsis from "../dropdown-ellipsis"
 import HoverCardUser from "../hover-card-user"
 import { ZoomImage } from '../zoom-image'
-import { AILogo } from "../ai-logo"
 import { Label } from "../ui/label"
 import Link from 'next/link'
 
@@ -68,7 +67,7 @@ export function ComposerComment({ post, currentUserId, onDelete }: ComposerComme
     setComment((prev) => prev + emojiData.emoji)
   }
 
-  const isOwner = post.userId === currentUserId;
+  const isOwner = post.session?.user?.id === currentUserId;
 
   return (
     <Dialog>
@@ -184,7 +183,6 @@ export function ComposerComment({ post, currentUserId, onDelete }: ComposerComme
               alt="Post"
               className="object-cover h-full w-full rounded-xl"
             />
-            <AILogo imageUrl={post.image_url} />
             <ZoomImage image={post.image_url} />
           </div>
         </DialogHeader>

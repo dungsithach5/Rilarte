@@ -95,13 +95,13 @@ export default function Home() {
     }, 1000);
   };
 
-  // Hàm xoá post
+  // delete post
   const handleDeletePost = async (postId: number) => {
     try {
-      await axios.delete(`http://localhost:5001/api/posts/${postId}`);
+      await axios.delete(`http://localhost:5000/api/posts/${postId}`);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
     } catch (err) {
-      alert("Xoá thất bại!");
+      console.error("Error deleting post", err);
     }
   };
 

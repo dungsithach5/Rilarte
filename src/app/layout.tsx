@@ -6,7 +6,6 @@ import ClientLayout from "./layout/ClientLayout";
 import "./globals.css";
 import ReduxProvider from "./context/ReduxProvider";
 import { SessionProvider } from "./context/SessionProvider";
-import AIChatbot from "./@/components/ai-chatbot";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,7 +37,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <div className="flex min-h-screen">
               <div className="flex flex-col flex-1">
                 <ClientLayout>{children}</ClientLayout>
-                <AIChatbot />
               </div>
             </div>
           </ReduxProvider>

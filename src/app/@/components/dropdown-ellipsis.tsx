@@ -4,7 +4,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu"
-import { Ellipsis, Download, Trash2 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../components/ui/dialog";
+import { Button } from "../components/ui/button";
+import { Ellipsis, Download, Trash2 } from "lucide-react";
+import { useState } from "react";
 
 interface DropdownMenuEllipsisProps {
   imageUrl: string;
@@ -23,6 +33,8 @@ export default function DropdownMenuEllipsis ({
   onDelete,
   postId,
 }: DropdownMenuEllipsisProps) {
+  const [openModal, setOpenModal] = useState(false);
+
   const handleDownload = async () => {
     const response = await fetch(imageUrl);
     const blob = await response.blob();
@@ -38,13 +50,14 @@ export default function DropdownMenuEllipsis ({
     window.URL.revokeObjectURL(url);
   };
 
-  const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this post?")) {
-      await onDelete?.(postId!);
-    }
+  const confirmDelete = async () => {
+    await onDelete?.(postId!);
+    setOpenModal(false);
   };
 
+
   return (
+    <>
     <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         <Ellipsis 
@@ -58,13 +71,33 @@ export default function DropdownMenuEllipsis ({
           <Download size={18} color="black"/>
           Download
         </DropdownMenuItem>
-        {isOwner && (
-          <DropdownMenuItem onClick={handleDelete} className="cursor-pointer text-red-500">
-            <Trash2 size={18} />
-            Delete post
-          </DropdownMenuItem>
-        )}
+          {isOwner && (
+            <DropdownMenuItem
+              onClick={() => setOpenModal(true)}
+              className="cursor-pointer text-red-500"
+            >
+              <Trash2 size={18} color="black" />
+              Delete post
+            </DropdownMenuItem>
+          )}
       </DropdownMenuContent>
     </DropdownMenu>
+    <Dialog open={openModal} onOpenChange={setOpenModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to delete this post?</p>
+          <DialogFooter className="mt-4 flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setOpenModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" className="cursor-pointer" onClick={confirmDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

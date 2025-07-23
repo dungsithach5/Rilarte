@@ -6,6 +6,8 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { signIn, useSession } from "next-auth/react"
+import { registerUser } from "../../../services/Api/register"
+import { useRouter } from "next/navigation"
 
 export function RegisterForm({
   className,
@@ -19,6 +21,7 @@ export function RegisterForm({
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const router = useRouter()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -59,31 +62,13 @@ export function RegisterForm({
     setError('')
 
     try {
-      const response = await fetch('http://localhost:5001/api/users/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          confirmPassword: formData.confirmPassword
-        }),
-      })
+      const data = await registerUser(formData)
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed')
-      }
-
-      // Store token in localStorage
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
 
-      // Redirect to dashboard or home page
-      window.location.href = '/'
+      router.push("/auth")
+
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')

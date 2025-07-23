@@ -12,7 +12,7 @@ model comments {
   user_id   Int
   post_id   Int
   content   String   @db.Text
-  createdAt DateTime @db.DateTime(0)
+  createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @db.DateTime(0)
   users     users?   @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "comments_ibfk_1")
   posts     posts?   @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "comments_ibfk_2")
@@ -94,13 +94,13 @@ model sequelizemeta {
 
 model users {
   id                                   Int             @id @default(autoincrement())
-  username                             String          @unique(map: "username") @db.VarChar(50)
+  username                             String          @unique @db.VarChar(50)
   email                                String          @unique(map: "email") @db.VarChar(100)
   password                             String          @db.VarChar(255)
   bio                                  String?         @db.Text
-  avatar_url                           String         @db.VarChar(255)
-  createdAt                            DateTime        @db.DateTime(0)
-  updatedAt                            DateTime        @db.DateTime(0)
+  avatar_url                           String?         @db.VarChar(255)
+  createdAt                            DateTime        @default(now()) @db.DateTime(0)
+  updatedAt                            DateTime        @default(now()) @db.DateTime(0)
   onboarded                           Boolean         @default(true)
   comments                             comments[]
   follows_follows_follower_idTousers   follows[]       @relation("follows_follower_idTousers")

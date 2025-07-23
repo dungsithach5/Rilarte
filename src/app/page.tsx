@@ -24,7 +24,7 @@ export default function Home() {
   const [searchInput, setSearchInput] = useState("");
   const [bannedKeywords, setBannedKeywords] = useState<string[]>([]);
   const [violation, setViolation] = useState(false);
-  const { session } = useAuth(true);
+  const { user } = useAuth(true);
 
   // Load banned keywords once
   useEffect(() => {
@@ -46,7 +46,7 @@ export default function Home() {
         const data = await fetchPosts("");
         const mapped = data.map((item: any) => ({
           id: item.id,
-          name: session?.user?.name,
+          name: user?.username || user?.name,
           text: item.content,
           image_url: item.image_url,
         }));
@@ -58,7 +58,7 @@ export default function Home() {
       }
     };
     loadPosts();
-  }, [session]);
+  }, [user]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +82,7 @@ export default function Home() {
         const data = await fetchPosts(keyword);
         const mapped = data.map((item: any) => ({
           id: item.id,
-          name: session?.user?.name,
+          name: user?.username || user?.name,
           text: item.content,
           image_url: item.image_url,
         }));

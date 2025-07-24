@@ -336,6 +336,34 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
+exports.resetPassword = async (req, res) => {
+  console.log('RESET PASSWORD API CALLED', req.body);
+  const { email, password, confirmPassword } = req.body;
+  if (!email || !password || !confirmPassword) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+  if (password !== confirmPassword) {
+    return res.status(400).json({ message: 'Passwords do not match' });
+  }
+  if (!validatePassword(password)) {
+    return res.status(400).json({ message: 'Password must be at least 8 characters long and contain both letters and numbers' });
+  }
+  try {
+    const user = await prisma.users.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ message: 'Email not found' });
+    }
+    const hashedPassword = await bcrypt.hash(password, 12);
+    await prisma.users.update({
+      where: { email },
+      data: { password: hashedPassword }
+    });
+    res.json({ message: 'Password reset successful' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message, stack: err.stack });
+  }
+};
+
 // Thêm alias cho register
 exports.createUser = exports.register;
 

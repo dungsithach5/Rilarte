@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Cookies from "js-cookie"
 import { useDispatch } from "react-redux"
 import { loginSuccess } from "../../../context/userSlice"
@@ -29,6 +29,12 @@ export function LoginForm({
   const { data: session } = useSession()
   const [showForgot, setShowForgot] = useState(false);
 
+  useEffect(() => {
+    if (session) {
+      router.push("/")
+    }
+  }, [session, router])
+
   if (showForgot) {
     return (
       <div>
@@ -43,11 +49,6 @@ export function LoginForm({
         </button>
       </div>
     );
-  }
-
-  if (session) {
-    router.push("/")
-    return null
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -25,6 +25,7 @@ export default function Home() {
   const [bannedKeywords, setBannedKeywords] = useState<string[]>([]);
   const [violation, setViolation] = useState(false);
   const { user } = useAuth(true);
+  const { session, status } = useAuth(true);
 
   // Load banned keywords once
   useEffect(() => {
@@ -108,19 +109,21 @@ export default function Home() {
   return (
     <section>
       {/* Banner */}
-      <section>
-        <div className="flex flex-col items-center justify-center mt-10 text-center">
-          <h1 className="text-5xl font-bold mb-4">
-            Unleash Your Creativity <br /> One Image at a Time
+      <section className="w-full overflow-hidden">
+        {/* Main Content */}
+        <div className="flex h-full flex-col px-4">
+          <h1 className="text-9xl font-bold mb-6">
+            Unleash Your Creativity
           </h1>
-          <p className="text-lg text-gray-600">
-            Step into a world where visuals speak louder than words — a place to explore <br /> share, and get lost in the boundless beauty of creative freedom.
+          <p className="text-xl text-gray-800">
+            Step into a world where visuals speak louder than words — a place to explore <br />
+            share, and get lost in the boundless beauty of creative freedom.
           </p>
         </div>
       </section>
 
       {/* Search & Filter */}
-      <section className="w-full px-6 mt-12 flex flex-col gap-4">
+      <section className="w-full px-6 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div className="w-1/3">
             <form onSubmit={handleSearch} className="relative">

@@ -1,8 +1,8 @@
 "use client";
 
+import axios from "axios";
 import { useState, useEffect } from "react";
 import Masonry from "react-masonry-css";
-import Image from "next/image";
 import {
   Tabs,
   TabsList,
@@ -10,57 +10,21 @@ import {
   TabsContent,
 } from "../components/tabs";
 import { ComposerComment } from "./model-comment/ComposerComment";
-import SkeletonPost from "./skeleton-post"
+import { fetchPosts } from "../../services/Api/posts";
+import { useAuth } from "../../hooks/useAuth";
+import SkeletonPost from "./skeleton-post";
 
-const posts = [
-  {
-    id: 1,
-    name: "Anna Smith",
-    time: "2 hours ago",
-    text: "Enjoying a quiet afternoon 🌿",
-    image:
-      "https://images.unsplash.com/photo-1659959103870-c4beea371a9b?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyfHx8ZW58MHx8fHx8",
-  },
-  {
-    id: 2,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image:
-      "https://images.unsplash.com/photo-1747767763480-a5b4c7a82aef?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwzfHx8ZW58MHx8fHx8",
-  },
-  {
-    id: 3,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1586788224331-947f68671cf1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzZ8fGNvbG9yfGVufDB8MXwwfHx8MA%3D%3D",
-  },
-  {
-    id: 4,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1586788224331-947f68671cf1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzZ8fGNvbG9yfGVufDB8MXwwfHx8MA%3D%3D",
-  },
-  {
-    id: 5,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1586788224331-947f68671cf1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzZ8fGNvbG9yfGVufDB8MXwwfHx8MA%3D%3D",
-  },
-  {
-    id: 6,
-    name: "John Doe",
-    time: "1 hour ago",
-    text: "Check out this amazing sunset!",
-    image: "https://images.unsplash.com/photo-1586788224331-947f68671cf1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzZ8fGNvbG9yfGVufDB8MXwwfHx8MA%3D%3D",
-  },
-];
+const breakpointColumnsObj = {
+  default: 6,
+  1024: 2,
+  640: 2,
+};
 
 export default function ProfileTabs() {
   const [isLoading, setIsLoading] = useState(true);
+  const [posts, setPosts] = useState<any[]>([]);
+  const { user } = useAuth(true);
+  const { session } = useAuth(true);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -69,6 +33,38 @@ export default function ProfileTabs() {
 
     return () => clearTimeout(timeout);
   }, []);
+
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        const data = await fetchPosts("");
+        const mapped = data.map((item: any) => ({
+          id: item.id,
+          name: user?.username || user?.name,
+          title: item.title,
+          content: item.content,
+          image_url: item.image_url,
+          likeCount: item.likeCount || 0,
+        }));
+        setPosts(mapped);
+      } catch (err) {
+        console.error("Error loading posts", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPosts();
+  }, [user]);
+
+  const handleDeletePost = async (postId: number) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/posts/${postId}`);
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+    } catch (err) {
+      console.error("Error deleting post", err);
+    }
+  };
 
   return (
     <Tabs defaultValue="post" className="mt-6 px-6">
@@ -80,16 +76,35 @@ export default function ProfileTabs() {
 
       <TabsContent
         value="post"
-        className="px-6 mt-6 columns-1 sm:columns-2 md:columns-5 gap-4 pb-28"
       >
-        {isLoading
-          ? Array.from({ length: 8 }).map((_, i) => <SkeletonPost key={i} />)
-          : posts.map((post) => (
-              <div key={post.id}>
-                <ComposerComment post={post} />
-              </div>
+        {isLoading ? (
+          <Masonry
+            breakpointCols={breakpointColumnsObj}
+            className="flex gap-4"
+            columnClassName="flex flex-col gap-4"
+          >
+            {Array.from({ length: 20 }).map((_, i) => (
+              <SkeletonPost key={i} index={i} />
             ))}
+          </Masonry>
+        ) : (
+          <Masonry
+            breakpointCols={breakpointColumnsObj}
+            className="flex gap-4"
+            columnClassName="flex flex-col"
+          >
+            {posts.map((post) => (
+              <ComposerComment
+                key={post.id}
+                post={post}
+                currentUserId={session?.user?.id}
+                onDelete={handleDeletePost}
+              />
+            ))}
+          </Masonry>
+        )}
       </TabsContent>
+
       {/* Following */}
       <TabsContent value="following" className="mt-6 mx-auto">
         <div className="flex items-center space-x-4">
@@ -110,6 +125,7 @@ export default function ProfileTabs() {
         </div>
       </TabsContent>
 
+      {/* Followers */}
       <TabsContent value="followers" className="mt-6 mx-auto">
         <div className="flex items-center space-x-4">
           <div className="w-10 h-10 rounded-full overflow-hidden">

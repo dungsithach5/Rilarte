@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Masonry from "react-masonry-css";
 import { Search,Frown, MoreVertical } from "lucide-react";
+import RotatingText from './@/components/RotatingText/RotatingText'
 
 import { fetchPosts } from "./services/Api/posts";
 import { fetchBannedKeywords } from "./services/Api/bannedKeywords";
@@ -49,7 +50,8 @@ export default function Home() {
         const mapped = data.map((item: any) => ({
           id: item.id,
           name: user?.username || user?.name,
-          text: item.content,
+          title: item.title,
+          content: item.content,
           image_url: item.image_url,
         }));
         setPosts(mapped);
@@ -85,7 +87,8 @@ export default function Home() {
         const mapped = data.map((item: any) => ({
           id: item.id,
           name: user?.username || user?.name,
-          text: item.content,
+          title: item.title,
+          content: item.content,
           image_url: item.image_url,
         }));
         setPosts(mapped);
@@ -110,16 +113,35 @@ export default function Home() {
   return (
     <section>
       {/* Banner */}
-      <section>
-        <div className="flex flex-col items-center justify-center mt-10 text-center">
-          <h1 className="text-5xl font-bold mb-4">
-            Unleash Your Creativity <br /> One Image at a Time
+      <section className="w-full overflow-hidden">
+        <div className="flex h-full flex-col px-6">
+          <h1
+            className="font-bold leading-tight text-[clamp(2.5rem,10vw,8rem)] flex flex-wrap items-center gap-2"
+          >
+            Unleash your{" "}
+            <RotatingText
+              texts={["creative", "vivid", "pure", "real", "fluid", "cool", "artsy"]}
+              mainClassName="px-2 sm:px-2 md:px-5 bg-black text-white overflow-hidden py-0.5 sm:py-1 md:py-1 justify-center rounded-xl"
+              staggerFrom="last"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "-120%" }}
+              staggerDuration={0.025}
+              splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1 md:pb-1"
+              transition={{ type: "spring", damping: 30, stiffness: 400 }}
+              rotationInterval={2500}
+            />
+            energy
           </h1>
-          <p className="text-lg text-gray-600">
-            Step into a world where visuals speak louder than words — a place to explore <br /> share, and get lost in the boundless beauty of creative freedom.
+
+          <p className="text-lg md:text-xl text-gray-800">
+            Step into a world where visuals speak and creativity knows no limits 
+            <br/>
+             a space to express, inspire, and connect through art.
           </p>
         </div>
       </section>
+
 
       {/* Search & Filter */}
       <section className="w-full px-6 mt-12 flex flex-col gap-4">

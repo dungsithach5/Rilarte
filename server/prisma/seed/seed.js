@@ -1,23 +1,17 @@
 const { PrismaClient } = require('@prisma/client');
 const { faker } = require('@faker-js/faker');
-
-
 const prisma = new PrismaClient();
-
 
 function getRandomHeight(min = 250, max = 500) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-
 
 async function main() {
   // Xóa dữ liệu cũ
   await prisma.posts.deleteMany();
   await prisma.users.deleteMany();
 
-
   const users = [];
-
 
   // Fake 10 users
   for (let i = 0; i < 10; i++) {
@@ -36,11 +30,10 @@ async function main() {
     users.push(user);
   }
 
-
-  // Fake 100 posts với ảnh width 400, height ngẫu nhiên
-  for (let i = 0; i < 100; i++) {
+  // Fake 100 posts
+  for (let i = 0; i < 20; i++) {
     const randomUser = users[Math.floor(Math.random() * users.length)];
-    const randomHeight = getRandomHeight(); // random từ 250 đến 500
+    const randomHeight = getRandomHeight();
 
 
     await prisma.posts.create({

@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { testSendMail } = require('../controllers/user.controller');
 
 // Validation helper
 const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
@@ -168,5 +169,9 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     res.status(500).json({ success: false, message: 'Lỗi xoá người dùng', error: error.message });
   }
 });
+
+router.post('/test-send-mail', testSendMail);
+router.post('/send-otp', testSendMail.sendOtp || require('../controllers/user.controller').sendOtp);
+router.post('/verify-otp', testSendMail.verifyOtp || require('../controllers/user.controller').verifyOtp);
 
 module.exports = router;

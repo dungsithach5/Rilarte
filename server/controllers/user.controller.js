@@ -2,6 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { sendMail } = require('../utils/mailer');
 
 // Validation helper functions
 const validatePassword = (password) => {
@@ -12,6 +13,44 @@ const validatePassword = (password) => {
 const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+};
+
+// Biến lưu OTP tạm thời (email -> { otp, expires })
+const otpStore = {};
+
+// API gửi OTP
+exports.sendOtp = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+
+  // Tạo OTP 4 số
+  const otp = Math.floor(1000 + Math.random() * 9000).toString();
+  // Lưu vào memory, hết hạn sau 5 phút
+  otpStore[email] = { otp, expires: Date.now() + 5 * 60 * 1000 };
+
+  try {
+    await sendMail({
+      to: email,
+      subject: 'Your OTP Code',
+      text: `Your OTP code is: ${otp}`,
+      html: `<b>Your OTP code is: ${otp}</b>`
+    });
+    res.json({ message: 'OTP sent to email!' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to send OTP', error: err.message });
+  }
+};
+
+// API xác thực OTP
+exports.verifyOtp = (req, res) => {
+  const { email, otp } = req.body;
+  const record = otpStore[email];
+  if (!record) return res.status(400).json({ message: 'No OTP sent to this email' });
+  if (Date.now() > record.expires) return res.status(400).json({ message: 'OTP expired' });
+  if (record.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
+  // Xác thực thành công, xóa OTP
+  delete otpStore[email];
+  res.json({ message: 'OTP verified' });
 };
 
 exports.register = async (req, res) => {
@@ -299,3 +338,20 @@ exports.deleteUser = async (req, res) => {
 
 // Thêm alias cho register
 exports.createUser = exports.register;
+
+// Thêm route test gửi mail
+async function testSendMail(req, res) {
+  try {
+    await sendMail({
+      to: req.body.to || process.env.EMAIL_USER,
+      subject: 'Test Nodemailer',
+      text: 'Đây là email test từ Social Media App!',
+      html: '<b>Đây là email test từ Social Media App!</b>'
+    });
+    res.status(200).json({ message: 'Đã gửi email thành công!' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+module.exports.testSendMail = testSendMail;

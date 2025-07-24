@@ -8,6 +8,8 @@ import { Label } from "../ui/label"
 import { signIn, useSession } from "next-auth/react"
 import { registerUser } from "../../../services/Api/register"
 import { useRouter } from "next/navigation"
+import { sendOtp, verifyOtp } from '../../../services/Api/register';
+import { Eye, CheckCircle2 } from 'lucide-react';
 
 export function RegisterForm({
   className,
@@ -22,6 +24,11 @@ export function RegisterForm({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -51,29 +58,53 @@ export function RegisterForm({
     return true
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!validateForm()) {
-      return
-    }
-    
-    setLoading(true)
-    setError('')
-
+  const handleSendOtp = async () => {
+    setOtpLoading(true);
+    setOtpError('');
     try {
-      const data = await registerUser(formData)
-
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
-
-      router.push("/auth")
-
-      
+      await sendOtp(formData.email);
+      setOtpSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed')
+      setOtpError('Gửi mã OTP thất bại.');
     } finally {
-      setLoading(false)
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    setOtpLoading(true);
+    setOtpError('');
+    try {
+      await verifyOtp(formData.email, otp);
+      setOtpVerified(true);
+      setOtpError('');
+    } catch (err) {
+      setOtpError('Mã OTP không đúng hoặc đã hết hạn.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpVerified) {
+      setError('Bạn cần xác thực email bằng OTP trước khi đăng ký!');
+      return;
+    }
+    if (!validateForm()) {
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const data = await registerUser(formData);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      router.push("/auth");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -128,15 +159,57 @@ export function RegisterForm({
         </div>
         <div className="grid gap-3">
           <Label htmlFor="email">Email</Label>
-          <Input 
-            id="email" 
-            type="email" 
-            placeholder="m@example.com" 
-            value={formData.email}
-            onChange={handleChange}
-            required 
-          />
+          <div className="flex gap-2">
+            <Input 
+              id="email" 
+              type="email" 
+              placeholder="m@example.com" 
+              value={formData.email}
+              onChange={handleChange}
+              required 
+              disabled={otpSent}
+            />
+            <Button type="button" onClick={handleSendOtp} disabled={otpLoading || !formData.email || otpSent} className="min-w-max">
+              {otpLoading ? 'Đang gửi...' : otpSent ? 'Đã gửi' : 'Gửi mã'}
+            </Button>
+          </div>
+          {otpError && <div className="text-red-500 text-xs mt-1">{otpError}</div>}
         </div>
+        {otpSent && !otpVerified && (
+          <div className="grid gap-3">
+            <Label htmlFor="otp">Nhập mã OTP</Label>
+            <div className="flex gap-2 items-center">
+              <div className="relative w-full">
+                <Input
+                  id="otp"
+                  type="text"
+                  placeholder="Nhập mã OTP"
+                  value={otp}
+                  onChange={e => setOtp(e.target.value)}
+                  maxLength={4}
+                  className="pr-20"
+                />
+                <Button
+                  type="button"
+                  onClick={handleVerifyOtp}
+                  disabled={otpLoading || otp.length !== 4}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-3 text-xs"
+                  variant="secondary"
+                >
+                  {otpLoading ? '...' : <span>Xác thực</span>}
+                </Button>
+              </div>
+              {/* Nút xác thực bên ngoài cho desktop/mobile */}
+              <Button type="button" onClick={handleVerifyOtp} disabled={otpLoading || otp.length !== 4} className="min-w-max hidden sm:inline-flex">
+                {otpLoading ? 'Đang xác thực...' : <CheckCircle2 size={16} className="mr-1" />} Xác thực
+              </Button>
+            </div>
+            {otpError && <div className="text-red-500 text-xs mt-1">{otpError}</div>}
+          </div>
+        )}
+        {otpVerified && (
+          <div className="text-green-600 text-xs mb-2">Email đã xác thực thành công!</div>
+        )}
         <div className="grid gap-3">
           <Label htmlFor="password">Password</Label>
           <Input 

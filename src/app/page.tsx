@@ -26,6 +26,7 @@ export default function Home() {
   const [violation, setViolation] = useState(false);
   const { user } = useAuth(true);
   const { session, status } = useAuth(true);
+  
 
   // Load banned keywords once
   useEffect(() => {

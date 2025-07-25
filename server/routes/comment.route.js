@@ -7,7 +7,11 @@ const {
     createComment,
     updateComment,
     deleteComment,
+    getCommentsByPostId,
 } = require('../controllers/comment.controller');
+
+// Route comment post_id kèm replies
+router.get('/post/:post_id', getCommentsByPostId);
 
 router
     .route('/')

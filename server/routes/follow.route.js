@@ -7,6 +7,8 @@ const {
     createFollow,
     updateFollow,
     deleteFollow,
+    unfollow,
+    getFollowStats,
 } = require('../controllers/follow.controller');
 
 router
@@ -19,5 +21,8 @@ router
     .get(getFollowById)
     .put(updateFollow)
     .delete(deleteFollow);
+
+router.post('/unfollow', unfollow);
+router.get('/stats/:userId', getFollowStats);
 
 module.exports = router;

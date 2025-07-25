@@ -165,6 +165,20 @@ export default function Home() {
             </form>
           </div>
 
+          {/* Tag topics UI */}
+          <div className="flex gap-2 w-auto">
+            {['Art', 'Photography', 'Design', 'Music', 'Travel', 'Food'].map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                className="px-4 py-2 rounded-full border border-gray-300 bg-white hover:bg-black hover:text-white transition-colors text-sm font-medium shadow-sm"
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+
+          {/* Sort by UI */}
           <div className="w-auto">
             <select className="p-2 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2C343A]">
               <option value="popular">Popular</option>
@@ -174,7 +188,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Posts */}
+      {/* Posts */} 
       <section className="px-6 mt-6 pb-20">
         {violation ? (
           <div className="mt-12 text-center w-full flex justify-center items-center">
@@ -208,6 +222,7 @@ export default function Home() {
                 post={post}
                 currentUserId={session?.user?.id}
                 onDelete={handleDeletePost}
+                allPosts={posts}
               />
             ))}
           </Masonry>

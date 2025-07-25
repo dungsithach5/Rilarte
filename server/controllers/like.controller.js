@@ -24,7 +24,46 @@ exports.getLikeById = async (req, res) => {
 
 exports.createLike = async (req, res) => {
     try {
+        const { userId, postId, commentId } = req.body;
+
+        // Kiểm tra đã tồn tại like chưa (theo userId + postId hoặc userId + commentId)
+        const existingLike = await prisma.like.findFirst({
+            where: {
+                userId,
+                ...(postId ? { postId } : {}),
+                ...(commentId ? { commentId } : {})
+            }
+        });
+
+        if (existingLike) {
+            return res.status(409).json({ message: 'User has already liked this item.' });
+        }
+
         const newLike = await prisma.like.create({ data: req.body });
+
+        // Tạo notification cho chủ post/comment
+        let targetUserId = null;
+        if (postId) {
+            const post = await prisma.posts.findUnique({ where: { id: postId } });
+            targetUserId = post?.user_id;
+        }
+        if (commentId) {
+            const comment = await prisma.comment.findUnique({ where: { id: commentId } });
+            targetUserId = comment?.user_id;
+        }
+        if (targetUserId && targetUserId !== userId) {
+            await prisma.notification.create({
+                data: {
+                    user_id: targetUserId,
+                    type: 'like',
+                    content: `User ${userId} đã thích nội dung của bạn.`,
+                    is_read: false,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                }
+            });
+        }
+
         res.status(201).json(newLike);
     } catch (error) {
         res.status(400).json({ message: 'Error creating like', error });

@@ -7,6 +7,7 @@ const {
     createNotification,
     updateNotification,
     deleteNotification,
+    getNotificationsByUser,
 } = require('../controllers/notification.controller');
 
 router
@@ -19,5 +20,7 @@ router
     .get(getNotificationById)
     .put(updateNotification)
     .delete(deleteNotification);
+
+router.get('/user/:user_id', getNotificationsByUser);
 
 module.exports = router;

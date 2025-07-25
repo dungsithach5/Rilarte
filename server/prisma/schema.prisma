@@ -14,11 +14,17 @@ model comments {
   content   String   @db.Text
   createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @db.DateTime(0)
+  parent_id Int?     
+
   users     users?   @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "comments_ibfk_1")
   posts     posts?   @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "comments_ibfk_2")
 
+  parent    comments?  @relation("CommentToReplies", fields: [parent_id], references: [id])
+  replies   comments[] @relation("CommentToReplies")
+
   @@index([post_id], map: "post_id")
   @@index([user_id], map: "user_id")
+  @@index([parent_id])
 }
 
 model follows {

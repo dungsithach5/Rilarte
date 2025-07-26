@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { AiLogo } from "../ai-logo"
 import ColorThief from "colorthief"
 
 import {
@@ -228,6 +229,7 @@ export function ComposerComment({ post, currentUserId, onDelete }: ComposerComme
               alt="Post"
               className="object-contain h-full"
             />
+            <AiLogo imageUrl={post.image_url} />
             <ZoomImage image={post.image_url} />
           </div>
         </DialogHeader>

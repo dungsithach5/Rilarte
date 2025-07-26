@@ -95,7 +95,7 @@ const topics = [
 ];
 
 export default function OnboardingModal() {
-  const { data: session, update } = useSession();
+  const { data: session, status, update } = useSession();
   const [gender, setGender] = useState('');
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -108,9 +108,17 @@ export default function OnboardingModal() {
   useEffect(() => {
     console.log('Session in OnboardingModal:', session);
     console.log('User data:', session?.user);
+    console.log('Auth status:', status);
     
-    // Chỉ hiển thị modal khi đã đăng nhập và chưa onboarded
-    if (session?.user) {
+    // Không hiện modal khi đang loading
+    if (status === 'loading') {
+      console.log('Auth still loading, hiding modal');
+      setShowModal(false);
+      return;
+    }
+    
+    // Chỉ hiển thị modal khi đã đăng nhập (status === 'authenticated') và chưa onboarded
+    if (status === 'authenticated' && session?.user) {
       const onboarded = (session.user as any).onboarded;
       console.log('Onboarded status:', onboarded);
       
@@ -122,10 +130,10 @@ export default function OnboardingModal() {
         setShowModal(false);
       }
     } else {
-      console.log('Not authenticated or no user, hiding modal');
+      console.log('Not authenticated yet, hiding modal. Status:', status);
       setShowModal(false);
     }
-  }, [session]);
+  }, [session, status]);
 
   const handleTopicToggle = (topicId: string) => {
     const isSelected = selectedTopics.includes(topicId);

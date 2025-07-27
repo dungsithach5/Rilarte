@@ -85,7 +85,21 @@ model posts {
   updatedAt DateTime   @db.DateTime(0)
   comments  comments[]
   likes     likes[]
+  relatedPosts      related_posts[] @relation("PostToRelated")
+  relatedToPosts    related_posts[] @relation("RelatedToPost")
+}
 
+model related_posts {
+  id           Int   @id @default(autoincrement())
+  post_id      Int
+  related_id   Int
+
+  post         posts @relation("PostToRelated", fields: [post_id], references: [id], onDelete: Cascade)
+  relatedPost  posts @relation("RelatedToPost", fields: [related_id], references: [id], onDelete: Cascade)
+
+  @@unique([post_id, related_id])
+  @@index([post_id])
+  @@index([related_id])
 }
 
 model sequelizemeta {

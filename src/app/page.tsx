@@ -49,7 +49,7 @@ export default function Home() {
         const data = await fetchPosts("");
         const mapped = data.map((item: any) => ({
           id: item.id,
-          name: user?.username || user?.name,
+          name: item.username || user?.name,
           title: item.title,
           content: item.content,
           image_url: item.image_url,
@@ -222,7 +222,7 @@ export default function Home() {
                 post={post}
                 currentUserId={session?.user?.id}
                 onDelete={handleDeletePost}
-                allPosts={posts}
+                relatedPosts={posts.filter((p) => p.id !== post.id)}
               />
             ))}
           </Masonry>

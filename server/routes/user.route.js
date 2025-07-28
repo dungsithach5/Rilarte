@@ -295,7 +295,7 @@ router.post('/auth/google', async (req, res) => {
           image,
           createdAt: new Date(),
           updatedAt: new Date(),
-          onboarded: false
+          onboarded: false,
         }
       });
       console.log('New user created:', user.id);

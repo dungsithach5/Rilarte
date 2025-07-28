@@ -188,11 +188,11 @@ export default function OnboardingModal() {
     setLoading(true);
     try {
       // Gọi trực tiếp đến backend server
-      await axios.post(`http://localhost:5001/api/users/onboarding`, {
-        email: session?.user?.email,
-        gender: gender.trim(),
-        topics: selectedTopics.join(','),
-      });
+      // await axios.post(`http://localhost:5000/api/users/onboarding`, {
+      //   email: session?.user?.email,
+      //   gender: gender.trim(),
+      //   topics: selectedTopics.join(','),
+      // });
       
       playSound('success');
       
@@ -394,7 +394,7 @@ export default function OnboardingModal() {
             <div className="space-y-6 animate-scale-in">
               <div className="text-center">
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Interests</h3>
-                <p className="text-gray-600">Select topics you're interested in (you can choose multiple)</p>
+                <p className="text-gray-600">Select topics youre interested in (you can choose multiple)</p>
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

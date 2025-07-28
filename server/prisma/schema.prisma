@@ -161,6 +161,7 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
 
 model banned_keywords {
   id      Int             @id @default(autoincrement())

@@ -1,104 +1,92 @@
 "use client"
 
-import axios from 'axios'
+import axios from "axios"
 import React, { useState, useRef, useEffect } from "react"
-import { UploadCloud, Crop } from 'lucide-react';
-import Cropper, { Area } from 'react-easy-crop';
-import { useAuth } from "../hooks/useAuth";
+import { UploadCloud, Crop } from "lucide-react"
+import Cropper, { Area } from "react-easy-crop"
+import { useAuth } from "../hooks/useAuth"
+import TagInput from "../@/components/post-artwork/tag-input"
 
 interface HandleSubmitEvent extends React.FormEvent<HTMLFormElement> {}
 
 export default function Post() {
-  const { session } = useAuth(true);
+  const { session } = useAuth(true)
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [image, setImage] = useState<string | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
-  const [isCropOpen, setIsCropOpen] = useState(false);
-  const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [isCropOpen, setIsCropOpen] = useState(false)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+  const [tags, setTags] = useState<string[]>([])
   const inputFileRef = useRef<HTMLInputElement>(null)
-  const [isMounted, setIsMounted] = useState(false);
+  const [isMounted, setIsMounted] = useState(false)
 
-  useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const handleImageChange = (file: File | null) => {
-    if (file) {
-      if (file.size > 20 * 1024 * 1024) {
-        alert("Ảnh vượt quá 20MB. Vui lòng chọn ảnh nhỏ hơn.");
-        return;
-      }
-      setImageFile(file);
-      setImage(URL.createObjectURL(file));
+    if (file && file.size <= 20 * 1024 * 1024) {
+      setImageFile(file)
+      setImage(URL.createObjectURL(file))
+    } else if (file) {
+      alert("Ảnh vượt quá 20MB. Vui lòng chọn ảnh nhỏ hơn.")
     }
-  };
-
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    handleImageChange(file);
-  };
-
-  const handleDrag = (e: React.DragEvent<HTMLDivElement>, isEntering: boolean) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(isEntering);
-  };
+  }
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0] ?? null;
-    handleImageChange(file);
-    e.dataTransfer.clearData();
-  };
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0] ?? null
+    handleImageChange(file)
+    e.dataTransfer.clearData()
+  }
 
   const handleSubmit = async (e: HandleSubmitEvent) => {
-    e.preventDefault();
-    if (!imageFile) {
-      alert('Vui lòng chọn một ảnh');
-      return;
-    }
-    try {
-      const formData = new FormData();
-      formData.append('image', imageFile);
+    e.preventDefault()
+    if (!imageFile) return alert("Vui lòng chọn một ảnh")
 
-      const uploadResponse = await axios.post('http://localhost:5000/api/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      const imageUrl = uploadResponse.data.imageUrl;
+    try {
+      const formData = new FormData()
+      formData.append("image", imageFile)
+
+      const uploadResponse = await axios.post("http://localhost:5001/api/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      })
+      const imageUrl = uploadResponse.data.imageUrl
 
       const newPost = {
         user_name: session?.user?.email,
         title,
         content: description,
-        image_url: imageUrl
-      };
+        image_url: imageUrl,
+        tags
+      }
 
-      await axios.post('http://localhost:5000/api/posts', newPost, {
-        headers: { 'Content-Type': 'application/json' },
-      });
-      
-      setTitle('');
-      setDescription('');
-      setImage(null);
-      setImageFile(null);
-      if (inputFileRef.current) inputFileRef.current.value = '';
-      console.log('Data to send:', newPost);
+      await axios.post("http://localhost:5001/api/posts", newPost)
+
+      setTitle("")
+      setDescription("")
+      setImage(null)
+      setImageFile(null)
+      setTags([])
+      if (inputFileRef.current) inputFileRef.current.value = ""
     } catch (err) {
-      console.error('Error creating post:', err);
+      console.error("Error creating post:", err)
     }
-  };
+  }
 
   const getCroppedImg = async (imageSrc: string, cropPixels: Area): Promise<string> => {
-    const image = await createImage(imageSrc);
-    const canvas = document.createElement('canvas');
-    canvas.width = cropPixels.width;
-    canvas.height = cropPixels.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas context is null');
+    const image = await createImage(imageSrc)
+    const canvas = document.createElement("canvas")
+    canvas.width = cropPixels.width
+    canvas.height = cropPixels.height
+    const ctx = canvas.getContext("2d")
+    if (!ctx) throw new Error("Canvas context is null")
+
     ctx.drawImage(
       image,
       cropPixels.x,
@@ -109,122 +97,108 @@ export default function Post() {
       0,
       cropPixels.width,
       cropPixels.height
-    );
+    )
+
     return new Promise((resolve, reject) => {
       canvas.toBlob(blob => {
-        if (!blob) return reject(new Error('Canvas is empty'));
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      }, 'image/jpeg');
-    });
-  };
+        if (!blob) return reject(new Error("Canvas is empty"))
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(blob)
+      }, "image/jpeg")
+    })
+  }
 
   function createImage(url: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
-      const img = new window.Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = e => reject(e);
-      img.src = url;
-    });
+      const img = new Image()
+      img.crossOrigin = "anonymous"
+      img.onload = () => resolve(img)
+      img.onerror = e => reject(e)
+      img.src = url
+    })
   }
 
   return (
     <section className="w-full">
       <div className="px-90">
         <h2 className="text-xl font-bold mb-4 text-left">New post</h2>
-
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+          {/* Image Upload */}
           <div
-            className={`w-full h-[700px] bg-gray-200 hover:bg-gray-200 rounded-xl overflow-hidden flex flex-col items-center justify-center text-center cursor-pointer
+            className={`w-full h-[700px] bg-gray-200 rounded-xl flex items-center justify-center text-center cursor-pointer 
             ${isDragging ? "bg-pink-100 border-4 border-dashed border-pink-400" : ""}`}
             onClick={() => inputFileRef.current?.click()}
-            onDragEnter={e => handleDrag(e, true)}
-            onDragLeave={e => handleDrag(e, false)}
-            onDragOver={e => {
-              e.preventDefault();
-              e.stopPropagation();
-              e.dataTransfer.dropEffect = "copy";
-              setIsDragging(true);
-            }}
+            onDragEnter={e => (e.preventDefault(), setIsDragging(true))}
+            onDragOver={e => e.preventDefault()}
+            onDragLeave={e => setIsDragging(false)}
             onDrop={handleDrop}
           >
             {isMounted && image ? (
               <img src={image} alt="Preview" className="h-full w-full object-cover" />
             ) : (
-              <div className="space-y-6">
-                <div className="flex flex-col items-center justify-center mt-4">
-                  <UploadCloud className="h-10 w-10 text-gray-500 mb-1" />
-                  <span className="text-lg text-gray-500 font-medium">Or drag & drop your image here</span>
-                </div>
-                <div className="text-center">
-                  <span className="text-sm text-gray-500 block">Please upload an image file (maximum 20MB)</span>
-                  <span className="text-sm text-gray-500 block mb-3">Supported formats: JPG, PNG, WebP, etc.</span>
-                </div>
+              <div className="space-y-4">
+                <UploadCloud className="h-10 w-10 text-gray-500 mx-auto" />
+                <p className="text-sm text-gray-500">Click hoặc kéo ảnh vào đây (max 20MB)</p>
               </div>
             )}
-
-            <input
-              type="file"
-              accept="image/*"
-              ref={inputFileRef}
-              onChange={onFileChange}
-              className="hidden"
-            />
+            <input type="file" ref={inputFileRef} onChange={e => handleImageChange(e.target.files?.[0] ?? null)} className="hidden" />
           </div>
 
+          {/* Content */}
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="title" className="text-sm font-medium text-gray-700">Title</label>
+            <div>
+              <label className="text-sm">Title</label>
               <input
-                id="title"
-                type="text"
-                placeholder="Write a title"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                className="border p-3 py-6 rounded-lg focus:outline-pink-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                required
                 disabled={!image}
+                placeholder="Write a title"
+                className="w-full p-3 rounded-lg border disabled:bg-gray-100"
               />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label htmlFor="description" className="text-sm font-medium text-gray-700">Description</label>
+            <div>
+              <label className="text-sm">Description</label>
               <textarea
-                id="description"
-                placeholder="Write a Description"
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                className="border p-2 rounded-lg h-24 resize-none focus:outline-pink-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 disabled={!image}
+                placeholder="Write a description"
+                className="w-full p-2 h-24 rounded-lg border resize-none disabled:bg-gray-100"
               />
               {image && (
                 <button
                   type="button"
-                  className="text-black p-2 rounded-lg w-fit self-start cursor-pointer border hover:bg-gray-200"
-                  title="Cắt ảnh"
+                  className="mt-2 text-black p-2 rounded-lg border hover:bg-gray-200"
                   onClick={() => setIsCropOpen(true)}
                 >
-                  <Crop className="w-5 h-5" />
+                  <Crop className="w-5 h-5 inline" /> Cut
                 </button>
               )}
             </div>
 
+            <div>
+              <label className="text-sm">Tags</label>
+              <TagInput tags={tags} setTags={setTags} disabled={!image}/>
+              <small className="text-gray-400 text-xs">Use Enter or comma to separate tags</small>
+            </div>
+
             <button
               type="submit"
-              className="bg-black hover:opacity-50 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed"
               disabled={!image}
+              className="bg-black text-white py-2 px-4 rounded-lg hover:opacity-80 disabled:bg-gray-300"
             >
               Post
             </button>
           </div>
         </form>
 
+        {/* Crop Modal */}
         {isCropOpen && image && (
-          <div className="fixed inset-0 flex items-center justify-center pb-12">
-            <div className="w-[90vw] h-[90vh] rounded-xl overflow-hidden flex flex-col items-center justify-center">
-              <div className="relative w-[80vw] h-[80vh] bg-zinc-900">
+          <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center">
+            <div className="w-[90vw] h-[90vh] bg-white rounded-xl p-4 flex flex-col items-center">
+              <div className="relative w-full h-full bg-zinc-900 rounded-lg overflow-hidden">
                 <Cropper
                   image={image}
                   crop={crop}
@@ -236,19 +210,18 @@ export default function Post() {
                 />
               </div>
               <div className="flex gap-4 mt-4">
-                <button className="bg-gray-300 px-4 py-2 rounded-lg" onClick={() => setIsCropOpen(false)}>Cancel</button>
+                <button className="px-4 py-2 rounded-lg bg-gray-200" onClick={() => setIsCropOpen(false)}>Cancel</button>
                 <button
-                  className="bg-black text-white px-4 py-2 rounded-lg cursor-pointer"
+                  className="px-4 py-2 rounded-lg bg-black text-white"
                   onClick={async () => {
                     if (image && croppedAreaPixels) {
-                      const cropped = await getCroppedImg(image, croppedAreaPixels);
-                      setImage(cropped);
-                      const response = await fetch(cropped);
-                      const blob = await response.blob();
-                      const croppedFile = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' });
-                      setImageFile(croppedFile);
+                      const cropped = await getCroppedImg(image, croppedAreaPixels)
+                      setImage(cropped)
+                      const blob = await (await fetch(cropped)).blob()
+                      const croppedFile = new File([blob], "cropped-image.jpg", { type: "image/jpeg" })
+                      setImageFile(croppedFile)
                     }
-                    setIsCropOpen(false);
+                    setIsCropOpen(false)
                   }}
                 >
                   Save

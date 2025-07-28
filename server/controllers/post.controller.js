@@ -27,9 +27,23 @@ exports.getAllPosts = async (req, res) => {
       },
     });
 
-    res.status(200).json(posts);
+      const postsWithTags = await Promise.all(
+      posts.map(async post => {
+        const postTags = await prisma.post_tags.findMany({
+          where: { post_id: post.id },
+          include: {
+            tag: true,
+          },
+        });
+
+        const tags = postTags.map(pt => pt.tag.name);
+        return { ...post, tags };
+      })
+    );
+
+    res.status(200).json(postsWithTags);
   } catch (error) {
-    console.error("Error fetching posts:", error); // Log chi tiết lỗi
+    console.error("Error fetching posts:", error);
     res.status(500).json({
       message: 'Error fetching posts',
       error: error.message || 'Unknown error',
@@ -38,42 +52,77 @@ exports.getAllPosts = async (req, res) => {
 };
 
 exports.getPostById = async (req, res) => {
-    try {
-        const post = await prisma.posts.findUnique({
-            where: { id: Number(req.params.id) }
-        });
+  try {
+      const post = await prisma.posts.findUnique({
+        where: { id: Number(req.params.id) },
+        include: {
+          postTags: {
+            include: {
+              tag: true,
+            },
+          },
+        },
+      });
 
-        if (!post) {
-            return res.status(404).json({ message: 'Post not found' });
-        }
+      if (!post) {
+          return res.status(404).json({ message: 'Post not found' });
+      }
 
-        res.status(200).json(post);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching post', error });
-    }
+      const tags = post.postTags.map(pt => pt.tag.name);
+      const postWithTags = {
+        ...post,
+        tags,
+      };
+      delete postWithTags.postTags;
+
+      res.status(200).json(post);
+  } catch (error) {
+      res.status(500).json({ message: 'Error fetching post', error });
+  }
 };
 
 exports.createPost = async (req, res) => {
-    try {
-        const newPost = await prisma.posts.create({
-            data: {
-                user_name: req.body.user_name,
-                title: req.body.title,
-                content: req.body.content,
-                image_url: req.body.image_url,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-        });
+  try {
+    const { user_name, title, content, image_url, tags = [] } = req.body;
 
-        res.status(201).json(newPost);
-    } catch (error) {
-        res.status(400).json({ message: 'Error creating post', error });
-    }
+    const newPost = await prisma.posts.create({
+      data: {
+        user_name,
+        title,
+        content,
+        image_url,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        postTags: {
+          create: tags.map(tag => ({
+            tag: {
+              connectOrCreate: {
+                where: { name: tag },
+                create: { name: tag },
+              },
+            },
+          })),
+        },
+      },
+      include: {
+        postTags: {
+          include: { tag: true },
+        },
+      },
+    });
+
+    res.status(201).json(newPost);
+  } catch (error) {
+    console.error('Error creating post with tags:', error);
+    res.status(400).json({ message: 'Error creating post', error: error.message });
+  }
 };
 
 exports.updatePost = async (req, res) => {
     try {
+        const { tags, ...postData } = req.body;
+        const postId = Number(req.params.id);
+
         const existingPost = await prisma.posts.findUnique({
             where: { id: Number(req.params.id) }
         });
@@ -87,6 +136,25 @@ exports.updatePost = async (req, res) => {
             data: req.body
         });
 
+        if (tags && Array.isArray(tags)) {
+          await prisma.post_tags.deleteMany({
+            where: { post_id: postId }
+          });
+    
+          for (const tagName of tags) {
+            await prisma.post_tags.create({
+              data: {
+                post_id: postId,
+                tag: {
+                  connectOrCreate: {
+                    where: { name: tagName },
+                    create: { name: tagName },
+                  },
+                },
+              },
+            });
+          }
+        }
         res.status(200).json(updatedPost);
     } catch (error) {
         res.status(400).json({ message: 'Error updating post', error });

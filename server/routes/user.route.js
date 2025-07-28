@@ -170,6 +170,266 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// Onboarding route
+router.post('/onboarding', async (req, res) => {
+  try {
+    const { email, gender, topics } = req.body;
+
+    // Input validation
+    if (!email || !gender || !topics) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email, gender và topics là bắt buộc' 
+      });
+    }
+
+    // Tìm user theo email
+    const user = await prisma.users.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Không tìm thấy user' 
+      });
+    }
+
+    // Cập nhật thông tin onboarding
+    const updatedUser = await prisma.users.update({
+      where: { email },
+      data: {
+        onboarded: true,
+        gender: gender,
+        topics: topics
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Onboarding completed successfully',
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        gender: updatedUser.gender,
+        topics: updatedUser.topics,
+        onboarded: updatedUser.onboarded
+      }
+    });
+    
+    console.log('Onboarding completed for user:', updatedUser.email, 'onboarded:', updatedUser.onboarded);
+
+  } catch (error) {
+    console.error('Onboarding error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Lỗi server trong quá trình onboarding' 
+    });
+  }
+});
+
+// Reset onboarding route (for testing)
+router.post('/reset-onboarding', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email là bắt buộc' 
+      });
+    }
+
+    const user = await prisma.users.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Không tìm thấy user' 
+      });
+    }
+
+    const updatedUser = await prisma.users.update({
+      where: { email },
+      data: {
+        onboarded: false
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Onboarding reset successfully',
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        onboarded: updatedUser.onboarded
+      }
+    });
+
+  } catch (error) {
+    console.error('Reset onboarding error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Lỗi server trong quá trình reset onboarding' 
+    });
+  }
+});
+
+// Google OAuth route
+router.post('/auth/google', async (req, res) => {
+  try {
+    const { email, name, image, provider, providerAccountId } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email là bắt buộc' 
+      });
+    }
+
+    // Tìm user theo email
+    let user = await prisma.users.findUnique({ where: { email } });
+
+    if (!user) {
+      // Tạo user mới
+      user = await prisma.users.create({
+        data: {
+          email,
+          username: name,
+          image,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          onboarded: false
+        }
+      });
+      console.log('New user created:', user.id);
+    } else {
+      // Cập nhật user hiện tại
+      user = await prisma.users.update({
+        where: { email },
+        data: {
+          username: name,
+          image,
+          updatedAt: new Date()
+        }
+      });
+      console.log('User updated:', user.id);
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        onboarded: user.onboarded
+      }
+    });
+
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Lỗi server trong quá trình xác thực Google' 
+    });
+  }
+});
+
+// Get user by email
+router.get('/email/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const user = await prisma.users.findUnique({ 
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        onboarded: true,
+        gender: true,
+        topics: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Không tìm thấy user' 
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      user
+    });
+
+  } catch (error) {
+    console.error('Get user by email error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Lỗi server khi lấy thông tin user' 
+    });
+  }
+});
+
+// Update user by email
+router.put('/update', async (req, res) => {
+  try {
+    const { email, gender, password } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email là bắt buộc' 
+      });
+    }
+
+    // Tìm user theo email
+    const user = await prisma.users.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Không tìm thấy user' 
+      });
+    }
+
+    // Prepare update data
+    const updateData = {};
+    
+    if (gender !== undefined) {
+      updateData.gender = gender;
+    }
+    
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateData.password = hashedPassword;
+    }
+
+    // Update user
+    const updatedUser = await prisma.users.update({
+      where: { email },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        gender: true,
+        onboarded: true
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật thành công',
+      data: updatedUser
+    });
+
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Lỗi server khi cập nhật user' 
+    });
+  }
+});
+
 router.post('/test-send-mail', testSendMail);
 router.post('/send-otp', testSendMail.sendOtp || require('../controllers/user.controller').sendOtp);
 router.post('/verify-otp', testSendMail.verifyOtp || require('../controllers/user.controller').verifyOtp);

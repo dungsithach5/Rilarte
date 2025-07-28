@@ -367,6 +367,58 @@ exports.resetPassword = async (req, res) => {
 // Thêm alias cho register
 exports.createUser = exports.register;
 
+exports.onboarding = async (req, res) => {
+  try {
+    const { email, gender, topics } = req.body;
+
+    // Input validation
+    if (!email || !gender || !topics) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email, gender và topics là bắt buộc' 
+      });
+    }
+
+    // Tìm user theo email
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Không tìm thấy user' 
+      });
+    }
+
+    // Cập nhật thông tin onboarding
+    const updatedUser = await prisma.user.update({
+      where: { email },
+      data: {
+        gender,
+        topics: Array.isArray(topics) ? topics : [topics],
+        onboarded: true
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Onboarding completed successfully',
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        gender: updatedUser.gender,
+        topics: updatedUser.topics,
+        onboarded: updatedUser.onboarded
+      }
+    });
+
+  } catch (error) {
+    console.error('Onboarding error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Lỗi server trong quá trình onboarding' 
+    });
+  }
+};
+
 // Thêm route test gửi mail
 async function testSendMail(req, res) {
   try {

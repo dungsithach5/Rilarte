@@ -2,22 +2,39 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 exports.getAllPosts = async (req, res) => {
-    try {
-        const posts = await prisma.posts.findMany({
-            select: {
-                id: true,
-                user_name: true,
-                title: true,
-                content: true,
-                image_url: true,
-                createdAt: true,
-                updatedAt: true
-            }
-        });
-        res.status(200).json(posts);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching posts', error });
-    }
+  try {
+    const { search } = req.query;
+    const keyword = typeof search === 'string' ? search : '';
+
+    const where = keyword
+      ? {
+          OR: [
+            { user_name: { contains: keyword } },
+            { title: { contains: keyword } },
+            { content: { contains: keyword } },
+          ],
+        }
+      : {};
+
+    const posts = await prisma.posts.findMany({
+      where,
+      select: {
+        id: true,
+        user_name: true,
+        title: true,
+        content: true,
+        image_url: true,
+      },
+    });
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error("Error fetching posts:", error); // Log chi tiết lỗi
+    res.status(500).json({
+      message: 'Error fetching posts',
+      error: error.message || 'Unknown error',
+    });
+  }
 };
 
 exports.getPostById = async (req, res) => {
@@ -77,21 +94,16 @@ exports.updatePost = async (req, res) => {
 };
 
 exports.deletePost = async (req, res) => {
-    try {
-        const existingPost = await prisma.posts.findUnique({
-            where: { id: Number(req.params.id) }
-        });
-
-        if (!existingPost) {
-            return res.status(404).json({ message: 'Post not found' });
-        }
-
-        await prisma.post.delete({
-            where: { id: Number(req.params.id) }
-        });
-
-        res.status(200).json({ message: 'Post deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ message: 'Error deleting post', error });
+  try {
+    const deletedPost = await prisma.posts.delete({
+      where: { id: Number(req.params.id) }
+    });
+    if (!deletedPost) {
+      return res.status(404).json({ message: 'Post not found' });
     }
+    res.status(200).json({ message: 'Post deleted successfully' });
+  } catch (error) {
+    console.error('Delete post error:', error);
+    res.status(500).json({ message: 'Error deleting post', error });
+  }
 };

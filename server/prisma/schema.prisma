@@ -12,13 +12,19 @@ model comments {
   user_id   Int
   post_id   Int
   content   String   @db.Text
-  createdAt DateTime @db.DateTime(0)
+  createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @db.DateTime(0)
+  parent_id Int?     
+
   users     users?   @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "comments_ibfk_1")
   posts     posts?   @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "comments_ibfk_2")
 
+  parent    comments?  @relation("CommentToReplies", fields: [parent_id], references: [id])
+  replies   comments[] @relation("CommentToReplies")
+
   @@index([post_id], map: "post_id")
   @@index([user_id], map: "user_id")
+  @@index([parent_id])
 }
 
 model follows {
@@ -120,7 +126,6 @@ model users {
   notifications                        notifications[]
 }
 
-
 model Account {
   id                String  @id
   userId            Int
@@ -150,13 +155,15 @@ model Session {
   @@index([userId], map: "Session_userId_fkey")
 }
 
-
-
 model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
 
   @@unique([identifier, token])
-}
 
+model banned_keywords {
+  id      Int             @id @default(autoincrement())
+  word    String          @unique
+  createdAt DateTime      @default(now())
+}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Cookies from "js-cookie"
 import { useDispatch } from "react-redux"
 import { loginSuccess } from "../../../context/userSlice"
@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation"
 import { signIn, useSession } from "next-auth/react"
 import { ForgotPasswordForm } from "./forgot-password-form"
 import { ArrowLeft } from 'lucide-react';
+import { loginUser } from "../../../services/Api/login"
 
 export function LoginForm({
   className,
@@ -27,6 +28,12 @@ export function LoginForm({
   const router = useRouter()
   const { data: session } = useSession()
   const [showForgot, setShowForgot] = useState(false);
+
+  useEffect(() => {
+    if (session) {
+      router.push("/")
+    }
+  }, [session, router])
 
   if (showForgot) {
     return (
@@ -44,11 +51,6 @@ export function LoginForm({
     );
   }
 
-  if (session) {
-    router.push("/")
-    return null
-  }
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -63,19 +65,8 @@ export function LoginForm({
     setError('')
 
     try {
-      const response = await fetch('http://localhost:5000/api/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed')
-      }
+      const data = await loginUser(formData.email, formData.password)
+      console.log('Login response:', data)
 
       Cookies.set('token', data.token, { expires: 1, secure: false, sameSite: 'lax' })
       localStorage.setItem('user', JSON.stringify(data.user))
@@ -88,8 +79,12 @@ export function LoginForm({
         avatar: avatarUrl,
         token: data.token,
       }));
+      console.log('Dispatching loginSuccess with:', {
+        avatar: avatarUrl,
+        token: data.token,
+      });
 
-      router.push("/");
+      router.push("/")
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')

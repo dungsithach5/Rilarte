@@ -49,11 +49,15 @@ export default function BottomBar() {
           }
         />
         <NavIcon icon={<DrawerChat />} />
-        <NavIcon icon={
-          <Link href="/post">
-            <Plus size={28} />
-          </Link>
-        } />
+        <NavIcon
+          icon={
+            <Link href="/post">
+              <div className="bg-black rounded-full p-2 hover:bg-gray-800 transition-all">
+                <Plus size={28} color="white" />
+              </div>
+            </Link>
+          }
+        />
         <NavIcon icon={<DrawerNotification />} />
         <NavIcon
           onClick={() => setActiveIcon("settings")}

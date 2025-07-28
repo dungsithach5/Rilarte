@@ -5,15 +5,16 @@ const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { testSendMail, resetPassword } = require('../controllers/user.controller');
 
 // Validation helper
 const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
 
 // Register
 router.post('/register', async (req, res) => {
-  const { email, name, password, confirmPassword } = req.body;
+  const { email, username, password, confirmPassword } = req.body;
 
-  if (!email || !name || !password || !confirmPassword) {
+  if (!email || !username || !password || !confirmPassword) {
     return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin' });
   }
 
@@ -36,8 +37,10 @@ router.post('/register', async (req, res) => {
     const user = await prisma.users.create({
       data: {
         email,
-        username: name,
+        username,
         password: hashedPassword,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
     });
 
@@ -74,7 +77,15 @@ router.post('/login', async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    res.json({ token, name: user.username });
+    res.json({ 
+      token, 
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        username: user.username, 
+        avatar: user.avatar_url // nếu có
+      } 
+    });
   } catch (err) {
     res.status(500).json({ message: 'Lỗi server', error: err.message });
   }
@@ -418,5 +429,10 @@ router.put('/update', async (req, res) => {
     });
   }
 });
+
+router.post('/test-send-mail', testSendMail);
+router.post('/send-otp', testSendMail.sendOtp || require('../controllers/user.controller').sendOtp);
+router.post('/verify-otp', testSendMail.verifyOtp || require('../controllers/user.controller').verifyOtp);
+router.post('/reset-password', resetPassword);
 
 module.exports = router;

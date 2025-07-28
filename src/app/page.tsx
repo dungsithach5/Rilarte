@@ -52,6 +52,7 @@ export default function Home() {
           title: item.title,
           content: item.content,
           image_url: item.image_url,
+          tags: item.tags || [],
         }));
         setPosts(mapped);
       } catch (err) {
@@ -70,7 +71,7 @@ export default function Home() {
     const tagCount: Record<string, number> = {};
 
     posts.forEach((post) => {
-      const allText = `${post.title} ${post.content}`.toLowerCase();
+      const allText = `${post.tags}`.toLowerCase();
       const words = allText.match(/\b\w+\b/g) || [];
       words.forEach((word) => {
         if (word.length > 3) {
@@ -132,10 +133,7 @@ export default function Home() {
   };
 
   const filteredPosts = selectedTag
-    ? posts.filter((post) => {
-        const text = `${post.title} ${post.content}`.toLowerCase();
-        return text.includes(selectedTag.toLowerCase());
-      })
+    ? posts.filter((post) => post.tags?.includes(selectedTag))
     : posts;
 
   return (

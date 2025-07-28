@@ -75,7 +75,7 @@ exports.getPostById = async (req, res) => {
       };
       delete postWithTags.postTags;
 
-      res.status(200).json(post);
+      res.status(200).json(postWithTags);
   } catch (error) {
       res.status(500).json({ message: 'Error fetching post', error });
   }

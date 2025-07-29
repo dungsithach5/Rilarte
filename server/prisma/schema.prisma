@@ -33,8 +33,8 @@ model follows {
   following_id                      Int
   createdAt                         DateTime @db.DateTime(0)
   updatedAt                         DateTime @db.DateTime(0)
-  users_follows_follower_idTousers  users  @relation("follows_follower_idTousers", fields: [follower_id], references: [id], onDelete: Cascade, map: "follows_ibfk_1")
-  users_follows_following_idTousers users   @relation("follows_following_idTousers", fields: [following_id], references: [id], onDelete: Cascade, map: "follows_ibfk_2")
+  users_follows_follower_idTousers  users    @relation("follows_follower_idTousers", fields: [follower_id], references: [id], onDelete: Cascade, map: "follows_ibfk_1")
+  users_follows_following_idTousers users    @relation("follows_following_idTousers", fields: [following_id], references: [id], onDelete: Cascade, map: "follows_ibfk_2")
 
   @@index([follower_id], map: "follower_id")
   @@index([following_id], map: "following_id")
@@ -46,8 +46,8 @@ model likes {
   post_id   Int
   createdAt DateTime @db.DateTime(0)
   updatedAt DateTime @db.DateTime(0)
-  users     users   @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "likes_ibfk_1")
-  posts     posts   @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "likes_ibfk_2")
+  users     users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "likes_ibfk_1")
+  posts     posts    @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "likes_ibfk_2")
 
   @@index([post_id], map: "post_id")
   @@index([user_id], map: "user_id")
@@ -71,27 +71,63 @@ model messages {
 model notifications {
   id        Int      @id @default(autoincrement())
   user_id   Int
-  type      String  @db.VarChar(50)
-  content   String  @db.Text
-  is_read   Boolean @default(false)
+  type      String   @db.VarChar(50)
+  content   String   @db.Text
+  is_read   Boolean  @default(false)
   createdAt DateTime @db.DateTime(0)
   updatedAt DateTime @db.DateTime(0)
-  users     users   @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "notifications_ibfk_1")
+  users     users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "notifications_ibfk_1")
 
   @@index([user_id], map: "user_id")
 }
 
 model posts {
-  id        Int        @id @default(autoincrement())
-  user_name String    @db.VarChar(45)
-  title     String    @db.Text
-  content   String   @db.Text
-  image_url String   @db.VarChar(255)
-  createdAt DateTime   @db.DateTime(0)
-  updatedAt DateTime   @db.DateTime(0)
-  comments  comments[]
-  likes     likes[]
+  id             Int             @id @default(autoincrement())
+  user_name      String          @db.VarChar(45)
+  title          String          @db.Text
+  content        String          @db.Text
+  image_url      String          @db.VarChar(255)
+  createdAt      DateTime        @db.DateTime(0)
+  updatedAt      DateTime        @db.DateTime(0)
+  comments       comments[]
+  likes          likes[]
+  relatedPosts   related_posts[] @relation("PostToRelated")
+  relatedToPosts related_posts[] @relation("RelatedToPost")
+  postTags       post_tags[]
+}
 
+model related_posts {
+  id         Int @id @default(autoincrement())
+  post_id    Int
+  related_id Int
+
+  post        posts @relation("PostToRelated", fields: [post_id], references: [id], onDelete: Cascade)
+  relatedPost posts @relation("RelatedToPost", fields: [related_id], references: [id], onDelete: Cascade)
+
+  @@unique([post_id, related_id])
+  @@index([post_id])
+  @@index([related_id])
+}
+
+model tags {
+  id        Int         @id @default(autoincrement())
+  name      String      @unique @db.VarChar(50)
+  createdAt DateTime    @default(now()) @db.DateTime(0)
+  updatedAt DateTime    @default(now()) @db.DateTime(0)
+  postTags  post_tags[]
+}
+
+model post_tags {
+  id      Int @id @default(autoincrement())
+  post_id Int
+  tag_id  Int
+
+  post posts @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  tag  tags  @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@unique([post_id, tag_id])
+  @@index([post_id])
+  @@index([tag_id])
 }
 
 model sequelizemeta {
@@ -105,18 +141,15 @@ model users {
   password                             String?         @db.VarChar(255)
   bio                                  String?         @db.Text
   avatar_url                           String?         @db.VarChar(255)
-  createdAt                            DateTime        @db.DateTime(0)
-  updatedAt                            DateTime        @db.DateTime(0)
+  createdAt                            DateTime        @default(now()) @db.DateTime(0)
+  updatedAt                            DateTime        @default(now()) @db.DateTime(0)
   onboarded                            Boolean         @default(false)
   gender                               String?         @db.VarChar(50)
   topics                               String?         @db.Text
-  // NextAuth fields
   emailVerified                        DateTime?
   image                                String?         @db.VarChar(255)
-  // NextAuth relations
   Account                              Account[]
   Session                              Session[]
-  // Existing relations
   comments                             comments[]
   follows_follows_follower_idTousers   follows[]       @relation("follows_follower_idTousers")
   follows_follows_following_idTousers  follows[]       @relation("follows_following_idTousers")
@@ -164,7 +197,7 @@ model VerificationToken {
 }
 
 model banned_keywords {
-  id      Int             @id @default(autoincrement())
-  word    String          @unique
-  createdAt DateTime      @default(now())
+  id        Int      @id @default(autoincrement())
+  word      String   @unique
+  createdAt DateTime @default(now())
 }

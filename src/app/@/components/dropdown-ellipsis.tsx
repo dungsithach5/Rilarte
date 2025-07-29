@@ -74,7 +74,7 @@ export default function DropdownMenuEllipsis ({
           {isOwner && (
             <DropdownMenuItem
               onClick={() => setOpenModal(true)}
-              className="cursor-pointer text-red-500"
+              className="cursor-pointer text-black"
             >
               <Trash2 size={18} color="black" />
               Delete post

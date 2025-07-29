@@ -3,10 +3,28 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useSession } from "next-auth/react";
+import { useSelector } from "react-redux";
 
 export default function EditProfile() {
-  const { session, status } = useAuth(true);
+  const { user, session, status } = useAuth(true);
   const { update } = useSession();
+  const reduxUser = useSelector((state: any) => state.user.user);
+
+  // Debug log
+  console.log('=== EDIT PROFILE DEBUG ===');
+  console.log('useAuth user:', user);
+  console.log('useAuth session:', session);
+  console.log('useAuth status:', status);
+  console.log('Redux user:', reduxUser);
+  console.log('Redux state:', useSelector((state: any) => state.user));
+  console.log('Redux user details:', reduxUser ? {
+    id: reduxUser.id,
+    email: reduxUser.email,
+    username: reduxUser.username,
+    name: reduxUser.name,
+    bio: reduxUser.bio,
+    avatar: reduxUser.avatar
+  } : 'No redux user');
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -22,15 +40,18 @@ export default function EditProfile() {
   const [message, setMessage] = useState({ type: "", text: "" });
 
   useEffect(() => {
-    if (session?.user) {
+    // Ưu tiên Redux user, fallback về NextAuth session
+    const currentUser = reduxUser || session?.user;
+    
+    if (currentUser) {
       setFormData({
-        name: session.user.name || "",
-        bio: (session.user as any).bio || "",
-        username: (session.user as any).username || "",
+        name: currentUser.name || currentUser.username || "",
+        bio: (currentUser as any).bio || "",
+        username: (currentUser as any).username || currentUser.name || "",
       });
-      setPreviewUrl(session.user.image || null);
+      setPreviewUrl(currentUser.image || currentUser.avatar || null);
     }
-  }, [session]);
+  }, [session, reduxUser]);
 
   useEffect(() => {
     if (!selectedFile) {
@@ -110,10 +131,10 @@ export default function EditProfile() {
 
   const removeImage = () => {
     setSelectedFile(null);
-    setPreviewUrl(session?.user?.image || null);
+    setPreviewUrl(reduxUser?.image || session?.user?.image || null);
   };
 
-  if (status === "loading") {
+  if (status === "loading" && !reduxUser) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -121,7 +142,7 @@ export default function EditProfile() {
     );
   }
 
-  if (!session) return null;
+  if (!reduxUser && !session) return null;
 
   return (
     <div className="p-6">
@@ -178,7 +199,7 @@ export default function EditProfile() {
                   />
                 </div>
                 
-                {previewUrl && previewUrl !== session.user?.image && (
+                {previewUrl && previewUrl !== (reduxUser?.image || session?.user?.image) && (
                   <button
                     onClick={removeImage}
                     className="text-red-600 text-sm hover:text-red-700 transition-colors duration-200"

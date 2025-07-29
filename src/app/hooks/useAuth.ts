@@ -15,10 +15,19 @@ export function useAuth(requireAuth = true) {
   const user = userRedux && userRedux.token ? userRedux : session?.user
 
   useEffect(() => {
-    if (requireAuth && !user) {
+    // Debug log
+    console.log('=== USE AUTH DEBUG ===');
+    console.log('Session:', session);
+    console.log('Status:', status);
+    console.log('UserRedux:', userRedux);
+    console.log('User:', user);
+    console.log('RequireAuth:', requireAuth);
+    
+    if (requireAuth && !user && !userRedux?.token) {
+      console.log('Redirecting to auth - no user found');
       router.push("/auth")
     }
-  }, [requireAuth, user, router])
+  }, [requireAuth, user, userRedux, router])
 
   return { user, session, status }
 }

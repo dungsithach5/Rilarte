@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { useSelector } from 'react-redux';
 import axios from 'axios';
 
 // Loading skeleton component with improved design
@@ -96,6 +97,7 @@ const topics = [
 
 export default function OnboardingModal() {
   const { data: session, status, update } = useSession();
+  const reduxUser = useSelector((state: any) => state.user.user);
   const [gender, setGender] = useState('');
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -110,7 +112,23 @@ export default function OnboardingModal() {
     console.log('Session in OnboardingModal:', session);
     console.log('User data:', session?.user);
     console.log('Auth status:', status);
+    console.log('Redux user:', reduxUser);
     console.log('ShowModal state:', showModal);
+    console.log('Session keys:', session ? Object.keys(session) : 'No session');
+    console.log('User keys:', session?.user ? Object.keys(session.user) : 'No user');
+    
+    // Check localStorage trực tiếp
+    const localStorageUser = localStorage.getItem('user');
+    console.log('LocalStorage user:', localStorageUser ? JSON.parse(localStorageUser) : 'No localStorage user');
+    
+    // Clear localStorage nếu user khác hoặc onboarded undefined
+    if (localStorageUser) {
+      const user = JSON.parse(localStorageUser);
+      if (user.onboarded === undefined || user.onboarded === null) {
+        console.log('Clearing localStorage with invalid onboarded status');
+        localStorage.removeItem('user');
+      }
+    }
     
     // Không hiện modal khi đang loading
     if (status === 'loading') {
@@ -119,11 +137,34 @@ export default function OnboardingModal() {
       return;
     }
     
-    // Chỉ hiển thị modal khi đã đăng nhập (status === 'authenticated') và chưa onboarded
+    // Check onboarded status từ NextAuth, Redux, hoặc localStorage
+    let onboarded = null;
+    let userEmail = null;
+    
     if (status === 'authenticated' && session?.user) {
-      const onboarded = (session.user as any).onboarded;
-      console.log('Onboarded status:', onboarded);
-      
+      // NextAuth session
+      onboarded = (session.user as any).onboarded;
+      userEmail = session.user.email;
+      console.log('Using NextAuth session data');
+    } else if (reduxUser) {
+      // Redux store (login thường)
+      onboarded = reduxUser.onboarded;
+      userEmail = reduxUser.email;
+      console.log('Using Redux store data');
+    } else if (localStorageUser) {
+      // LocalStorage (fallback)
+      const user = JSON.parse(localStorageUser);
+      onboarded = user.onboarded;
+      userEmail = user.email;
+      console.log('Using localStorage data');
+    }
+    
+    console.log('Onboarded status:', onboarded);
+    console.log('Onboarded type:', typeof onboarded);
+    console.log('User email:', userEmail);
+    
+    // Chỉ hiển thị modal khi đã đăng nhập và chưa onboarded
+    if ((status === 'authenticated' && session?.user) || reduxUser || localStorageUser) {
       if (onboarded === false || onboarded === null || onboarded === undefined) {
         console.log('Showing onboarding modal');
         setShowModal(true);
@@ -135,7 +176,7 @@ export default function OnboardingModal() {
       console.log('Not authenticated yet, hiding modal. Status:', status);
       setShowModal(false);
     }
-  }, [session, status]);
+  }, [session, status, reduxUser]);
 
   const handleTopicToggle = (topicId: string) => {
     const isSelected = selectedTopics.includes(topicId);
@@ -197,12 +238,30 @@ export default function OnboardingModal() {
 
     setLoading(true);
     try {
-      // Gọi trực tiếp đến backend server
-      await axios.post(`http://localhost:5001/api/users/onboarding`, {
-        email: session?.user?.email,
+      // Debug log
+      const requestData = {
+        email: session?.user?.email || reduxUser?.email,
         gender: gender.trim(),
         topics: selectedTopics.join(','),
-      });
+      };
+      console.log('Onboarding request data:', requestData);
+      
+      // Gọi trực tiếp đến backend server
+      await axios.post(`http://localhost:5001/api/users/onboarding`, requestData);
+      
+      // Cập nhật localStorage để tránh modal hiện lại khi refresh
+      const currentUser = localStorage.getItem('user');
+      if (currentUser) {
+        const user = JSON.parse(currentUser);
+        const updatedUser = {
+          ...user,
+          onboarded: true,
+          gender: gender.trim(),
+          topics: selectedTopics.join(',')
+        };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        console.log('Updated localStorage user:', updatedUser);
+      }
       
       playSound('success');
       

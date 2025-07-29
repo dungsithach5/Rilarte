@@ -282,6 +282,21 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                   </div>
                 ))}
               </div>
+              {Array.isArray(currentPost.tags) && currentPost.tags.length > 0 && (
+                <div className="mt-6">
+                  <Label className="block mb-2 text-sm font-semibold text-gray-700">Tags</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {currentPost.tags.map((tag: string, index: number) => (
+                      <span
+                        key={index}
+                        className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -95,7 +95,7 @@ const topics = [
 ];
 
 export default function OnboardingModal() {
-  const { data: session, update } = useSession();
+  const { data: session, status, update } = useSession();
   const [gender, setGender] = useState('');
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -106,11 +106,21 @@ export default function OnboardingModal() {
   const [confetti, setConfetti] = useState<Array<{id: number, x: number, y: number, color: string, delay: number}>>([]);
 
   useEffect(() => {
+    console.log('=== ONBOARDING MODAL DEBUG ===');
     console.log('Session in OnboardingModal:', session);
     console.log('User data:', session?.user);
+    console.log('Auth status:', status);
+    console.log('ShowModal state:', showModal);
     
-    // Chỉ hiển thị modal khi đã đăng nhập và chưa onboarded
-    if (session?.user) {
+    // Không hiện modal khi đang loading
+    if (status === 'loading') {
+      console.log('Auth still loading, hiding modal');
+      setShowModal(false);
+      return;
+    }
+    
+    // Chỉ hiển thị modal khi đã đăng nhập (status === 'authenticated') và chưa onboarded
+    if (status === 'authenticated' && session?.user) {
       const onboarded = (session.user as any).onboarded;
       console.log('Onboarded status:', onboarded);
       
@@ -122,10 +132,10 @@ export default function OnboardingModal() {
         setShowModal(false);
       }
     } else {
-      console.log('Not authenticated or no user, hiding modal');
+      console.log('Not authenticated yet, hiding modal. Status:', status);
       setShowModal(false);
     }
-  }, [session]);
+  }, [session, status]);
 
   const handleTopicToggle = (topicId: string) => {
     const isSelected = selectedTopics.includes(topicId);
@@ -188,11 +198,11 @@ export default function OnboardingModal() {
     setLoading(true);
     try {
       // Gọi trực tiếp đến backend server
-      // await axios.post(`http://localhost:5000/api/users/onboarding`, {
-      //   email: session?.user?.email,
-      //   gender: gender.trim(),
-      //   topics: selectedTopics.join(','),
-      // });
+      await axios.post(`http://localhost:5001/api/users/onboarding`, {
+        email: session?.user?.email,
+        gender: gender.trim(),
+        topics: selectedTopics.join(','),
+      });
       
       playSound('success');
       

@@ -1,10 +1,33 @@
+/*
+  Warnings:
+
+  - You are about to alter the column `userId` on the `Account` table. The data in that column could be lost. The data in that column will be cast from `VarChar(191)` to `Int`.
+  - You are about to alter the column `userId` on the `Session` table. The data in that column could be lost. The data in that column will be cast from `VarChar(191)` to `Int`.
+  - You are about to drop the `User` table. If the table is not empty, all the data it contains will be lost.
+
+*/
+-- DropForeignKey
+ALTER TABLE `Account` DROP FOREIGN KEY `Account_userId_fkey`;
+
+-- DropForeignKey
+ALTER TABLE `Session` DROP FOREIGN KEY `Session_userId_fkey`;
+
+-- AlterTable
+ALTER TABLE `Account` MODIFY `userId` INTEGER NOT NULL;
+
+-- AlterTable
+ALTER TABLE `Session` MODIFY `userId` INTEGER NOT NULL;
+
+-- DropTable
+DROP TABLE `User`;
+
 -- CreateTable
 CREATE TABLE `comments` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `user_id` INTEGER NOT NULL,
     `post_id` INTEGER NOT NULL,
     `content` TEXT NOT NULL,
-    `createdAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `createdAt` DATETIME(0) NOT NULL,
     `updatedAt` DATETIME(0) NOT NULL,
 
     INDEX `post_id`(`post_id`),
@@ -91,27 +114,21 @@ CREATE TABLE `sequelizemeta` (
 -- CreateTable
 CREATE TABLE `users` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `username` VARCHAR(50) NOT NULL,
+    `username` VARCHAR(50) NULL,
     `email` VARCHAR(100) NOT NULL,
-    `password` VARCHAR(255) NOT NULL,
+    `password` VARCHAR(255) NULL,
     `bio` TEXT NULL,
     `avatar_url` VARCHAR(255) NULL,
-    `createdAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
-    `updatedAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
-    `onboarded` BOOLEAN NOT NULL DEFAULT true,
+    `createdAt` DATETIME(0) NOT NULL,
+    `updatedAt` DATETIME(0) NOT NULL,
+    `onboarded` BOOLEAN NOT NULL DEFAULT false,
+    `gender` VARCHAR(50) NULL,
+    `topics` TEXT NULL,
+    `emailVerified` DATETIME(3) NULL,
+    `image` VARCHAR(255) NULL,
 
     UNIQUE INDEX `username`(`username`),
     UNIQUE INDEX `email`(`email`),
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `banned_keywords` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `word` VARCHAR(191) NOT NULL,
-    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-
-    UNIQUE INDEX `banned_keywords_word_key`(`word`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -141,3 +158,9 @@ ALTER TABLE `messages` ADD CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`receiver_i
 
 -- AddForeignKey
 ALTER TABLE `notifications` ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Account` ADD CONSTRAINT `Account_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Session` ADD CONSTRAINT `Session_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

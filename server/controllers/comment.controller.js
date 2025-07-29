@@ -23,7 +23,41 @@ exports.getCommentById = async (req, res) => {
 
 exports.createComment = async (req, res) => {
     try {
-        const newComment = await prisma.comment.create({ data: req.body });
+        const { user_id, post_id, content, parent_id } = req.body;
+
+        const newComment = await prisma.comment.create({
+            data: {
+                user_id,
+                post_id,
+                content,
+                parent_id: parent_id || null,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            }
+        });
+
+        // Tạo notification cho chủ post hoặc chủ comment cha
+        let targetUserId = null;
+        if (parent_id) {
+            const parentComment = await prisma.comment.findUnique({ where: { id: parent_id } });
+            targetUserId = parentComment?.user_id;
+        } else {
+            const post = await prisma.posts.findUnique({ where: { id: post_id } });
+            targetUserId = post?.user_id;
+        }
+        if (targetUserId && targetUserId !== user_id) {
+            await prisma.notification.create({
+                data: {
+                    user_id: targetUserId,
+                    type: 'comment',
+                    content: `User ${user_id} đã bình luận vào nội dung của bạn.`,
+                    is_read: false,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                }
+            });
+        }
+
         res.status(201).json(newComment);
     } catch (error) {
         res.status(400).json({ message: 'Error creating comment', error });
@@ -48,5 +82,51 @@ exports.deleteComment = async (req, res) => {
         res.status(200).json({ message: 'Comment deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error deleting comment', error });
+    }
+};
+
+exports.getCommentsByPostId = async (req, res) => {
+    try {
+        const post_id = Number(req.params.post_id);
+
+        //comment gốc
+        const comments = await prisma.comment.findMany({
+            where: {
+                post_id,
+                parent_id: null
+            },
+            include: {
+                replies: true //  (comment con)
+            },
+            orderBy: {
+                createdAt: 'asc'
+            }
+        });
+
+        res.status(200).json(comments);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching comments', error });
+    }
+};
+
+exports.getAllNotifications = async (req, res) => {
+    try {
+        const notifications = await prisma.notification.findMany();
+        res.status(200).json(notifications);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching notifications', error });
+    }
+};
+
+exports.getNotificationsByUser = async (req, res) => {
+    try {
+        const user_id = Number(req.params.user_id);
+        const notifications = await prisma.notification.findMany({
+            where: { user_id },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.status(200).json(notifications);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching notifications', error });
     }
 };

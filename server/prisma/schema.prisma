@@ -14,11 +14,17 @@ model comments {
   content   String   @db.Text
   createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @db.DateTime(0)
+  parent_id Int?     
+
   users     users?   @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "comments_ibfk_1")
   posts     posts?   @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "comments_ibfk_2")
 
+  parent    comments?  @relation("CommentToReplies", fields: [parent_id], references: [id])
+  replies   comments[] @relation("CommentToReplies")
+
   @@index([post_id], map: "post_id")
   @@index([user_id], map: "user_id")
+  @@index([parent_id])
 }
 
 model follows {
@@ -130,14 +136,20 @@ model sequelizemeta {
 
 model users {
   id                                   Int             @id @default(autoincrement())
-  username                             String          @unique @db.VarChar(50)
+  username                             String?         @unique(map: "username") @db.VarChar(50)
   email                                String          @unique(map: "email") @db.VarChar(100)
-  password                             String          @db.VarChar(255)
+  password                             String?         @db.VarChar(255)
   bio                                  String?         @db.Text
   avatar_url                           String?         @db.VarChar(255)
   createdAt                            DateTime        @default(now()) @db.DateTime(0)
   updatedAt                            DateTime        @default(now()) @db.DateTime(0)
-  onboarded                            Boolean         @default(true)
+  onboarded                            Boolean         @default(false)
+  gender                               String?         @db.VarChar(50)
+  topics                               String?         @db.Text
+  emailVerified                        DateTime?
+  image                                String?         @db.VarChar(255)
+  Account                              Account[]
+  Session                              Session[]
   comments                             comments[]
   follows_follows_follower_idTousers   follows[]       @relation("follows_follower_idTousers")
   follows_follows_following_idTousers  follows[]       @relation("follows_following_idTousers")
@@ -145,6 +157,43 @@ model users {
   messages_messages_sender_idTousers   messages[]      @relation("messages_sender_idTousers")
   messages_messages_receiver_idTousers messages[]      @relation("messages_receiver_idTousers")
   notifications                        notifications[]
+}
+
+model Account {
+  id                String  @id
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  users             users   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId], map: "Account_userId_fkey")
+}
+
+model Session {
+  id           String   @id
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+  users        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "Session_userId_fkey")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model banned_keywords {

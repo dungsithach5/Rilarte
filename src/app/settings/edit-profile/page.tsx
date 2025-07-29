@@ -2,20 +2,38 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useSession } from "next-auth/react";
 
 export default function EditProfile() {
   const { session, status } = useAuth(true);
+  const { update } = useSession();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  const [name, setName] = useState("");
-  const [bio, setBio] = useState("");
-  const [username, setUsername] = useState("");
+  const [formData, setFormData] = useState({
+    name: "",
+    bio: "",
+    username: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: "", text: "" });
+
+  useEffect(() => {
+    if (session?.user) {
+      setFormData({
+        name: session.user.name || "",
+        bio: (session.user as any).bio || "",
+        username: (session.user as any).username || "",
+      });
+      setPreviewUrl(session.user.image || null);
+    }
+  }, [session]);
 
   useEffect(() => {
     if (!selectedFile) {
-      setPreviewUrl(null);
       return;
     }
 
@@ -27,93 +45,225 @@ export default function EditProfile() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setMessage({ type: "error", text: "Please select an image file!" });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage({ type: "error", text: "Image size must be less than 5MB!" });
+        return;
+      }
+
+      setSelectedFile(file);
+      setMessage({ type: "", text: "" });
     }
   };
 
-  const handleSubmit = () => {
-    console.log({
-      name,
-      bio,
-      username,
-      avatar: selectedFile,
-    });
-    alert("Profile updated!");
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  if (status === "loading") return <div>Loading...</div>;
+  const handleSubmit = async () => {
+    setLoading(true);
+    setMessage({ type: "", text: "" });
+
+    try {
+      // Validate required fields
+      if (!formData.name.trim()) {
+        setMessage({ type: "error", text: "Name is required!" });
+        return;
+      }
+
+      if (!formData.username.trim()) {
+        setMessage({ type: "error", text: "Username is required!" });
+        return;
+      }
+
+      // TODO: Upload image if selected
+      if (selectedFile) {
+        setUploading(true);
+        // Simulate image upload
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setUploading(false);
+      }
+
+      // TODO: Call API to update profile
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      
+      setMessage({ type: "success", text: "Profile updated successfully!" });
+      
+      // Update session
+      await update();
+      
+    } catch (error) {
+      setMessage({ type: "error", text: "Failed to update profile!" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedFile(null);
+    setPreviewUrl(session?.user?.image || null);
+  };
+
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
   if (!session) return null;
 
   return (
-    <section className="max-w-xl mx-auto">
-      <div className="space-y-6">
-        <h2 className="text-2xl font-semibold text-gray-800">Edit Profile</h2>
+    <div className="p-6">
+      <div className="space-y-8">
 
-        {/* Avatar */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-600">Avatar</label>
-          <div className="flex items-center gap-4">
-            <img
-              src={previewUrl || session.user?.image || "/img/user.png"}
-              alt="Avatar Preview"
-              className="h-20 w-20 rounded-full object-cover border"
-            />
-            <div>
-              <label
-                htmlFor="avatar-upload"
-                className="inline-block bg-gray-100 text-sm text-gray-700 px-4 py-2 rounded-lg cursor-pointer hover:bg-gray-200 transition"
-              >
-                Change Avatar
-              </label>
-              <input
-                id="avatar-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
+        {/* Message */}
+        {message.text && (
+          <div className={`p-4 rounded-lg ${
+            message.type === "success" 
+              ? "bg-green-50 text-green-800 border border-green-200" 
+              : "bg-red-50 text-red-800 border border-red-200"
+          }`}>
+            {message.text}
+          </div>
+        )}
+
+        {/* Profile Form */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+          {/* Avatar Section */}
+          <div className="space-y-4">
+            <label className="block text-sm font-medium text-gray-700">Profile Picture</label>
+            
+            <div className="flex items-center gap-6">
+              {/* Avatar Preview */}
+              <div className="relative">
+                <img
+                  src={previewUrl || "/img/user.png"}
+                  alt="Avatar Preview"
+                  className="h-24 w-24 rounded-full object-cover border-4 border-gray-200 shadow-lg"
+                />
+                {uploading && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                  </div>
+                )}
+              </div>
+
+              {/* Upload Controls */}
+              <div className="space-y-3">
+                <div>
+                  <label
+                    htmlFor="avatar-upload"
+                    className="inline-block bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    {uploading ? "Uploading..." : "Change Picture"}
+                  </label>
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    disabled={uploading}
+                  />
+                </div>
+                
+                {previewUrl && previewUrl !== session.user?.image && (
+                  <button
+                    onClick={removeImage}
+                    className="text-red-600 text-sm hover:text-red-700 transition-colors duration-200"
+                  >
+                    Remove
+                  </button>
+                )}
+                
+                <p className="text-xs text-gray-500">
+                  JPG, PNG or GIF. Max size 5MB.
+                </p>
+              </div>
             </div>
+          </div>
+
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Display Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="Enter your display name"
+              maxLength={50}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {formData.name.length}/50 characters
+            </p>
+          </div>
+
+          {/* Username */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Username <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleInputChange}
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="Enter your username"
+              maxLength={30}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {formData.username.length}/30 characters. Only letters, numbers, and underscores.
+            </p>
+          </div>
+
+          {/* Bio */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+            <textarea
+              name="bio"
+              value={formData.bio}
+              onChange={handleInputChange}
+              rows={4}
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+              placeholder="Tell us about yourself..."
+              maxLength={200}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {formData.bio.length}/200 characters
+            </p>
           </div>
         </div>
 
-        {/* Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">Name</label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-black"
-          />
+        {/* Save Button */}
+        <div className="flex justify-end">
+          <button
+            onClick={handleSubmit}
+            disabled={loading || uploading}
+            className="bg-blue-600 text-white text-sm font-semibold py-3 px-8 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-2"
+          >
+            {loading && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            )}
+            {loading ? "Saving..." : "Save Changes"}
+          </button>
         </div>
-
-        {/* Bio */}
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">Bio</label>
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-black"
-          />
-        </div>
-
-        {/* Username */}
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">Username</label>
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-black"
-          />
-        </div>
-
-        {/* Submit */}
-        <button
-          onClick={handleSubmit}
-          className="mt-4 bg-black text-white text-sm font-semibold py-2 px-4 rounded-full hover:bg-gray-800 transition cursor-pointer"
-        >
-          Save Changes
-        </button>
       </div>
-    </section>
+    </div>
   );
 }

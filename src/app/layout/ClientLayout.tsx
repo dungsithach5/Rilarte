@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { NavBar } from './NavBar';
 import BottomBar from './BottomBar';
+import OnboardingModal from '../@/components/OnboardingModal';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -13,6 +14,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {!isAuthPage && <NavBar />}
       <main className="flex-1">{children}</main>
       {!isAuthPage && <BottomBar />}
+      {/* <OnboardingModal /> */}
     </>
   );
 }

@@ -8,8 +8,35 @@ function getRandomHeight(min = 250, max = 500) {
 
 async function main() {
   // Xóa dữ liệu cũ
+  await prisma.post_tags.deleteMany();
+  await prisma.tags.deleteMany();
   await prisma.posts.deleteMany();
   await prisma.users.deleteMany();
+
+  // Tạo danh sách tags mặc định
+  const defaultTags = ["art", "nature", "photography", "design", "travel", "abstract", "modern", "life", "street", "portrait"];
+
+  for (const name of defaultTags) {
+    await prisma.tags.upsert({
+      where: { name },
+      update: {},
+      create: {
+        name,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  // Lấy lại danh sách tags sau khi tạo
+  const tagRecords = await prisma.tags.findMany();
+  const tagIds = tagRecords.map((tag) => tag.id);
+
+  function getRandomTagIds() {
+    const shuffled = [...tagIds].sort(() => 0.5 - Math.random());
+    const count = Math.floor(Math.random() * 4) + 1; // 1–4 tags
+    return shuffled.slice(0, count);
+  }
 
   const users = [];
 
@@ -30,13 +57,13 @@ async function main() {
     users.push(user);
   }
 
-  // Fake 100 posts
+  // Fake 20 posts
   for (let i = 0; i < 20; i++) {
     const randomUser = users[Math.floor(Math.random() * users.length)];
     const randomHeight = getRandomHeight();
 
-
-    await prisma.posts.create({
+    // Tạo post
+    const post = await prisma.posts.create({
       data: {
         user_name: randomUser.username,
         title: faker.lorem.sentence(),
@@ -46,12 +73,20 @@ async function main() {
         updatedAt: new Date(),
       },
     });
+
+    const randomTagIds = getRandomTagIds();
+    for (const tagId of randomTagIds) {
+      await prisma.post_tags.create({
+        data: {
+          post_id: post.id,
+          tag_id: tagId,
+        },
+      });
+    }
   }
 
-
-  console.log('✅ Đã seed xong 10 users và 100 posts (ảnh random masonry)!');
+  console.log('✅ Đã seed xong 10 users, 20 posts và gán tags!');
 }
-
 
 main()
   .catch((e) => {

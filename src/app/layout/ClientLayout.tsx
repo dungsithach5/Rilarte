@@ -14,7 +14,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {!isAuthPage && <NavBar />}
       <main className="flex-1">{children}</main>
       {!isAuthPage && <BottomBar />}
-      <OnboardingModal />
+      {/* <OnboardingModal /> */}
     </>
   );
 }

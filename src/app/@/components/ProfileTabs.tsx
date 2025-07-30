@@ -23,8 +23,7 @@ const breakpointColumnsObj = {
 export default function ProfileTabs() {
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
-  const { user } = useAuth(true);
-  const { session } = useAuth(true);
+  const { user, session } = useAuth(true);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -97,7 +96,7 @@ export default function ProfileTabs() {
               <ComposerComment
                 key={post.id}
                 post={post}
-                currentUserId={session?.user?.id}
+                currentUserId={session?.user?.id ? Number(session.user.id) : undefined}
                 onDelete={handleDeletePost}
               />
             ))}

@@ -25,8 +25,7 @@ export default function Home() {
   const [searchInput, setSearchInput] = useState("");
   const [bannedKeywords, setBannedKeywords] = useState<string[]>([]);
   const [violation, setViolation] = useState(false);
-  const { user } = useAuth(true);
-  const { session, status } = useAuth(true);
+  const { user, session, status } = useAuth(true);
   
 
   // Load banned keywords once
@@ -206,7 +205,7 @@ export default function Home() {
               <ComposerComment
                 key={post.id}
                 post={post}
-                currentUserId={session?.user?.id}
+                currentUserId={session?.user?.id ? Number(session.user.id) : undefined}
                 onDelete={handleDeletePost}
               />
             ))}

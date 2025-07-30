@@ -176,16 +176,26 @@ export default function OnboardingModal() {
       console.log('Not authenticated yet, hiding modal. Status:', status);
       setShowModal(false);
     }
-  }, [session, status, reduxUser]);
+  }, [session?.user?.onboarded, session?.user?.email, status, reduxUser?.onboarded, reduxUser?.email]);
 
   const handleTopicToggle = (topicId: string) => {
     const isSelected = selectedTopics.includes(topicId);
-    setSelectedTopics(prev => 
-      isSelected
-        ? prev.filter(id => id !== topicId)
-        : [...prev, topicId]
-    );
-    playSound(isSelected ? 'click' : 'select');
+    
+    if (isSelected) {
+      // Nếu đã chọn thì bỏ chọn
+      setSelectedTopics(prev => prev.filter(id => id !== topicId));
+      playSound('click');
+    } else {
+      // Nếu chưa chọn và chưa đạt giới hạn 3 topics
+      if (selectedTopics.length < 3) {
+        setSelectedTopics(prev => [...prev, topicId]);
+        playSound('select');
+      } else {
+        // Đã đạt giới hạn 3 topics
+        playSound('error');
+        alert('Bạn chỉ có thể chọn tối đa 3 topics!');
+      }
+    }
   };
 
   const handleNext = () => {
@@ -230,9 +240,21 @@ export default function OnboardingModal() {
   };
 
   const handleSubmit = async () => {
-    if (!gender.trim() || selectedTopics.length === 0) {
+    if (!gender.trim()) {
       playSound('error');
-      alert('Please fill in all information!');
+      alert('Please select your gender!');
+      return;
+    }
+    
+    if (selectedTopics.length === 0) {
+      playSound('error');
+      alert('Please select at least 1 topic!');
+      return;
+    }
+    
+    if (selectedTopics.length > 3) {
+      playSound('error');
+      alert('You can only select up to 3 topics!');
       return;
     }
 
@@ -463,7 +485,12 @@ export default function OnboardingModal() {
             <div className="space-y-6 animate-scale-in">
               <div className="text-center">
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Interests</h3>
-                <p className="text-gray-600">Select topics youre interested in (you can choose multiple)</p>
+                <p className="text-gray-600">Select topics you're interested in (choose up to 3)</p>
+                <div className="mt-2 text-sm text-gray-500">
+                  <span className={`font-medium ${selectedTopics.length >= 3 ? 'text-red-500' : 'text-blue-600'}`}>
+                    {selectedTopics.length}/3 topics selected
+                  </span>
+                </div>
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -471,9 +498,12 @@ export default function OnboardingModal() {
                   <button
                     key={topic.id}
                     onClick={() => handleTopicToggle(topic.id)}
+                    disabled={!selectedTopics.includes(topic.id) && selectedTopics.length >= 3}
                     className={`relative p-4 rounded-2xl border-2 transition-all duration-300 overflow-hidden group h-32 transform hover:scale-105 ${
                       selectedTopics.includes(topic.id)
                         ? 'border-gray-800 ring-2 ring-gray-200 shadow-lg'
+                        : !selectedTopics.includes(topic.id) && selectedTopics.length >= 3
+                        ? 'border-gray-200 opacity-50 cursor-not-allowed'
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                     }`}>
                     {/* Loading Skeleton */}

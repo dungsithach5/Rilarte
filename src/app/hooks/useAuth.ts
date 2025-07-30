@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { useSelector } from "react-redux"
 
 export function useAuth(requireAuth = true) {
@@ -12,7 +12,14 @@ export function useAuth(requireAuth = true) {
   const userRedux = useSelector((state: any) => state.user)
 
   // Ưu tiên user từ Redux nếu có token (login thường)
-  const user = userRedux && userRedux.token ? userRedux : session?.user
+  const user = useMemo(() => {
+    return userRedux && userRedux.token ? userRedux : session?.user
+  }, [userRedux?.token, session?.user])
+
+  // Check if user is authenticated
+  const isAuthenticated = useMemo(() => {
+    return !!(user || (userRedux && userRedux.token))
+  }, [user, userRedux?.token])
 
   useEffect(() => {
     // Debug log
@@ -22,12 +29,13 @@ export function useAuth(requireAuth = true) {
     console.log('UserRedux:', userRedux);
     console.log('User:', user);
     console.log('RequireAuth:', requireAuth);
+    console.log('IsAuthenticated:', isAuthenticated);
     
-    if (requireAuth && !user && !userRedux?.token) {
+    if (requireAuth && !isAuthenticated) {
       console.log('Redirecting to auth - no user found');
       router.push("/auth")
     }
-  }, [requireAuth, user, userRedux, router])
+  }, [requireAuth, isAuthenticated, router, status])
 
-  return { user, session, status }
+  return { user, session, status, isAuthenticated }
 }

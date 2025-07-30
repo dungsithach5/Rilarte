@@ -269,7 +269,7 @@ export default function OnboardingModal() {
       console.log('Onboarding request data:', requestData);
       
       // Gọi trực tiếp đến backend server
-      await axios.post(`http://localhost:5001/api/users/onboarding`, requestData);
+      await axios.post(`http://localhost:5000/api/users/onboarding`, requestData);
       
       // Cập nhật localStorage để tránh modal hiện lại khi refresh
       const currentUser = localStorage.getItem('user');
@@ -485,7 +485,7 @@ export default function OnboardingModal() {
             <div className="space-y-6 animate-scale-in">
               <div className="text-center">
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Interests</h3>
-                <p className="text-gray-600">Select topics you're interested in (choose up to 3)</p>
+                <p className="text-gray-600">Select topics youre interested in (choose up to 3)</p>
                 <div className="mt-2 text-sm text-gray-500">
                   <span className={`font-medium ${selectedTopics.length >= 3 ? 'text-red-500' : 'text-blue-600'}`}>
                     {selectedTopics.length}/3 topics selected

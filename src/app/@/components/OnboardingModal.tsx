@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { useSelector } from 'react-redux';
 import axios from 'axios';
 
 // Loading skeleton component with improved design
@@ -95,7 +96,8 @@ const topics = [
 ];
 
 export default function OnboardingModal() {
-  const { data: session, update } = useSession();
+  const { data: session, status, update } = useSession();
+  const reduxUser = useSelector((state: any) => state.user.user);
   const [gender, setGender] = useState('');
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -106,14 +108,63 @@ export default function OnboardingModal() {
   const [confetti, setConfetti] = useState<Array<{id: number, x: number, y: number, color: string, delay: number}>>([]);
 
   useEffect(() => {
+    console.log('=== ONBOARDING MODAL DEBUG ===');
     console.log('Session in OnboardingModal:', session);
     console.log('User data:', session?.user);
+    console.log('Auth status:', status);
+    console.log('Redux user:', reduxUser);
+    console.log('ShowModal state:', showModal);
+    console.log('Session keys:', session ? Object.keys(session) : 'No session');
+    console.log('User keys:', session?.user ? Object.keys(session.user) : 'No user');
+    
+    // Check localStorage trực tiếp
+    const localStorageUser = localStorage.getItem('user');
+    console.log('LocalStorage user:', localStorageUser ? JSON.parse(localStorageUser) : 'No localStorage user');
+    
+    // Clear localStorage nếu user khác hoặc onboarded undefined
+    if (localStorageUser) {
+      const user = JSON.parse(localStorageUser);
+      if (user.onboarded === undefined || user.onboarded === null) {
+        console.log('Clearing localStorage with invalid onboarded status');
+        localStorage.removeItem('user');
+      }
+    }
+    
+    // Không hiện modal khi đang loading
+    if (status === 'loading') {
+      console.log('Auth still loading, hiding modal');
+      setShowModal(false);
+      return;
+    }
+    
+    // Check onboarded status từ NextAuth, Redux, hoặc localStorage
+    let onboarded = null;
+    let userEmail = null;
+    
+    if (status === 'authenticated' && session?.user) {
+      // NextAuth session
+      onboarded = (session.user as any).onboarded;
+      userEmail = session.user.email;
+      console.log('Using NextAuth session data');
+    } else if (reduxUser) {
+      // Redux store (login thường)
+      onboarded = reduxUser.onboarded;
+      userEmail = reduxUser.email;
+      console.log('Using Redux store data');
+    } else if (localStorageUser) {
+      // LocalStorage (fallback)
+      const user = JSON.parse(localStorageUser);
+      onboarded = user.onboarded;
+      userEmail = user.email;
+      console.log('Using localStorage data');
+    }
+    
+    console.log('Onboarded status:', onboarded);
+    console.log('Onboarded type:', typeof onboarded);
+    console.log('User email:', userEmail);
     
     // Chỉ hiển thị modal khi đã đăng nhập và chưa onboarded
-    if (session?.user) {
-      const onboarded = (session.user as any).onboarded;
-      console.log('Onboarded status:', onboarded);
-      
+    if ((status === 'authenticated' && session?.user) || reduxUser || localStorageUser) {
       if (onboarded === false || onboarded === null || onboarded === undefined) {
         console.log('Showing onboarding modal');
         setShowModal(true);
@@ -122,19 +173,29 @@ export default function OnboardingModal() {
         setShowModal(false);
       }
     } else {
-      console.log('Not authenticated or no user, hiding modal');
+      console.log('Not authenticated yet, hiding modal. Status:', status);
       setShowModal(false);
     }
-  }, [session]);
+  }, [session?.user?.onboarded, session?.user?.email, status, reduxUser?.onboarded, reduxUser?.email]);
 
   const handleTopicToggle = (topicId: string) => {
     const isSelected = selectedTopics.includes(topicId);
-    setSelectedTopics(prev => 
-      isSelected
-        ? prev.filter(id => id !== topicId)
-        : [...prev, topicId]
-    );
-    playSound(isSelected ? 'click' : 'select');
+    
+    if (isSelected) {
+      // Nếu đã chọn thì bỏ chọn
+      setSelectedTopics(prev => prev.filter(id => id !== topicId));
+      playSound('click');
+    } else {
+      // Nếu chưa chọn và chưa đạt giới hạn 3 topics
+      if (selectedTopics.length < 3) {
+        setSelectedTopics(prev => [...prev, topicId]);
+        playSound('select');
+      } else {
+        // Đã đạt giới hạn 3 topics
+        playSound('error');
+        alert('Bạn chỉ có thể chọn tối đa 3 topics!');
+      }
+    }
   };
 
   const handleNext = () => {
@@ -179,20 +240,50 @@ export default function OnboardingModal() {
   };
 
   const handleSubmit = async () => {
-    if (!gender.trim() || selectedTopics.length === 0) {
+    if (!gender.trim()) {
       playSound('error');
-      alert('Please fill in all information!');
+      alert('Please select your gender!');
+      return;
+    }
+    
+    if (selectedTopics.length === 0) {
+      playSound('error');
+      alert('Please select at least 1 topic!');
+      return;
+    }
+    
+    if (selectedTopics.length > 3) {
+      playSound('error');
+      alert('You can only select up to 3 topics!');
       return;
     }
 
     setLoading(true);
     try {
+      // Debug log
+      const requestData = {
+        email: session?.user?.email || reduxUser?.email,
+        gender: gender.trim(),
+        topics: selectedTopics.join(','),
+      };
+      console.log('Onboarding request data:', requestData);
+      
       // Gọi trực tiếp đến backend server
-      // await axios.post(`http://localhost:5000/api/users/onboarding`, {
-      //   email: session?.user?.email,
-      //   gender: gender.trim(),
-      //   topics: selectedTopics.join(','),
-      // });
+      await axios.post(`http://localhost:5001/api/users/onboarding`, requestData);
+      
+      // Cập nhật localStorage để tránh modal hiện lại khi refresh
+      const currentUser = localStorage.getItem('user');
+      if (currentUser) {
+        const user = JSON.parse(currentUser);
+        const updatedUser = {
+          ...user,
+          onboarded: true,
+          gender: gender.trim(),
+          topics: selectedTopics.join(',')
+        };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        console.log('Updated localStorage user:', updatedUser);
+      }
       
       playSound('success');
       
@@ -394,7 +485,12 @@ export default function OnboardingModal() {
             <div className="space-y-6 animate-scale-in">
               <div className="text-center">
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Interests</h3>
-                <p className="text-gray-600">Select topics youre interested in (you can choose multiple)</p>
+                <p className="text-gray-600">Select topics you're interested in (choose up to 3)</p>
+                <div className="mt-2 text-sm text-gray-500">
+                  <span className={`font-medium ${selectedTopics.length >= 3 ? 'text-red-500' : 'text-blue-600'}`}>
+                    {selectedTopics.length}/3 topics selected
+                  </span>
+                </div>
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -402,9 +498,12 @@ export default function OnboardingModal() {
                   <button
                     key={topic.id}
                     onClick={() => handleTopicToggle(topic.id)}
+                    disabled={!selectedTopics.includes(topic.id) && selectedTopics.length >= 3}
                     className={`relative p-4 rounded-2xl border-2 transition-all duration-300 overflow-hidden group h-32 transform hover:scale-105 ${
                       selectedTopics.includes(topic.id)
                         ? 'border-gray-800 ring-2 ring-gray-200 shadow-lg'
+                        : !selectedTopics.includes(topic.id) && selectedTopics.length >= 3
+                        ? 'border-gray-200 opacity-50 cursor-not-allowed'
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                     }`}>
                     {/* Loading Skeleton */}

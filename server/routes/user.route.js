@@ -184,12 +184,21 @@ router.post('/onboarding', async (req, res) => {
     }
 
     // Tìm user theo email
-    const user = await prisma.users.findUnique({ where: { email } });
+    let user = await prisma.users.findUnique({ where: { email } });
+    
+    // Nếu user chưa tồn tại, tạo user mới (fallback)
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Không tìm thấy user' 
+      console.log('User not found, creating new user for onboarding:', email);
+      user = await prisma.users.create({
+        data: {
+          email,
+          username: email.split('@')[0], // Tạo username từ email
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          onboarded: false,
+        }
       });
+      console.log('New user created for onboarding:', user.id);
     }
 
     // Cập nhật thông tin onboarding

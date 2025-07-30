@@ -25,6 +25,7 @@ export default function Home() {
   const [searchInput, setSearchInput] = useState("");
   const [bannedKeywords, setBannedKeywords] = useState<string[]>([]);
   const [violation, setViolation] = useState(false);
+  const { user, session, status } = useAuth(true);
   const [popularTags, setPopularTags] = useState<string[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const { user } = useAuth(true);
@@ -125,7 +126,7 @@ export default function Home() {
 
   const handleDeletePost = async (postId: number) => {
     try {
-      await axios.delete(`http://localhost:5000/api/posts/${postId}`);
+              await axios.delete(`http://localhost:5001/api/posts/${postId}`);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
     } catch (err) {
       console.error("Error deleting post", err);
@@ -255,7 +256,7 @@ export default function Home() {
               <ComposerComment
                 key={post.id}
                 post={post}
-                currentUserId={session?.user?.id}
+                currentUserId={session?.user?.id ? Number(session.user.id) : undefined}
                 onDelete={handleDeletePost}
                 relatedPosts={filteredPosts.filter((p) => p.id !== post.id)}
               />

@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useSession } from "next-auth/react";
+import { useSelector } from "react-redux";
 
 export default function AccountSettings() {
   const { session, status } = useAuth(true);
   const { update } = useSession();
+  const reduxUser = useSelector((state: any) => state.user.user);
   
   const [formData, setFormData] = useState({
     email: "",
@@ -19,14 +21,17 @@ export default function AccountSettings() {
   const [message, setMessage] = useState({ type: "", text: "" });
 
   useEffect(() => {
-    if (session?.user) {
+    // Ưu tiên Redux user, fallback về NextAuth session
+    const currentUser = reduxUser || session?.user;
+    
+    if (currentUser) {
       setFormData(prev => ({
         ...prev,
-        email: session.user.email || "",
-        gender: (session.user as any).gender || "",
+        email: currentUser.email || "",
+        gender: (currentUser as any).gender || "",
       }));
     }
-  }, [session]);
+  }, [session, reduxUser]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -76,7 +81,7 @@ export default function AccountSettings() {
         await update({
           ...session,
           user: {
-            ...session?.user,
+            ...(session?.user || reduxUser),
             gender: formData.gender,
           }
         });
@@ -98,11 +103,11 @@ export default function AccountSettings() {
   const handleDeleteAccount = () => {
     if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
       // TODO: Implement account deletion
-      alert("Account deletion feature coming soon!");
+      console.log("Account deletion requested");
     }
   };
 
-  if (status === "loading") {
+  if (status === "loading" && !reduxUser) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -110,7 +115,7 @@ export default function AccountSettings() {
     );
   }
 
-  if (!session) return null;
+  if (!reduxUser && !session) return null;
 
   return (
     <div className="p-6">

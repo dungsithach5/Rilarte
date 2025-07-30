@@ -2,7 +2,7 @@ import { useState } from "react"
 import axios from "axios"
 
 const HUGGINGFACE_API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
-const HUGGINGFACE_API_TOKEN = process.env.NEXT_PUBLIC_HF_API_KEY
+const HUGGINGFACE_API_TOKEN = process.env.HF_API_TOKEN
 
 export function AiLogo({ imageUrl }: { imageUrl: string }) {
   const [loading, setLoading] = useState(false)

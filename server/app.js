@@ -7,10 +7,10 @@ const path = require('path');
 dotenv.config();
 
 const app = express();
-const PORT = 5001;
+const PORT = 5000;
 
 const corsOptions = {
-  origin: 'http://localhost:3000', 
+  origin: ['http://localhost:3000'], 
   credentials: true,
   optionsSuccessStatus: 200
 };

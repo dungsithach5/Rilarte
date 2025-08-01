@@ -230,7 +230,7 @@ export function ComposerComment({ post, currentUserId, onDelete }: ComposerComme
               className="object-contain h-full"
             />
             <AiLogo imageUrl={post.image_url} />
-            <ZoomImage image={post.image_url} />
+            {/* <ZoomImage image={post.image_url} /> */}
           </div>
         </DialogHeader>
 

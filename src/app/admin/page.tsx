@@ -10,15 +10,15 @@ import {
   SidebarProvider,
 } from "../@/components/ui-admin/sidebar"
 
+import { getAllReports } from "../services/Api/report"
+
 export default function Page() {
   const [data, setData] = useState([])
 
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/reports")
-
-        const reports = res.data
+        const reports = await getAllReports()
         const formatted = reports.map((r: any) => ({
           id: r.id,
           post_id: r.post_id,

@@ -87,6 +87,9 @@ import {
   TabsTrigger,
 } from "../ui-admin/tabs"
 
+import { deletePost } from "../../../services/Api/posts"
+import { deleteReport } from "../../../services/Api/report"
+
 export const schema = z.object({
   id: z.number(),
   post_id: z.number(),      
@@ -203,8 +206,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
       const postId = row.original.post_id
       const handleAccept = async () => {
         try {
-          await axios.delete(`http://localhost:5000/api/posts/${postId}`)
-          
+          await deletePost(postId)
           window.location.reload()
           toast.success("Post deleted successfully!")
         } catch (error) {
@@ -216,12 +218,11 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
 
       const handleReject = async () => {
         try {
-          await axios.delete(`http://localhost:5000/api/reports/${reportId}`)
-
+          await deleteReport(reportId)
           window.location.reload()
-          toast.success('Report deleted successfully!')
+          toast.success('Report rejected successfully!')
         } catch (error) {
-          toast.error('Failed to delete report.')
+          toast.error('Failed to rejected report.')
           console.error(error)
         }
       }

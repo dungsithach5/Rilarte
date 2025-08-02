@@ -1,16 +1,43 @@
+"use client"
+
+import axios from "axios";
+import { useEffect, useState } from "react"
 import { AppSidebar } from "../@/components/admin-form/app-sidebar"
-// import { ChartAreaInteractive } from "../@/components/admin-form/chart-area-interactive"
 import { DataTable } from "../@/components/admin-form/data-table"
-// import { SectionCards } from "../@/components/admin-form/section-cards"
 import { SiteHeader } from "../@/components/admin-form/site-header"
 import {
   SidebarInset,
   SidebarProvider,
 } from "../@/components/ui-admin/sidebar"
 
-import data from "./data.json"
-
 export default function Page() {
+  const [data, setData] = useState([])
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/reports")
+
+        const reports = res.data
+        const formatted = reports.map((r: any) => ({
+          id: r.id,
+          post_id: r.post_id,
+          image: r.posts.image_url,
+          name: r.posts.user_name,
+          title: r.posts.title,
+          reason: r.reason,
+          status: r.resolved ? "Done" : "Report",
+          time: new Date(r.createdAt).toLocaleDateString(),
+        }))
+        setData(formatted)
+      } catch (err) {
+        console.error("Failed to fetch reports:", err)
+      }
+    }
+
+    fetchReports()
+  }, [])
+
   return (
     <SidebarProvider
       style={
@@ -26,10 +53,6 @@ export default function Page() {
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              {/* <SectionCards /> */}
-              <div className="px-4 lg:px-6">
-                {/* <ChartAreaInteractive /> */}
-              </div>
               <DataTable data={data} />
             </div>
           </div>

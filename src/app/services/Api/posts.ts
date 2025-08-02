@@ -6,3 +6,7 @@ export const fetchPosts = async (search: string) => {
   });
   return res.data;
 };
+
+export const deletePost = async (postId: number) => {
+  return await API.delete(`/posts/${postId}`)
+}

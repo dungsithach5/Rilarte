@@ -65,6 +65,7 @@ async function main() {
     // Tạo post
     const post = await prisma.posts.create({
       data: {
+        user_id: randomUser.id,
         user_name: randomUser.username,
         title: faker.lorem.sentence(),
         content: faker.lorem.paragraphs(2),

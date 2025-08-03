@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const auth = require('../middleware/auth');
 
 const {
     getAllLikes,
@@ -7,17 +8,22 @@ const {
     createLike,
     updateLike,
     deleteLike,
+    checkUserLike,
 } = require('../controllers/like.controller');
 
 router
     .route('/')
     .get(getAllLikes)
-    .post(createLike);
+    .post(auth, createLike);
+
+router
+    .route('/check')
+    .get(auth, checkUserLike);
 
 router
     .route('/:id')
     .get(getLikeById)
-    .put(updateLike)
-    .delete(deleteLike);
+    .put(auth, updateLike)
+    .delete(auth, deleteLike);
 
 module.exports = router;

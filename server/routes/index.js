@@ -3,6 +3,7 @@ module.exports = (app) => {
     app.use('/api/comments', require('./comment.route'))
     app.use('/api/posts', require('./post.route'));
     app.use('/api/likes', require('./like.route'));
+    app.use('/api/comment-likes', require('./commentLike.route'));
     app.use('/api/follows', require('./follow.route'));
     app.use('/api/messages', require('./message.route'));
     app.use('/api/notifications', require('./notification.route'));

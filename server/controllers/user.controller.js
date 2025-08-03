@@ -90,7 +90,7 @@ exports.register = async (req, res) => {
     }
 
     // Check if email already exists
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.users.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ 
         success: false, 
@@ -99,7 +99,7 @@ exports.register = async (req, res) => {
     }
 
     // Check if username already exists
-    const existingUsername = await prisma.user.findUnique({ where: { username } });
+    const existingUsername = await prisma.users.findUnique({ where: { username } });
     if (existingUsername) {
       return res.status(400).json({ 
         success: false, 
@@ -112,7 +112,7 @@ exports.register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Create user
-    const newUser = await prisma.user.create({
+    const newUser = await prisma.users.create({
       data: {
         username,
         email,
@@ -170,7 +170,7 @@ exports.login = async (req, res) => {
     }
 
     // Find user by email
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.users.findUnique({ where: { email } });
     if (!user) {
       return res.status(401).json({ 
         success: false, 
@@ -226,7 +226,7 @@ exports.login = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
+    const users = await prisma.users.findMany({
       select: {
         id: true,
         username: true,
@@ -249,38 +249,44 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+// Get user by ID (public info only)
 exports.getUserById = async (req, res) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: Number(req.params.id) },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        bio: true,
-        avatar_url: true,
-        createdAt: true
-      }
-    });
-    
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
-      });
+    try {
+        const userId = Number(req.params.id);
+        
+        const user = await prisma.users.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                username: true,
+                avatar: true,
+                name: true
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            user: {
+                id: user.id,
+                username: user.username,
+                avatar: user.avatar || '/img/user.png',
+                name: user.name || user.username
+            }
+        });
+    } catch (error) {
+        console.error('Error getting user by ID:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error getting user information' 
+        });
     }
-    
-    res.status(200).json({
-      success: true,
-      user
-    });
-  } catch (error) {
-    console.error('Get user error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Error fetching user' 
-    });
-  }
 };
 
 exports.updateUser = async (req, res) => {
@@ -291,7 +297,7 @@ exports.updateUser = async (req, res) => {
     // Remove password from update data if present
     delete updateData.password;
     
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await prisma.users.update({
       where: { id: Number(id) },
       data: updateData
     });
@@ -312,7 +318,7 @@ exports.updateUser = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
   try {
-    const deletedUser = await prisma.user.delete({
+    const deletedUser = await prisma.users.delete({
       where: { id: Number(req.params.id) }
     });
 
@@ -380,7 +386,7 @@ exports.onboarding = async (req, res) => {
     }
 
     // Tìm user theo email
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.users.findUnique({ where: { email } });
     if (!user) {
       return res.status(404).json({ 
         success: false, 
@@ -389,7 +395,7 @@ exports.onboarding = async (req, res) => {
     }
 
     // Cập nhật thông tin onboarding
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await prisma.users.update({
       where: { email },
       data: {
         gender,

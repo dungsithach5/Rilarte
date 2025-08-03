@@ -7,20 +7,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model comment_likes {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  comment_id Int
+  createdAt  DateTime @default(now()) @db.DateTime(0)
+  updatedAt  DateTime @default(now()) @db.DateTime(0)
+  comments   comments @relation(fields: [comment_id], references: [id], onDelete: Cascade)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, comment_id])
+  @@index([user_id])
+  @@index([comment_id])
+}
+
 model comments {
-  id        Int      @id @default(autoincrement())
+  id        Int             @id @default(autoincrement())
   user_id   Int
   post_id   Int
-  content   String   @db.Text
-  createdAt DateTime @default(now()) @db.DateTime(0)
-  updatedAt DateTime @db.DateTime(0)
-  parent_id Int?     
-
-  users     users?   @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "comments_ibfk_1")
-  posts     posts?   @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "comments_ibfk_2")
-
-  parent    comments?  @relation("CommentToReplies", fields: [parent_id], references: [id])
-  replies   comments[] @relation("CommentToReplies")
+  content   String          @db.Text
+  createdAt DateTime        @default(now()) @db.DateTime(0)
+  updatedAt DateTime        @db.DateTime(0)
+  parent_id Int?
+  likes     comment_likes[]
+  users     users           @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "comments_ibfk_1")
+  posts     posts           @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "comments_ibfk_2")
+  parent    comments?       @relation("CommentToReplies", fields: [parent_id], references: [id])
+  replies   comments[]      @relation("CommentToReplies")
 
   @@index([post_id], map: "post_id")
   @@index([user_id], map: "user_id")
@@ -44,8 +57,8 @@ model likes {
   id        Int      @id @default(autoincrement())
   user_id   Int
   post_id   Int
-  createdAt DateTime @db.DateTime(0)
-  updatedAt DateTime @db.DateTime(0)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  updatedAt DateTime @default(now()) @db.DateTime(0)
   users     users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "likes_ibfk_1")
   posts     posts    @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "likes_ibfk_2")
 
@@ -91,16 +104,15 @@ model posts {
   updatedAt      DateTime        @db.DateTime(0)
   comments       comments[]
   likes          likes[]
+  postTags       post_tags[]
   relatedPosts   related_posts[] @relation("PostToRelated")
   relatedToPosts related_posts[] @relation("RelatedToPost")
-  postTags       post_tags[]
 }
 
 model related_posts {
-  id         Int @id @default(autoincrement())
-  post_id    Int
-  related_id Int
-
+  id          Int   @id @default(autoincrement())
+  post_id     Int
+  related_id  Int
   post        posts @relation("PostToRelated", fields: [post_id], references: [id], onDelete: Cascade)
   relatedPost posts @relation("RelatedToPost", fields: [related_id], references: [id], onDelete: Cascade)
 
@@ -118,12 +130,11 @@ model tags {
 }
 
 model post_tags {
-  id      Int @id @default(autoincrement())
+  id      Int   @id @default(autoincrement())
   post_id Int
   tag_id  Int
-
-  post posts @relation(fields: [post_id], references: [id], onDelete: Cascade)
-  tag  tags  @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+  post    posts @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  tag     tags  @relation(fields: [tag_id], references: [id], onDelete: Cascade)
 
   @@unique([post_id, tag_id])
   @@index([post_id])
@@ -150,6 +161,7 @@ model users {
   image                                String?         @db.VarChar(255)
   Account                              Account[]
   Session                              Session[]
+  comment_likes                        comment_likes[]
   comments                             comments[]
   follows_follows_follower_idTousers   follows[]       @relation("follows_follower_idTousers")
   follows_follows_following_idTousers  follows[]       @relation("follows_following_idTousers")

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useSelector } from 'react-redux';
-import axios from 'axios';
+import { submitOnboarding } from '../../services/Api/onboarding';
 
 // Loading skeleton component with improved design
 const TopicSkeleton = () => (
@@ -17,6 +17,7 @@ const TopicSkeleton = () => (
     </div>
   </div>
 );
+
 
 // Sound effects utility
 const playSound = (type: 'click' | 'select' | 'success' | 'error') => {
@@ -269,7 +270,7 @@ export default function OnboardingModal() {
       console.log('Onboarding request data:', requestData);
       
       // Gọi trực tiếp đến backend server
-      await axios.post(`http://localhost:5000/api/users/onboarding`, requestData);
+      await submitOnboarding(requestData);
       
       // Cập nhật localStorage để tránh modal hiện lại khi refresh
       const currentUser = localStorage.getItem('user');
@@ -331,10 +332,19 @@ export default function OnboardingModal() {
         }
       }, 3000);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Onboarding failed:', err);
       playSound('error');
-      alert('An error occurred, please try again!');
+      
+      // Show more specific error messages
+      let errorMessage = 'An error occurred, please try again!';
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

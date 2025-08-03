@@ -12,9 +12,11 @@ import {
 } from "../ui/dialog"
 
 import { useAuth } from "../../../hooks/useAuth"
+import { useSelector } from "react-redux"
 import DropdownMenuEllipsis from "../dropdown-ellipsis"
 import HoverCardUser from "../hover-card-user"
 import LikeButton from "./like-button"
+import CommentLikeButton from "./comment-like-button"
 import BookmarkButton from "./bookmark-button"
 import ColorPalette from "./color-palette"
 import EmojiPickerPopover from "./emoji-picker-popover"
@@ -22,6 +24,8 @@ import RelatedPosts from "./related-post"
 import { ZoomImage } from '../zoom-image'
 import { Label } from "../ui/label"
 import Link from 'next/link'
+import { likePost, unlikePost, getPostLikes, checkUserLikePost } from "../../../services/Api/postLikes"
+import { getComments, createComment } from "../../../services/Api/comments"
 
 type Comment = {
   id: number;
@@ -50,6 +54,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
   const [likeCount, setLikeCount] = useState(post.likeCount || 0)
   const [bookmarked, setBookmarked] = useState(false)
   const { session } = useAuth(true)
+  const reduxUser = useSelector((state: any) => state.user.user)
 
   const googleUser = session?.user
   const userName = googleUser?.name || 'Unknown User'
@@ -62,30 +67,79 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
 
   const isOwner = post.session?.user?.id === currentUserId
 
-  const handleLikeToggle = (e: React.MouseEvent) => {
+  const handleLikeToggle = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (liked) {
-      setLiked(false)
-      setLikeCount((prev: number) => prev - 1)
-    } else {
-      setLiked(true)
-      setLikeCount((prev: number) => prev + 1)
+    
+    // Check if user is authenticated
+    if (!session?.user && !reduxUser) {
+      alert('Please login to like posts');
+      return;
+    }
+
+    try {
+      if (liked) {
+        // Unlike post - we need to get the like ID first
+        const likeData = await checkUserLikePost(currentPost.id);
+        if (likeData.likeId) {
+          await unlikePost(likeData.likeId);
+          setLiked(false);
+          setLikeCount((prev: number) => Math.max(0, prev - 1));
+        }
+      } else {
+        // Like post
+        await likePost(currentPost.id);
+        setLiked(true);
+        setLikeCount((prev: number) => prev + 1);
+      }
+    } catch (error: any) {
+      console.error('Error toggling like:', error);
+      
+      // Handle 409 conflict (user already liked)
+      if (error.response?.status === 409) {
+        setLiked(true);
+        setLikeCount((prev: number) => prev + 1);
+        return;
+      }
+      
+      alert('Failed to update like. Please try again.');
     }
   }
 
-  const handleCommentSubmit = () => {
+  const handleCommentSubmit = async () => {
     if (!comment.trim()) return
 
-    const newComment: Comment = {
-      id: Date.now(),
-      avatarUrl: userAvatar,
-      name: userName,
-      username: userEmail,
-      content: comment.trim(),
-    }
+    try {
+      const newCommentData = await createComment(currentPost.id, comment.trim());
+      setComment('');
+      
+      // Get current user info using the user_id from the created comment
+      let currentUserInfo = null;
+      try {
+        const userResponse = await fetch(`http://localhost:5001/api/users/public/${newCommentData.user_id}`);
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          currentUserInfo = userData.user;
+        }
+      } catch (error) {
+        console.log('Error getting current user info:', error);
+      }
 
-    setComments([newComment, ...comments])
-    setComment('')
+      // Add new comment to the list immediately with user info
+      const newComment = {
+        ...newCommentData,
+        userInfo: currentUserInfo || {
+          id: newCommentData.user_id,
+          username: 'Current User',
+          avatar: '/img/user.png',
+          name: 'Current User'
+        }
+      };
+      
+      setComments([newComment, ...comments]);
+    } catch (error: any) {
+      console.error('Error submitting comment:', error);
+      alert('Failed to post comment. Please try again.');
+    }
   }
 
   useEffect(() => {
@@ -96,11 +150,85 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
 
   useEffect(() => {
     setCurrentPost(post)
-    setLikeCount(post.likeCount || 0)
-    setLiked(false)
     setBookmarked(false)
-    setComments([])
-  }, [post])
+    
+    // Check if user has already liked this post and ensure token is available
+    const checkUserLike = async () => {
+      if (session?.user || reduxUser) {
+        try {
+          // For NextAuth users, ensure we have a JWT token
+          if (session?.user && !localStorage.getItem('token')) {
+            const tokenResponse = await fetch('/api/auth/save-token', {
+              method: 'POST'
+            });
+            if (tokenResponse.ok) {
+              const tokenData = await tokenResponse.json();
+              localStorage.setItem('token', tokenData.token);
+            }
+          }
+          
+          const response = await checkUserLikePost(post.id);
+          if (response.liked) {
+            setLiked(true);
+          }
+        } catch (error) {
+          console.log('Error checking user like status:', error);
+        }
+      }
+    };
+    
+    // Get actual like count from database
+    const getLikeCount = async () => {
+      try {
+        const response = await getPostLikes(post.id);
+        if (Array.isArray(response)) {
+          setLikeCount(response.length);
+        } else {
+          setLikeCount(0);
+        }
+      } catch (error) {
+        console.log('Error getting like count:', error);
+        setLikeCount(0);
+      }
+    };
+
+    // Get actual comments from database
+    const getCommentsData = async () => {
+      try {
+        const response = await getComments(post.id);
+        if (Array.isArray(response)) {
+          // Fetch user information for each comment
+          const commentsWithUserInfo = await Promise.all(
+            response.map(async (comment: any) => {
+              try {
+                const userResponse = await fetch(`http://localhost:5001/api/users/public/${comment.user_id}`);
+                if (userResponse.ok) {
+                  const userData = await userResponse.json();
+                  return {
+                    ...comment,
+                    userInfo: userData.user
+                  };
+                }
+              } catch (error) {
+                console.log('Error fetching user info:', error);
+              }
+              return comment;
+            })
+          );
+          setComments(commentsWithUserInfo);
+        } else {
+          setComments([]);
+        }
+      } catch (error) {
+        console.log('Error getting comments:', error);
+        setComments([]);
+      }
+    };
+    
+    checkUserLike();
+    getLikeCount();
+    getCommentsData();
+  }, [post, session, reduxUser])
 
   const handleSelectRelatedPost = (newPost: any) => {
     setLoading(true)
@@ -272,12 +400,20 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
               </div>
 
               <div className="flex flex-col gap-4 mt-4">
-                {comments.map(({ id, avatarUrl, name, username, content }) => (
-                  <div key={id} className="flex items-start gap-3">
-                    <HoverCardUser avatarUrl={avatarUrl} name={name} username={username} />
-                    <div>
-                      <p className="text-sm font-medium">{name}</p>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{content}</p>
+                {comments.map((comment: any) => (
+                  <div key={comment.id} className="flex items-start gap-3">
+                    <HoverCardUser 
+                      avatarUrl={comment.userInfo?.avatar || '/img/user.png'} 
+                      name={comment.userInfo?.name || `User ${comment.user_id}`} 
+                      username={comment.userInfo?.username || `user${comment.user_id}`} 
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{comment.userInfo?.name || `User ${comment.user_id}`}</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{comment.content}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <CommentLikeButton commentId={comment.id} />
+                        <span className="text-xs text-gray-500">Reply</span>
+                      </div>
                     </div>
                   </div>
                 ))}

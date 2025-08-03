@@ -1,0 +1,8 @@
+# Docker ignore file
+node_modules
+.pnpm-store
+.next
+.env
+.git
+Dockerfile
+docker-compose.yml

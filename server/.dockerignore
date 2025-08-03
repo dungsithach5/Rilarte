@@ -1,0 +1,6 @@
+# Dockerignore file for server
+node_modules
+.env
+.git
+.pnpm-store
+Dockerfile

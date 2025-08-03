@@ -259,8 +259,7 @@ exports.getUserById = async (req, res) => {
             select: {
                 id: true,
                 username: true,
-                avatar: true,
-                name: true
+                avatar_url: true
             }
         });
 
@@ -276,8 +275,8 @@ exports.getUserById = async (req, res) => {
             user: {
                 id: user.id,
                 username: user.username,
-                avatar: user.avatar || '/img/user.png',
-                name: user.name || user.username
+                avatar: user.avatar_url || '/img/user.png',
+                name: user.username
             }
         });
     } catch (error) {

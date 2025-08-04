@@ -47,7 +47,7 @@ export default function Home() {
         const data = await fetchPosts("");
         const mapped = data.map((item: any) => ({
           id: item.id,
-          name: item.username || user?.name,
+          name: item.username || user?.username || user?.name,
           title: item.title,
           content: item.content,
           image_url: item.image_url,
@@ -124,7 +124,7 @@ export default function Home() {
 
   const handleDeletePost = async (postId: number) => {
     try {
-      await axios.delete(`http://localhost:5000/api/posts/${postId}`);
+      await axios.delete(`http://localhost:5001/api/posts/${postId}`);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
     } catch (err) {
       console.error("Error deleting post", err);

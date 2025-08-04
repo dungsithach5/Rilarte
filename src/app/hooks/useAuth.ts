@@ -13,8 +13,8 @@ export function useAuth(requireAuth = true) {
 
   // Ưu tiên user từ Redux nếu có token (login thường)
   const user = useMemo(() => {
-    return userRedux && userRedux.token ? userRedux : session?.user
-  }, [userRedux?.token, session?.user])
+    return userRedux && userRedux.token ? userRedux.user : session?.user
+  }, [userRedux?.token, userRedux?.user, session?.user])
 
   // Check if user is authenticated
   const isAuthenticated = useMemo(() => {

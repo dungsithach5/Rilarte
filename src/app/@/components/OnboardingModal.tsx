@@ -295,18 +295,29 @@ export default function OnboardingModal() {
       // Wait for animation to complete then close modal
       setTimeout(async () => {
         try {
+          const userEmail = session?.user?.email || reduxUser?.email;
+          console.log('Refreshing user data for email:', userEmail);
+          
+          if (!userEmail) {
+            console.log('No email found, closing modal');
+            setShowModal(false);
+            setShowSuccess(false);
+            setConfetti([]);
+            return;
+          }
+          
           // Gọi API để lấy thông tin user mới nhất
           const refreshResponse = await fetch('/api/auth/refresh', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: session?.user?.email })
+            body: JSON.stringify({ email: userEmail })
           });
           
           if (refreshResponse.ok) {
             const userData = await refreshResponse.json();
             console.log('Refreshed user data:', userData);
             
-            if (userData.user.onboarded === true) {
+            if (userData.user && userData.user.onboarded === true) {
               console.log('User successfully onboarded, closing modal');
               // Force update session
               await update();
@@ -319,13 +330,16 @@ export default function OnboardingModal() {
               setConfetti([]);
             }
           } else {
-            console.log('Failed to refresh user data, closing modal anyway');
+            const errorData = await refreshResponse.json().catch(() => ({}));
+            console.log('Failed to refresh user data:', refreshResponse.status, errorData);
+            // Vẫn đóng modal vì onboarding đã thành công
             setShowModal(false);
             setShowSuccess(false);
             setConfetti([]);
           }
         } catch (error) {
           console.error('Error updating session:', error);
+          // Vẫn đóng modal vì onboarding đã thành công
           setShowModal(false);
           setShowSuccess(false);
           setConfetti([]);

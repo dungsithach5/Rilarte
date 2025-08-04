@@ -57,9 +57,10 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
   const reduxUser = useSelector((state: any) => state.user.user)
 
   const googleUser = session?.user
-  const userName = googleUser?.name || 'Unknown User'
-  const userEmail = googleUser?.email || ''
-  const userAvatar = googleUser?.image || '/img/user.png'
+  // Ưu tiên Redux user (login thường), fallback về NextAuth session (Google)
+  const userName = reduxUser?.username || reduxUser?.name || googleUser?.name || 'Unknown User'
+  const userEmail = reduxUser?.email || googleUser?.email || ''
+  const userAvatar = reduxUser?.avatar || googleUser?.image || '/img/user.png'
 
   const addEmoji = (emojiData: any) => {
     setComment((prev) => prev + emojiData.emoji)

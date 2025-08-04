@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useSession } from "next-auth/react";
 import { useSelector } from "react-redux";
+import Cookies from "js-cookie";
 
 export default function AccountSettings() {
   const { session, status } = useAuth(true);
@@ -50,26 +51,67 @@ export default function AccountSettings() {
       }
 
       // Validate password strength
-      if (formData.newPassword && formData.newPassword.length < 6) {
-        setMessage({ type: "error", text: "Password must be at least 6 characters!" });
+      if (formData.newPassword) {
+        if (formData.newPassword.length < 6) {
+          setMessage({ type: "error", text: "Password must be at least 6 characters!" });
+          return;
+        }
+        
+        // Check if password contains both letters and numbers
+        const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+        if (!passwordRegex.test(formData.newPassword)) {
+          setMessage({ type: "error", text: "Password must contain both letters and numbers!" });
+          return;
+        }
+      }
+
+      // Get token for authentication
+      const token = Cookies.get('token') || localStorage.getItem('token');
+      console.log('Token for update:', token ? 'Token exists' : 'No token found');
+      
+      if (!token) {
+        setMessage({ type: "error", text: "Authentication required. Please login again." });
         return;
       }
 
-      // Call API to update user data
-      const response = await fetch('/api/user/update', {
+      // Get user ID from database by email
+      const userEmail = formData.email;
+      console.log('Getting user ID for email:', userEmail);
+      
+      // First, get user ID from database
+      const userResponse = await fetch(`http://localhost:5001/api/users/email/${userEmail}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!userResponse.ok) {
+        throw new Error('Failed to get user data');
+      }
+      
+      const userData = await userResponse.json();
+      const userId = userData.user.id;
+      
+      console.log('Updating user with ID:', userId);
+      console.log('Update data:', { gender: formData.gender, hasPassword: !!formData.newPassword });
+      
+      const response = await fetch(`http://localhost:5001/api/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          email: formData.email,
           gender: formData.gender,
           ...(formData.newPassword && { password: formData.newPassword })
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update settings');
+        const errorText = await response.text();
+        console.error('Update API error:', response.status, errorText);
+        throw new Error(`Failed to update settings: ${response.status}`);
       }
 
       const result = await response.json();
@@ -100,10 +142,61 @@ export default function AccountSettings() {
     }
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-      // TODO: Implement account deletion
-      console.log("Account deletion requested");
+      setLoading(true);
+      setMessage({ type: "", text: "" });
+
+      try {
+        const token = Cookies.get('token') || localStorage.getItem('token');
+        console.log('Token for delete:', token ? 'Token exists' : 'No token found');
+        
+        if (!token) {
+          setMessage({ type: "error", text: "Authentication required. Please login again." });
+          return;
+        }
+
+        // Get user ID from database by email
+        const userEmail = formData.email;
+        const userResponse = await fetch(`http://localhost:5001/api/users/email/${userEmail}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!userResponse.ok) {
+          throw new Error('Failed to get user data');
+        }
+        
+        const userData = await userResponse.json();
+        const userId = userData.user.id;
+        
+        const response = await fetch(`http://localhost:5001/api/users/${userId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          setMessage({ type: "success", text: "Account deleted successfully!" });
+          // Redirect to logout after 2 seconds
+          setTimeout(() => {
+            window.location.href = '/auth';
+          }, 2000);
+        } else {
+          const errorText = await response.text();
+          console.error('Delete API error:', response.status, errorText);
+          throw new Error(`Failed to delete account: ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Error deleting account:', error);
+        setMessage({ type: "error", text: "Failed to delete account!" });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -292,9 +385,13 @@ export default function AccountSettings() {
             </div>
             <button 
               onClick={handleDeleteAccount}
-              className="bg-red-600 text-white text-sm font-semibold py-3 px-6 rounded-lg hover:bg-red-700 transition-colors duration-200"
+              disabled={loading}
+              className="bg-red-600 text-white text-sm font-semibold py-3 px-6 rounded-lg hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-2"
             >
-              Delete Account
+              {loading && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              )}
+              {loading ? "Deleting..." : "Delete Account"}
             </button>
           </div>
         </div>

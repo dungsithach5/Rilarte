@@ -167,8 +167,11 @@ router.put('/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
     const updateData = { ...req.body };
 
-    // Không cho update password trực tiếp qua API này
-    delete updateData.password;
+    // Hash password if provided
+    if (updateData.password) {
+      const hashedPassword = await bcrypt.hash(updateData.password, 10);
+      updateData.password = hashedPassword;
+    }
 
     const user = await prisma.users.update({
       where: { id: parseInt(id) },
@@ -179,6 +182,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
         email: true,
         bio: true,
         avatar_url: true,
+        gender: true,
         createdAt: true
       }
     });

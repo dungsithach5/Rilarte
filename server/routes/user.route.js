@@ -110,6 +110,35 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
+// Get public user info by ID (no auth required)
+router.get('/public/:id', async (req, res) => {
+  try {
+    const user = await prisma.users.findUnique({
+      where: { id: parseInt(req.params.id) },
+      select: {
+        id: true,
+        username: true,
+        avatar_url: true,
+        image: true
+      }
+    });
+    if (!user) return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+
+    res.status(200).json({ 
+      success: true, 
+      user: {
+        id: user.id,
+        username: user.username,
+        avatar: user.avatar_url || user.image || '/img/user.png',
+        name: user.username || `User ${user.id}`
+      }
+    });
+  } catch (error) {
+    console.error('Error getting public user:', error);
+    res.status(500).json({ success: false, message: 'Lỗi khi lấy người dùng' });
+  }
+});
+
 // Get user by ID
 router.get('/:id', authMiddleware, async (req, res) => {
   try {

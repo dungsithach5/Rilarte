@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const auth = require('../middleware/auth');
 
 const {
     getAllComments,
@@ -16,13 +17,12 @@ router.get('/post/:post_id', getCommentsByPostId);
 router
     .route('/')
     .get(getAllComments)
-    .post(createComment);
+    .post(auth, createComment);
 
 router
     .route('/:id')
     .get(getCommentById)
-    .put(updateComment)
-    .delete(deleteComment);
-
+    .put(auth, updateComment)
+    .delete(auth, deleteComment);
 
 module.exports = router;

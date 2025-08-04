@@ -17,7 +17,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {!shouldHideBars && <NavBar />}
       <main className="flex-1">{children}</main>
       {!shouldHideBars && <BottomBar />}
-      {/* <OnboardingModal /> */}
+      <OnboardingModal />
     </>
   );
 }

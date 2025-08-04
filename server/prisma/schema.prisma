@@ -34,7 +34,7 @@ model comments {
   posts     posts           @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "comments_ibfk_2")
   parent    comments?       @relation("CommentToReplies", fields: [parent_id], references: [id])
   replies   comments[]      @relation("CommentToReplies")
-
+ 
   @@index([post_id], map: "post_id")
   @@index([user_id], map: "user_id")
   @@index([parent_id])
@@ -96,6 +96,7 @@ model notifications {
 
 model posts {
   id             Int             @id @default(autoincrement())
+  user_id        Int
   user_name      String          @db.VarChar(45)
   title          String          @db.Text
   content        String          @db.Text
@@ -104,9 +105,12 @@ model posts {
   updatedAt      DateTime        @db.DateTime(0)
   comments       comments[]
   likes          likes[]
-  postTags       post_tags[]
   relatedPosts   related_posts[] @relation("PostToRelated")
   relatedToPosts related_posts[] @relation("RelatedToPost")
+  postTags       post_tags[]
+  reportPosts    report_posts[]
+
+  users users @relation(fields: [user_id], references: [id])
 }
 
 model related_posts {
@@ -141,6 +145,23 @@ model post_tags {
   @@index([tag_id])
 }
 
+model report_posts {
+  id          Int       @id @default(autoincrement())
+  post_id     Int
+  user_id     Int
+  reporter_id Int
+  reason      String    @db.Text
+  createdAt   DateTime  @default(now()) @db.DateTime(0)
+  resolved    Boolean   @default(false)
+  resolvedAt  DateTime? @db.DateTime(0)
+
+  posts posts @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  users users @relation(fields: [reporter_id], references: [id], onDelete: Cascade)
+
+  @@index([post_id])
+  @@index([reporter_id])
+}
+
 model sequelizemeta {
   name String @id @unique(map: "name") @db.VarChar(255)
 }
@@ -169,6 +190,9 @@ model users {
   messages_messages_sender_idTousers   messages[]      @relation("messages_sender_idTousers")
   messages_messages_receiver_idTousers messages[]      @relation("messages_receiver_idTousers")
   notifications                        notifications[]
+  report_posts                         report_posts[]
+
+  posts posts[]
 }
 
 model Account {

@@ -87,9 +87,7 @@ export function LoginForm({
           };
           localStorage.setItem('user', JSON.stringify(updatedUser));
           
-          const avatarUrl = data.user?.avatar && data.user.avatar !== ''
-            ? data.user.avatar
-            : '/img/user.png';
+          const avatarUrl = data.user?.avatar_url || data.user?.avatar || '/img/user.png';
 
           dispatch(loginSuccess({
             avatar: avatarUrl,
@@ -100,9 +98,7 @@ export function LoginForm({
       } catch (error) {
         console.error('Failed to get user onboarded info:', error);
         // Fallback nếu không lấy được thông tin onboarded
-        const avatarUrl = data.user?.avatar && data.user.avatar !== ''
-          ? data.user.avatar
-          : '/img/user.png';
+        const avatarUrl = data.user?.avatar_url || data.user?.avatar || '/img/user.png';
 
         dispatch(loginSuccess({
           avatar: avatarUrl,

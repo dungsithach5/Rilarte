@@ -3,28 +3,51 @@ const prisma = new PrismaClient();
 
 exports.getAllPosts = async (req, res) => {
   try {
-    const { search } = req.query;
+    const { search, user_id } = req.query;
     const keyword = typeof search === 'string' ? search : '';
 
-    const where = keyword
-      ? {
-          OR: [
-            { user_name: { contains: keyword } },
-            { title: { contains: keyword } },
-            { content: { contains: keyword } },
-          ],
-        }
-      : {};
+    let where = {};
+
+    // Nếu có user_id, filter theo user_id
+    if (user_id) {
+      where.user_id = Number(user_id);
+    }
+
+    // Nếu có search keyword, thêm điều kiện search
+    if (keyword) {
+      const searchCondition = {
+        OR: [
+          { user_name: { contains: keyword } },
+          { title: { contains: keyword } },
+          { content: { contains: keyword } },
+        ],
+      };
+      
+      // Combine với user_id nếu có
+      if (user_id) {
+        where = {
+          ...where,
+          ...searchCondition
+        };
+      } else {
+        where = searchCondition;
+      }
+    }
 
     const posts = await prisma.posts.findMany({
       where,
       select: {
         id: true,
+        user_id: true,
         user_name: true,
         title: true,
         content: true,
         image_url: true,
+        createdAt: true,
       },
+      orderBy: {
+        createdAt: 'desc'
+      }
     });
 
       const postsWithTags = await Promise.all(
@@ -85,12 +108,35 @@ exports.createPost = async (req, res) => {
   try {
     const { user_name, title, content, image_url, tags = [] } = req.body;
 
+    // Validate required fields
+    if (!user_name || !title || !content) {
+      return res.status(400).json({ 
+        message: 'Missing required fields: user_name, title, content',
+        received: { user_name, title, content }
+      });
+    }
+
+    // Find user by email (user_name contains email from frontend)
+    const user = await prisma.users.findUnique({
+      where: { email: user_name }
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        message: 'User not found with email: ' + user_name,
+        suggestion: 'Please make sure the user is registered in the system'
+      });
+    }
+
+    console.log('Creating post for user:', { id: user.id, email: user.email, username: user.username });
+
     const newPost = await prisma.posts.create({
       data: {
-        user_name,
+        user_id: user.id,
+        user_name: user.username || user.email, // Use username if available, otherwise email
         title,
         content,
-        image_url,
+        image_url: image_url || '',
         createdAt: new Date(),
         updatedAt: new Date(),
         postTags: {
@@ -111,10 +157,15 @@ exports.createPost = async (req, res) => {
       },
     });
 
+    console.log('Post created successfully:', { id: newPost.id, title: newPost.title });
     res.status(201).json(newPost);
   } catch (error) {
     console.error('Error creating post with tags:', error);
-    res.status(400).json({ message: 'Error creating post', error: error.message });
+    res.status(400).json({ 
+      message: 'Error creating post', 
+      error: error.message,
+      details: error.code ? `Database error: ${error.code}` : 'Unknown error'
+    });
   }
 };
 

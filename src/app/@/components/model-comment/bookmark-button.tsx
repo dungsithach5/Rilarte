@@ -16,7 +16,7 @@ export default function BookmarkButton({ bookmarked, onToggle }: BookmarkButtonP
         onToggle(e)
       }}
       className={`transition-colors cursor-pointer ${
-        bookmarked ? "text-white" : "hover:text-black"
+        bookmarked ? "text-black" : "text-gray-500 hover:text-black"
       }`}
     >
       {bookmarked ? (

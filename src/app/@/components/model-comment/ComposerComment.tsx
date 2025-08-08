@@ -362,11 +362,6 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                       likeCount={likeCount}
                       onToggle={handleLikeToggle}
                     />
-
-                    <BookmarkButton
-                      bookmarked={bookmarked}
-                      onToggle={handleBookmarkToggle}
-                    />
                   </div>
                 </div>
               </div>

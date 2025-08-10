@@ -1,6 +1,83 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+const ColorThief = require('colorthief');
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+
+function rgbToHex(r, g, b) {
+  return (
+    "#" +
+    [r, g, b]
+      .map((x) => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? "0" + hex : hex;
+      })
+      .join("")
+  );
+}
+
+async function getDominantColor(imageUrl) {
+  try {
+    // Kiểm tra URL hợp lệ
+    if (!imageUrl || typeof imageUrl !== 'string') {
+      console.error("URL không hợp lệ:", imageUrl);
+      return null;
+    }
+
+    const response = await fetch(imageUrl, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    // Kiểm tra response status
+    if (!response.ok) {
+      console.error(`HTTP Error: ${response.status} - ${response.statusText} for URL: ${imageUrl}`);
+      return null;
+    }
+
+    // Kiểm tra content type
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.startsWith('image/')) {
+      console.error(`Invalid content type: ${contentType} for URL: ${imageUrl}`);
+      return null;
+    }
+
+    const buffer = await response.arrayBuffer();
+    
+    // Kiểm tra buffer có dữ liệu không
+    if (!buffer || buffer.byteLength === 0) {
+      console.error("Empty buffer received for URL:", imageUrl);
+      return null;
+    }
+
+    const colorResult = await ColorThief.getColor(Buffer.from(buffer));
+    
+    // Kiểm tra kết quả từ ColorThief
+    if (!colorResult || !Array.isArray(colorResult) || colorResult.length !== 3) {
+      console.error("Invalid color result from ColorThief for URL:", imageUrl);
+      return null;
+    }
+
+    const [r, g, b] = colorResult;
+    
+    // Validate RGB values
+    if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
+      console.error("Invalid RGB values:", { r, g, b });
+      return null;
+    }
+
+    const hexColor = rgbToHex(r, g, b);
+    console.log(`Successfully extracted dominant color: ${hexColor} from ${imageUrl}`);
+    return hexColor;
+    
+  } catch (err) {
+    console.error("Error dominant color:", err.message);
+    return null;
+  }
+}
+
 exports.getAllPosts = async (req, res) => {
   try {
     const { search } = req.query;
@@ -24,10 +101,11 @@ exports.getAllPosts = async (req, res) => {
         title: true,
         content: true,
         image_url: true,
+        dominant_color: true,
       },
     });
 
-      const postsWithTags = await Promise.all(
+    const postsWithTags = await Promise.all(
       posts.map(async post => {
         const postTags = await prisma.post_tags.findMany({
           where: { post_id: post.id },
@@ -53,44 +131,55 @@ exports.getAllPosts = async (req, res) => {
 
 exports.getPostById = async (req, res) => {
   try {
-      const post = await prisma.posts.findUnique({
-        where: { id: Number(req.params.id) },
-        include: {
-          postTags: {
-            include: {
-              tag: true,
-            },
+    const post = await prisma.posts.findUnique({
+      where: { id: Number(req.params.id) },
+      include: {
+        postTags: {
+          include: {
+            tag: true,
           },
         },
-      });
+      },
+    });
 
-      if (!post) {
-          return res.status(404).json({ message: 'Post not found' });
-      }
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
 
-      const tags = post.postTags.map(pt => pt.tag.name);
-      const postWithTags = {
-        ...post,
-        tags,
-      };
-      delete postWithTags.postTags;
+    const tags = post.postTags.map(pt => pt.tag.name);
+    const postWithTags = {
+      ...post,
+      tags,
+    };
+    delete postWithTags.postTags;
 
-      res.status(200).json(postWithTags);
+    res.status(200).json(postWithTags);
   } catch (error) {
-      res.status(500).json({ message: 'Error fetching post', error });
+    res.status(500).json({ message: 'Error fetching post', error });
   }
 };
 
 exports.createPost = async (req, res) => {
   try {
-    const { user_name, title, content, image_url, tags = [] } = req.body;
+    const { user_id, user_name, title, content, image_url, tags = [] } = req.body;
+
+    // Validate required fields
+    if (!user_id) {
+      return res.status(400).json({ 
+        message: 'user_id is required' 
+      });
+    }
+
+    const dominantColor = image_url ? await getDominantColor(image_url) : null;
 
     const newPost = await prisma.posts.create({
       data: {
+        user_id: Number(user_id),
         user_name,
         title,
         content,
         image_url,
+        dominant_color: dominantColor,
         createdAt: new Date(),
         updatedAt: new Date(),
         postTags: {
@@ -119,46 +208,58 @@ exports.createPost = async (req, res) => {
 };
 
 exports.updatePost = async (req, res) => {
-    try {
-        const { tags, ...postData } = req.body;
-        const postId = Number(req.params.id);
+  try {
+    const { tags, image_url, ...postData } = req.body;
+    const postId = Number(req.params.id);
 
-        const existingPost = await prisma.posts.findUnique({
-            where: { id: Number(req.params.id) }
-        });
+    const existingPost = await prisma.posts.findUnique({
+      where: { id: postId }
+    });
 
-        if (!existingPost) {
-            return res.status(404).json({ message: 'Post not found' });
-        }
-
-        const updatedPost = await prisma.posts.update({
-            where: { id: Number(req.params.id) },
-            data: req.body
-        });
-
-        if (tags && Array.isArray(tags)) {
-          await prisma.post_tags.deleteMany({
-            where: { post_id: postId }
-          });
-    
-          for (const tagName of tags) {
-            await prisma.post_tags.create({
-              data: {
-                post_id: postId,
-                tag: {
-                  connectOrCreate: {
-                    where: { name: tagName },
-                    create: { name: tagName },
-                  },
-                },
-              },
-            });
-          }
-        }
-        res.status(200).json(updatedPost);
-    } catch (error) {
-        res.status(400).json({ message: 'Error updating post', error });
+    if (!existingPost) {
+      return res.status(404).json({ message: 'Post not found' });
     }
+
+    let dominantColor = existingPost.dominant_color;
+
+    if (image_url && image_url !== existingPost.image_url) {
+      dominantColor = await getDominantColor(image_url);
+    }
+
+    const updatedPost = await prisma.posts.update({
+      where: { id: postId },
+      data: {
+        ...postData,
+        image_url,
+        dominant_color: dominantColor,
+        updatedAt: new Date(),
+      }
+    });
+
+    if (tags && Array.isArray(tags)) {
+      await prisma.post_tags.deleteMany({
+        where: { post_id: postId }
+      });
+
+      for (const tagName of tags) {
+        await prisma.post_tags.create({
+          data: {
+            post_id: postId,
+            tag: {
+              connectOrCreate: {
+                where: { name: tagName },
+                create: { name: tagName },
+              },
+            },
+          },
+        });
+      }
+    }
+
+    res.status(200).json(updatedPost);
+  } catch (error) {
+    res.status(400).json({ message: 'Error updating post', error });
+  }
 };
 
 exports.deletePost = async (req, res) => {
@@ -173,5 +274,37 @@ exports.deletePost = async (req, res) => {
   } catch (error) {
     console.error('Delete post error:', error);
     res.status(500).json({ message: 'Error deleting post', error });
+  }
+};
+
+exports.getColors = async (req, res) => {
+  try {
+    const colors = await prisma.posts.findMany({
+      select: { dominant_color: true },
+      where: { dominant_color: { not: null } },
+    });
+
+    const colorList = colors.map(c => c.dominant_color.toLowerCase());
+    res.status(200).json(colorList);
+  } catch (error) {
+    console.error('Error fetching colors:', error);
+    res.status(500).json({ message: 'Failed to fetch colors', error });
+  }
+};
+
+
+exports.getPostsByColor = async (req, res) => {
+  try {
+    const { color } = req.query;
+    if (!color) return res.status(400).json({ message: "Color is required" });
+
+    const posts = await prisma.posts.findMany({
+      where: { dominant_color: color.toLowerCase() },
+    });
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error('Error searching posts by color:', error);
+    res.status(500).json({ message: 'Error searching posts', error });
   }
 };

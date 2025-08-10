@@ -1,41 +1,43 @@
 'use client'
 
-import React, { useState, useEffect } from "react";
-import { Search } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux"
 import type { RootState, AppDispatch } from "../context/store"
 import Link from 'next/link'
 import { useSession } from "next-auth/react"
 import DropdownUser from "../@/components/dropdown-user"
 import { useRouter } from 'next/navigation'
-import { setKeyword } from "../context/searchSlice";
-import SearchInput from "../@/components/feature-search/search-input";
+import { setColor, setKeyword } from "../context/searchSlice";
+import SearchInput from "../@/components/feature-search/search-input"
 
 export function NavBar() {
   const dispatch = useDispatch<AppDispatch>();
-  const keyword = useSelector((state: RootState) => state.search.keyword);
   const { isAuthenticated, avatar } = useSelector((state: RootState) => state.user)
   const { data: session } = useSession()
-  // const [inputValue, setInputValue] = useState(keyword);
   const router = useRouter()
 
   const handleLogin = () => {
     router.push('/auth')
   }
 
-  // useEffect(() => {
-  //   setInputValue(keyword);
-  // }, [keyword]);
+  function isHexColor(str: string): boolean {
+    const hexColorRegex = /^#([0-9A-Fa-f]{3}){1,2}$/;
+    return hexColorRegex.test(str);
+  }
 
   const handleSearch = (keyword: string) => {
-    dispatch(setKeyword(keyword.trim()));
-    if (typeof window !== "undefined") {
-      router.push("/");
+    const trimmed = keyword.trim();
+  
+    if (isHexColor(trimmed)) {
+      dispatch(setColor(trimmed));
+    } else {
+      dispatch(setKeyword(trimmed));
     }
+  
+    router.push("/");
   };
 
   return (
-    <nav className="w-full mx-auto flex items-center justify-between px-6 py-2 rounded-full">
+    <nav className="fixed z-50 bg-white w-full mx-auto flex items-center justify-between px-6 py-2 rounded-full">
       <Link href="/" className="text-xl font-bold text-black">
         Elarte
       </Link>

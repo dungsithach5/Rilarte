@@ -70,7 +70,8 @@ export default function Post() {
       const imageUrl = uploadResponse.data.imageUrl
 
       const newPost = {
-        user_name: userEmail,
+        user_id: typeof user === 'number' ? user : 1,
+        user_name: session?.user?.email || user?.email || user,
         title,
         content: description,
         image_url: imageUrl,

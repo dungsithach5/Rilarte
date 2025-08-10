@@ -1,17 +1,20 @@
+// Home.tsx
 "use client";
 
+import axios from "axios";
 import { useEffect, useState } from "react";
 import Masonry from "react-masonry-css";
-import { Search, Frown } from "lucide-react";
+import { Frown } from "lucide-react";
 import RotatingText from './@/components/RotatingText/RotatingText';
+import { useSelector } from "react-redux";
+import { RootState } from "./context/store";
 
-import { fetchPosts } from "./services/Api/posts";
+import { fetchPosts, fetchPostsByColor } from "./services/Api/posts";
 import { fetchBannedKeywords } from "./services/Api/bannedKeywords";
 
 import { ComposerComment } from "./@/components/model-comment/ComposerComment";
 import SkeletonPost from "./@/components/skeleton-post";
 import { useAuth } from "./hooks/useAuth";
-import axios from "axios";
 
 const breakpointColumnsObj = {
   default: 6,
@@ -20,112 +23,94 @@ const breakpointColumnsObj = {
 };
 
 export default function Home() {
+  const { keyword, color } = useSelector((state: RootState) => state.search);
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
-  const [searchInput, setSearchInput] = useState("");
   const [bannedKeywords, setBannedKeywords] = useState<string[]>([]);
   const [violation, setViolation] = useState(false);
-  const { user, session, status } = useAuth(true);
+  const { user, session } = useAuth(true);
   const [popularTags, setPopularTags] = useState<string[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
+  // Load banned keywords
   useEffect(() => {
-    const loadBanned = async () => {
-      try {
-        const words = await fetchBannedKeywords();
-        setBannedKeywords(words);
-      } catch (err) {
-        console.error("Error loading banned keywords", err);
-      }
-    };
-    loadBanned();
+    fetchBannedKeywords()
+      .then(setBannedKeywords)
+      .catch(console.error);
   }, []);
 
+  // Fetch posts by keyword or color
   useEffect(() => {
-    const loadPosts = async () => {
-      try {
-        const data = await fetchPosts("");
-        const mapped = data.map((item: any) => ({
-          id: item.id,
-          name: item.username || user?.username || user?.name,
-          title: item.title,
-          content: item.content,
-          image_url: item.image_url,
-          tags: item.tags || [],
-        }));
-        setPosts(mapped);
-      } catch (err) {
-        console.error("Error loading posts", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadPosts();
-  }, [user]);
-
-  // Extract top 5 tags based on word frequency
-  useEffect(() => {
-    if (!posts || posts.length === 0) return;
-
-    const tagCount: Record<string, number> = {};
-
-    posts.forEach((post) => {
-      const allText = `${post.tags}`.toLowerCase();
-      const words = allText.match(/\b\w+\b/g) || [];
-      words.forEach((word) => {
-        if (word.length > 3) {
-          tagCount[word] = (tagCount[word] || 0) + 1;
-        }
-      });
-    });
-
-    const sortedTags = Object.entries(tagCount)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([word]) => word);
-
-    setPopularTags(sortedTags);
-  }, [posts]);
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const keyword = searchInput.trim().toLowerCase();
-
-    const foundViolation = bannedKeywords.some((word) =>
-      keyword.includes(word)
+    // Kiểm tra vi phạm keyword nếu có
+    const foundViolation = keyword && bannedKeywords.some((word) =>
+      keyword.toLowerCase().includes(word)
     );
+
     if (foundViolation) {
       setViolation(true);
       setPosts([]);
       return;
     }
 
-    setViolation(false);
     setIsLoading(true);
 
-    setTimeout(async () => {
-      try {
-        const data = await fetchPosts(keyword);
-        const mapped = data.map((item: any) => ({
-          id: item.id,
-          name: user?.username || user?.name,
-          title: item.title,
-          content: item.content,
-          image_url: item.image_url,
-        }));
-        setPosts(mapped);
-      } catch (err) {
-        console.error("Error fetching posts", err);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 1000);
-  };
+    if (color) {
+      fetchPostsByColor(color)
+        .then((data) => {
+          const mapped = data.map((item: any) => ({
+            id: item.id,
+            name: item.username || user?.username || user?.name,
+            title: item.title,
+            content: item.content,
+            image_url: item.image_url,
+            tags: item.tags || [],
+          }));
+          setPosts(mapped);
+          setViolation(false);
+        })
+        .catch(console.error)
+        .finally(() => setIsLoading(false));
+    } else {
+      fetchPosts(keyword)
+        .then((data) => {
+          const mapped = data.map((item: any) => ({
+            id: item.id,
+            name: item.username || user?.username || user?.name,
+            title: item.title,
+            content: item.content,
+            image_url: item.image_url,
+            tags: item.tags || [],
+          }));
+          setPosts(mapped);
+          setViolation(false);
+        })
+        .catch(console.error)
+        .finally(() => setIsLoading(false));
+    }
+  }, [keyword, color, bannedKeywords, user]);
+
+  // Tính popular tags
+  useEffect(() => {
+    if (!posts.length) return;
+    const tagCount: Record<string, number> = {};
+    posts.forEach((post) => {
+      (post.tags || []).forEach((tag: string) => {
+        if (tag.length > 3) {
+          tagCount[tag] = (tagCount[tag] || 0) + 1;
+        }
+      });
+    });
+    const sortedTags = Object.entries(tagCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([tag]) => tag);
+    setPopularTags(sortedTags);
+  }, [posts]);
 
   const handleDeletePost = async (postId: number) => {
     try {
       await axios.delete(`http://localhost:5001/api/posts/${postId}`);
-      setPosts((prev) => prev.filter((p) => p.id !== postId));
+      setPosts(prev => prev.filter(p => p.id !== postId));
     } catch (err) {
       console.error("Error deleting post", err);
     }
@@ -136,7 +121,7 @@ export default function Home() {
     : posts;
 
   return (
-    <section>
+    <section className="mt-20">
       {/* Banner */}
       <section className="w-full overflow-hidden">
         <div className="flex h-full flex-col px-6">
@@ -156,7 +141,6 @@ export default function Home() {
             />
             energy
           </h1>
-
           <p className="text-lg md:text-xl text-gray-800">
             Step into a world where visuals speak and creativity knows no limits 
             <br />
@@ -168,27 +152,7 @@ export default function Home() {
       {/* Search & Filter */}
       <section className="w-full px-6 mt-12 flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          {/* Search */}
-          <div className="w-1/3">
-            <form onSubmit={handleSearch} className="relative">
-              <input
-                type="text"
-                name="search"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search..."
-                className="w-full p-3 px-4 pr-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#2C343A]"
-              />
-              <button
-                type="submit"
-                className="absolute h-10 w-10 bg-black rounded-full flex justify-center items-center top-1/2 right-1 -translate-y-1/2 text-white cursor-pointer"
-              >
-                <Search size={20} />
-              </button>
-            </form>
-          </div>
-
-          {/* Popular Tags (dynamic) */}
+          {/* filter Tags */}
           <div className="flex gap-2 w-auto">
             <label className="text-sm">Popular Tags:</label>
             {popularTags.map((tag) => (
@@ -205,7 +169,7 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Sort UI (placeholder) */}
+          {/* Sort UI */}
           <div className="w-auto">
             <select className="p-2 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2C343A]">
               <option value="popular">Popular</option>
@@ -214,7 +178,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Selected Tag Notice */}
         {selectedTag && (
           <div className="px-2 text-sm text-gray-600">
             Showing results for tag: <span className="font-semibold text-black">#{selectedTag}</span>

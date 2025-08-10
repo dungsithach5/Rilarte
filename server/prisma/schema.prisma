@@ -34,7 +34,7 @@ model comments {
   posts     posts           @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "comments_ibfk_2")
   parent    comments?       @relation("CommentToReplies", fields: [parent_id], references: [id])
   replies   comments[]      @relation("CommentToReplies")
- 
+
   @@index([post_id], map: "post_id")
   @@index([user_id], map: "user_id")
   @@index([parent_id])
@@ -101,6 +101,7 @@ model posts {
   title          String          @db.Text
   content        String          @db.Text
   image_url      String          @db.VarChar(255)
+  dominant_color String?         @db.VarChar(7)
   createdAt      DateTime        @db.DateTime(0)
   updatedAt      DateTime        @db.DateTime(0)
   comments       comments[]

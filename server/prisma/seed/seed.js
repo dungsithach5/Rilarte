@@ -2,7 +2,65 @@ const { PrismaClient } = require('@prisma/client');
 const { faker } = require('@faker-js/faker');
 const prisma = new PrismaClient();
 
-function getRandomHeight(min = 250, max = 500) {
+const ColorThief = require('colorthief');
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+
+function rgbToHex(r, g, b) {
+  return (
+    "#" +
+    [r, g, b]
+      .map((x) => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? "0" + hex : hex;
+      })
+      .join("")
+  );
+}
+
+async function getDominantColor(imageUrl) {
+  try {
+    if (!imageUrl || typeof imageUrl !== 'string') {
+      return null;
+    }
+
+    const response = await fetch(imageUrl, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.startsWith('image/')) {
+      return null;
+    }
+
+    const buffer = await response.arrayBuffer();
+    if (!buffer || buffer.byteLength === 0) {
+      return null;
+    }
+
+    const colorResult = await ColorThief.getColor(Buffer.from(buffer));
+    if (!colorResult || !Array.isArray(colorResult) || colorResult.length !== 3) {
+      return null;
+    }
+
+    const [r, g, b] = colorResult;
+    if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
+      return null;
+    }
+
+    return rgbToHex(r, g, b);
+  } catch (err) {
+    return null;
+  }
+}
+
+function getRandomHeight(min = 250, max = 750) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -57,10 +115,14 @@ async function main() {
     users.push(user);
   }
 
-  // Fake 20 posts
-  for (let i = 0; i < 20; i++) {
+  // Fake 100 posts
+  for (let i = 0; i < 50; i++) {
     const randomUser = users[Math.floor(Math.random() * users.length)];
     const randomHeight = getRandomHeight();
+    const imageUrl = `https://picsum.photos/seed/${faker.string.uuid()}/400/${randomHeight}`;
+
+    // Lấy dominant color từ ảnh (có thể mất thời gian)
+    const dominantColor = await getDominantColor(imageUrl);
 
     // Tạo post
     const post = await prisma.posts.create({
@@ -69,7 +131,8 @@ async function main() {
         user_name: randomUser.username,
         title: faker.lorem.sentence(),
         content: faker.lorem.paragraphs(2),
-        image_url: `https://picsum.photos/seed/${faker.string.uuid()}/400/${randomHeight}`,
+        image_url: imageUrl,
+        dominant_color: dominantColor,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -86,7 +149,7 @@ async function main() {
     }
   }
 
-  console.log('✅ Đã seed xong 10 users, 20 posts và gán tags!');
+  console.log('✅ Đã seed xong 10 users, 100 posts và gán tags!');
 }
 
 main()

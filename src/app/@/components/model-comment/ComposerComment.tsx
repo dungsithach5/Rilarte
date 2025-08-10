@@ -26,6 +26,7 @@ import { Label } from "../ui/label"
 import Link from 'next/link'
 import { likePost, unlikePost, getPostLikes, checkUserLikePost } from "../../../services/Api/postLikes"
 import { getComments, createComment } from "../../../services/Api/comments"
+import { savePost, unsavePost, checkSavedPost } from "../../../services/Api/savedPosts"
 
 type Comment = {
   id: number;
@@ -67,6 +68,78 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
   }
 
   const isOwner = post.session?.user?.id === currentUserId
+
+  // Load saved status when component mounts
+  useEffect(() => {
+    const loadSavedStatus = async () => {
+      // Thử lấy user ID từ nhiều nguồn
+      let userId = currentUserId;
+      if (!userId) {
+        userId = reduxUser?.id || session?.user?.id;
+      }
+      
+      if (userId && post.id) {
+        try {
+          const { isSaved } = await checkSavedPost(Number(userId), post.id);
+          setBookmarked(isSaved);
+          console.log('Loaded saved status for post', post.id, ':', isSaved);
+        } catch (error) {
+          console.error('Error checking saved status:', error);
+        }
+      }
+    };
+    
+    loadSavedStatus();
+  }, [currentUserId, post.id, reduxUser?.id, session?.user?.id]);
+
+  const handleBookmarkToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Thử lấy user ID từ nhiều nguồn
+    let userId = currentUserId;
+    if (!userId) {
+      userId = reduxUser?.id || session?.user?.id;
+    }
+    
+    // Debug logging
+    console.log('=== BOOKMARK DEBUG ===');
+    console.log('currentUserId prop:', currentUserId);
+    console.log('reduxUser:', reduxUser);
+    console.log('reduxUser.id:', reduxUser?.id);
+    console.log('session?.user:', session?.user);
+    console.log('session?.user?.id:', session?.user?.id);
+    console.log('Final userId:', userId);
+    
+    // Check if user is authenticated
+    if (!session?.user && !reduxUser) {
+      alert('Please login to save posts');
+      return;
+    }
+
+    if (!userId) {
+      alert('User ID not found. Please try logging in again.');
+      console.error('No user ID available from any source');
+      return;
+    }
+
+    try {
+      const userIdNumber = Number(userId);
+      console.log('Using user ID:', userIdNumber, 'for post ID:', post.id);
+      
+      if (bookmarked) {
+        await unsavePost(userIdNumber, post.id);
+        setBookmarked(false);
+        console.log('Post unsaved successfully');
+      } else {
+        await savePost(userIdNumber, post.id);
+        setBookmarked(true);
+        console.log('Post saved successfully');
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      alert('Error saving/unsaving post');
+    }
+  };
 
   const handleLikeToggle = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -289,11 +362,6 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                       likeCount={likeCount}
                       onToggle={handleLikeToggle}
                     />
-
-                    <BookmarkButton
-                      bookmarked={bookmarked}
-                      onToggle={() => setBookmarked(!bookmarked)}
-                    />
                   </div>
                 </div>
               </div>
@@ -370,7 +438,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
 
                   <BookmarkButton
                     bookmarked={bookmarked}
-                    onToggle={() => setBookmarked(!bookmarked)}
+                    onToggle={handleBookmarkToggle}
                   />
                 </div>
               </div>

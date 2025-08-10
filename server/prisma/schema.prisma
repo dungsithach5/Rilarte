@@ -110,6 +110,7 @@ model posts {
   relatedToPosts related_posts[] @relation("RelatedToPost")
   postTags       post_tags[]
   reportPosts    report_posts[]
+  savedPosts     saved_posts[]
 
   users users @relation(fields: [user_id], references: [id])
 }
@@ -192,6 +193,7 @@ model users {
   messages_messages_receiver_idTousers messages[]      @relation("messages_receiver_idTousers")
   notifications                        notifications[]
   report_posts                         report_posts[]
+  saved_posts                          saved_posts[]
 
   posts posts[]
 }
@@ -237,4 +239,17 @@ model banned_keywords {
   id        Int      @id @default(autoincrement())
   word      String   @unique
   createdAt DateTime @default(now())
+}
+
+model saved_posts {
+  id        Int      @id @default(autoincrement())
+  user_id   Int
+  post_id   Int
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  user      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  post      posts    @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, post_id])
+  @@index([user_id])
+  @@index([post_id])
 }

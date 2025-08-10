@@ -27,6 +27,9 @@ export function useAuth(requireAuth = true) {
     console.log('Session:', session);
     console.log('Status:', status);
     console.log('UserRedux:', userRedux);
+    console.log('UserRedux.user:', userRedux?.user);
+    console.log('UserRedux.user.id:', userRedux?.user?.id);
+    console.log('Session.user.id:', session?.user?.id);
     console.log('User:', user);
     console.log('RequireAuth:', requireAuth);
     console.log('IsAuthenticated:', isAuthenticated);

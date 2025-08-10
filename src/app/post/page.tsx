@@ -10,7 +10,7 @@ import TagInput from "../@/components/post-artwork/tag-input"
 interface HandleSubmitEvent extends React.FormEvent<HTMLFormElement> {}
 
 export default function Post() {
-  const { session, user } = useAuth(true)
+  const { user, session, isAuthenticated } = useAuth(true)
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [image, setImage] = useState<string | null>(null)
@@ -26,7 +26,12 @@ export default function Post() {
 
   useEffect(() => {
     setIsMounted(true)
-  }, [])
+    // Debug log để kiểm tra user data
+    console.log('=== POST COMPONENT DEBUG ===');
+    console.log('User from useAuth:', user);
+    console.log('Session from useAuth:', session);
+    console.log('IsAuthenticated:', isAuthenticated);
+  }, [user, session, isAuthenticated])
 
   const handleImageChange = (file: File | null) => {
     if (file && file.size <= 20 * 1024 * 1024) {
@@ -48,6 +53,13 @@ export default function Post() {
   const handleSubmit = async (e: HandleSubmitEvent) => {
     e.preventDefault()
     if (!imageFile) return alert("Vui lòng chọn một ảnh")
+    
+    // Lấy email từ user hoặc session
+    const userEmail = user?.email || session?.user?.email
+    if (!userEmail) {
+      alert("Bạn cần đăng nhập để tạo post")
+      return
+    }
 
     try {
       const formData = new FormData()
@@ -66,15 +78,23 @@ export default function Post() {
         tags
       }
 
+      console.log('Creating post with data:', newPost); // Debug log
+
       await axios.post("http://localhost:5001/api/posts", newPost)
+      alert("Post created successfully!")
       setTitle("")
       setDescription("")
       setImage(null)
       setImageFile(null)
       setTags([])
       if (inputFileRef.current) inputFileRef.current.value = ""
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating post:", err)
+      if (err.response?.data?.message) {
+        alert("Lỗi: " + err.response.data.message)
+      } else {
+        alert("Có lỗi xảy ra khi tạo post")
+      }
     }
   }
 

@@ -9,9 +9,8 @@ import RotatingText from './@/components/RotatingText/RotatingText';
 import { useSelector } from "react-redux";
 import { RootState } from "./context/store";
 
-import { fetchPosts } from "./services/Api/posts";
+import { fetchPosts, fetchPostsByColor } from "./services/Api/posts";
 import { fetchBannedKeywords } from "./services/Api/bannedKeywords";
-import { useSearch } from "./context/SearchContext"
 
 import { ComposerComment } from "./@/components/model-comment/ComposerComment";
 import SkeletonPost from "./@/components/skeleton-post";
@@ -24,7 +23,7 @@ const breakpointColumnsObj = {
 };
 
 export default function Home() {
-  const keyword = useSelector((state: RootState) => state.search.keyword);
+  const { keyword, color } = useSelector((state: RootState) => state.search);
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
   const [bannedKeywords, setBannedKeywords] = useState<string[]>([]);
@@ -40,10 +39,23 @@ export default function Home() {
       .catch(console.error);
   }, []);
 
+  // Fetch posts by keyword or color
   useEffect(() => {
-    if (keyword.trim() === "") {
-      setIsLoading(true);
-      fetchPosts("")
+    // Kiểm tra vi phạm keyword nếu có
+    const foundViolation = keyword && bannedKeywords.some((word) =>
+      keyword.toLowerCase().includes(word)
+    );
+
+    if (foundViolation) {
+      setViolation(true);
+      setPosts([]);
+      return;
+    }
+
+    setIsLoading(true);
+
+    if (color) {
+      fetchPostsByColor(color)
         .then((data) => {
           const mapped = data.map((item: any) => ({
             id: item.id,
@@ -58,37 +70,26 @@ export default function Home() {
         })
         .catch(console.error)
         .finally(() => setIsLoading(false));
-      return;
+    } else {
+      fetchPosts(keyword)
+        .then((data) => {
+          const mapped = data.map((item: any) => ({
+            id: item.id,
+            name: item.username || user?.username || user?.name,
+            title: item.title,
+            content: item.content,
+            image_url: item.image_url,
+            tags: item.tags || [],
+          }));
+          setPosts(mapped);
+          setViolation(false);
+        })
+        .catch(console.error)
+        .finally(() => setIsLoading(false));
     }
+  }, [keyword, color, bannedKeywords, user]);
 
-    const foundViolation = bannedKeywords.some((word) =>
-      keyword.toLowerCase().includes(word)
-    );
-    if (foundViolation) {
-      setViolation(true);
-      setPosts([]);
-      return;
-    }
-
-    setIsLoading(true);
-    fetchPosts(keyword)
-      .then((data) => {
-        const mapped = data.map((item: any) => ({
-          id: item.id,
-          name: item.username || user?.username || user?.name,
-          title: item.title,
-          content: item.content,
-          image_url: item.image_url,
-          tags: item.tags || [],
-        }));
-        setPosts(mapped);
-        setViolation(false);
-      })
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
-  }, [keyword, bannedKeywords, user]);
-
-  // Popular tags
+  // Tính popular tags
   useEffect(() => {
     if (!posts.length) return;
     const tagCount: Record<string, number> = {};
@@ -120,7 +121,7 @@ export default function Home() {
     : posts;
 
   return (
-    <section>
+    <section className="mt-20">
       {/* Banner */}
       <section className="w-full overflow-hidden">
         <div className="flex h-full flex-col px-6">

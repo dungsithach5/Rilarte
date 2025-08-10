@@ -10,7 +10,7 @@ import TagInput from "../@/components/post-artwork/tag-input"
 interface HandleSubmitEvent extends React.FormEvent<HTMLFormElement> {}
 
 export default function Post() {
-  const { session } = useAuth(true)
+  const { session, user } = useAuth(true)
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [image, setImage] = useState<string | null>(null)
@@ -58,7 +58,8 @@ export default function Post() {
       const imageUrl = uploadResponse.data.imageUrl
 
       const newPost = {
-        user_name: session?.user?.email,
+        user_id: typeof user === 'number' ? user : 1,
+        user_name: session?.user?.email || user?.email || user,
         title,
         content: description,
         image_url: imageUrl,

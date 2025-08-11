@@ -8,4 +8,5 @@ module.exports = (app) => {
     app.use('/api/notifications', require('./notification.route'));
     app.use('/api/upload', require('./upload.js'));
     app.use('/api/banned_keywords', require('./bannedKeywords.route'));
+    app.use('/api/copyright-violations', require('./copyrightViolation.route'));
 }

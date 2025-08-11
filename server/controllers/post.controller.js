@@ -55,12 +55,39 @@ exports.getPostById = async (req, res) => {
 
 exports.createPost = async (req, res) => {
     try {
+        const {
+            user_name,
+            title,
+            content,
+            image_url,
+            // Copyright protection fields
+            license_type,
+            license_description,
+            watermark_enabled,
+            watermark_text,
+            watermark_position,
+            download_protected,
+            allow_download,
+            copyright_owner_id,
+            copyright_year
+        } = req.body;
+
         const newPost = await prisma.posts.create({
             data: {
-                user_name: req.body.user_name,
-                title: req.body.title,
-                content: req.body.content,
-                image_url: req.body.image_url,
+                user_name,
+                title,
+                content,
+                image_url,
+                // Copyright protection fields
+                license_type: license_type || null,
+                license_description: license_description || null,
+                watermark_enabled: watermark_enabled || false,
+                watermark_text: watermark_text || null,
+                watermark_position: watermark_position || null,
+                download_protected: download_protected || false,
+                allow_download: allow_download !== undefined ? allow_download : true,
+                copyright_owner_id: copyright_owner_id || null,
+                copyright_year: copyright_year || null,
                 createdAt: new Date(),
                 updatedAt: new Date(),
             },

@@ -19,13 +19,16 @@ interface User {
   avatarUrl: string
   name: string
   username: string
+  userId?: number | string;
 }
 
-export default function HoverCardUser({ avatarUrl, name, username }: User) {
+export default function HoverCardUser({ avatarUrl, name, username, userId }: User) {
+  const profileLink = userId ? `/profile/${userId}` : '/profile';
+  
   return (
     <HoverCard>
       <HoverCardTrigger asChild>
-        <Link href="/profile">
+        <Link href={profileLink}>
           <img
             src={avatarUrl}
             alt="User"
@@ -34,12 +37,12 @@ export default function HoverCardUser({ avatarUrl, name, username }: User) {
         </Link>
       </HoverCardTrigger>
       <HoverCardContent className="w-[350px]">
-        <img src="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Z3JhZGllbnR8ZW58MHx8MHx8fDA%3D" alt="" className="h-26 w-full object-cover bg-center rounded" />
+        <img src="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Z3JhZGllbnR8MHx8MHx8fDA%3D" alt="" className="h-26 w-full object-cover bg-center rounded" />
 
         {/* Centered Avatar */}
         <div className="flex justify-center -mt-13">
           <Avatar className="w-24 h-24 border-2 border-white shadow-md">
-            <Link href="/profile">
+            <Link href={profileLink}>
               <AvatarImage src={avatarUrl} />
             </Link>
             <AvatarFallback>AV</AvatarFallback>
@@ -47,37 +50,36 @@ export default function HoverCardUser({ avatarUrl, name, username }: User) {
         </div>
 
         {/* Info */}
-        <div className="text-center mt-2">
-          <h2 className="font-semibold text-lg">{name}</h2>
-          <p className="text-sm text-gray-500">@{username}</p>
+        <div className="text-center mt-4">
+          <h4 className="text-lg font-semibold">{name}</h4>
+          <p className="text-sm text-gray-600">@{username}</p>
+        </div>
 
-          {/* Stats */}
-          <div className="flex justify-between items-center mt-4 text-sm text-gray-700">
-            <div className="flex-1">
-              <p className="font-semibold">1</p>
-              <p className="text-xs">Following</p>
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold">3</p>
-              <p className="text-xs">Followers</p>
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold">16</p>
-              <p className="text-xs">Post Views</p>
-            </div>
+        {/* Stats */}
+        <div className="flex justify-around mt-4 pt-4 border-t">
+          <div className="text-center">
+            <div className="font-semibold">1.2K</div>
+            <div className="text-sm text-gray-600">Followers</div>
           </div>
+          <div className="text-center">
+            <div className="font-semibold">890</div>
+            <div className="text-sm text-gray-600">Following</div>
+          </div>
+          <div className="text-center">
+            <div className="font-semibold">156</div>
+            <div className="text-sm text-gray-600">Posts</div>
+          </div>
+        </div>
 
-          {/* Buttons */}
-          <div className="space-y-2 mt-4">
-            <Button variant="default" className="w-full text-sm cursor-pointer">
-              Follow
-            </Button>
-            <Button variant="outline" className="w-full text-sm cursor-pointer">
-              Message
-            </Button>
-          </div>
+        {/* Action Button */}
+        <div className="mt-4">
+          <Link href={profileLink}>
+            <button className="w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 transition-colors">
+              View Profile
+            </button>
+          </Link>
         </div>
       </HoverCardContent>
     </HoverCard>
-  )
+  );
 }

@@ -1,32 +1,26 @@
-import { Button } from "../components/ui/button-user"
+import { useDispatch } from "react-redux";
+import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Cookies from "js-cookie";
+import { logout } from "../../context/userSlice";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu"
-import Link from "next/link";
-import Cookies from "js-cookie"
-import { useRouter } from "next/navigation"
-import { useDispatch } from "react-redux"
-import { logout } from "../../context/userSlice"
-import { signOut, useSession } from "next-auth/react"
+} from "./ui-admin/dropdown-menu";
+import { Button } from "./ui-admin/button";
 
 interface Props {
   avatar: React.ReactNode;
+  userId?: number | string;
 }
 
-export default function DropdownMenuDemo({ avatar }: Props) {
+export default function DropdownMenuDemo({ avatar, userId }: Props) {
   const dispatch = useDispatch()
   const router = useRouter();
+  const profileLink = userId ? `/profile/${userId}` : '/profile';
 
   const handleLogout = async () => {
     dispatch(logout());
@@ -42,7 +36,7 @@ export default function DropdownMenuDemo({ avatar }: Props) {
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem>
-          <Link href="/profile">
+          <Link href={profileLink}>
             Profile
           </Link>
         </DropdownMenuItem>

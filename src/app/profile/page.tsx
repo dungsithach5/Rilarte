@@ -6,8 +6,8 @@ import ProfileTabs from '../@/components/ProfileTabs';
 export default function ProfilePage() {
   return (
     <main className="">
-      <ProfileHeader />
-      <ProfileTabs />
+      <ProfileHeader targetUserId={undefined} />
+      <ProfileTabs targetUserId={undefined} />
     </main>
   )
 }

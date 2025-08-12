@@ -1,4 +1,3 @@
-// Home.tsx
 "use client";
 
 import axios from "axios";
@@ -11,6 +10,7 @@ import { RootState } from "./context/store";
 
 import { fetchPosts, fetchPostsByColor } from "./services/Api/posts";
 import { fetchBannedKeywords } from "./services/Api/bannedKeywords";
+import { createPostSlug } from "../lib/utils";
 
 import { ComposerComment } from "./@/components/model-comment/ComposerComment";
 import SkeletonPost from "./@/components/skeleton-post";
@@ -64,6 +64,7 @@ export default function Home() {
             content: item.content,
             image_url: item.image_url,
             tags: item.tags || [],
+            slug: createPostSlug(item.title, item.id),
           }));
           setPosts(mapped);
           setViolation(false);
@@ -80,6 +81,7 @@ export default function Home() {
             content: item.content,
             image_url: item.image_url,
             tags: item.tags || [],
+            slug: createPostSlug(item.title, item.id),
           }));
           setPosts(mapped);
           setViolation(false);
@@ -216,7 +218,10 @@ export default function Home() {
             {filteredPosts.map((post) => (
               <ComposerComment
                 key={post.id}
-                post={post}
+                post={{
+                  ...post,
+                  slug: createPostSlug(post.title, post.id)
+                }}
                 currentUserId={session?.user?.id ? Number(session.user.id) : undefined}
                 onDelete={handleDeletePost}
                 relatedPosts={filteredPosts.filter((p) => p.id !== post.id)}

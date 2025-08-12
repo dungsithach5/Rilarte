@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import {
   Dialog,
@@ -48,6 +49,12 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
   const [loading, setLoading] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dialogContentRef = useRef<HTMLDivElement>(null)
+  const [open, setOpen] = useState(false)
+  const isClosingRef = useRef(false)
+
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const [comment, setComment] = useState('')
   const [comments, setComments] = useState<Comment[]>([])
@@ -304,6 +311,17 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
     getCommentsData();
   }, [post, session, reduxUser])
 
+  // Auto-open modal if URL contains this post's slug
+  useEffect(() => {
+    const urlSlug = searchParams?.get('post')
+    if (!open && urlSlug && String(urlSlug) === String(post?.slug)) {
+      if (!isClosingRef.current) setOpen(true)
+    } else if (!urlSlug && isClosingRef.current) {
+      // URL cleared; allow future auto-opens
+      isClosingRef.current = false
+    }
+  }, [searchParams, post?.slug, open])
+
   const handleSelectRelatedPost = (newPost: any) => {
     setLoading(true)
     setTimeout(() => {
@@ -314,10 +332,48 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
       setComments([])
       setLoading(false)
     }, 1000)
+
+    // Update slug in URL while staying on the same page
+    try {
+      const params = new URLSearchParams(searchParams?.toString())
+      if (newPost?.slug) {
+        params.set('post', String(newPost.slug))
+        const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname
+        router.replace(nextUrl, { scroll: false })
+      }
+    } catch (err) {
+      // noop
+    }
   }
 
   return (
-    <Dialog>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        try {
+          const params = new URLSearchParams(searchParams?.toString())
+          if (nextOpen) {
+            isClosingRef.current = false
+            if (currentPost?.slug) {
+              params.set('post', String(currentPost.slug))
+              const nextUrl = `${pathname}?${params.toString()}`
+              router.replace(nextUrl, { scroll: false })
+            }
+            setOpen(true)
+          } else {
+            isClosingRef.current = true
+            if (params.get('post') === String(currentPost?.slug)) {
+              params.delete('post')
+            }
+            const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname
+            router.replace(nextUrl, { scroll: false })
+            setOpen(false)
+          }
+        } catch (err) {
+          console.log('Error', err)
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <div key={currentPost.id} className="mb-4 break-inside-avoid cursor-pointer">
           <div className="mx-auto">

@@ -59,6 +59,7 @@ export default function Home() {
         .then((data) => {
           const mapped = data.map((item: any) => ({
             id: item.id,
+            user_id: item.user_id,
             name: item.username || user?.username || user?.name,
             title: item.title,
             content: item.content,
@@ -75,6 +76,7 @@ export default function Home() {
         .then((data) => {
           const mapped = data.map((item: any) => ({
             id: item.id,
+            user_id: item.user_id,
             name: item.username || user?.username || user?.name,
             title: item.title,
             content: item.content,

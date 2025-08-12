@@ -35,6 +35,24 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
+// Get all users (public - no auth required)
+router.get('/public', async (req, res) => {
+  try {
+    const users = await prisma.users.findMany({
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        avatar_url: true,
+        image: true
+      }
+    });
+    res.status(200).json({ success: true, users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách người dùng' });
+  }
+});
+
 // Get public user info by ID (no auth required)
 router.get('/public/:id', async (req, res) => {
   try {
@@ -43,6 +61,8 @@ router.get('/public/:id', async (req, res) => {
       select: {
         id: true,
         username: true,
+        email: true,
+        bio: true,
         avatar_url: true,
         image: true
       }
@@ -54,6 +74,8 @@ router.get('/public/:id', async (req, res) => {
       user: {
         id: user.id,
         username: user.username,
+        email: user.email,
+        bio: user.bio,
         avatar: user.avatar_url || user.image || '/img/user.png',
         name: user.username || `User ${user.id}`
       }

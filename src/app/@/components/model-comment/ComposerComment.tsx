@@ -15,6 +15,7 @@ import { useAuth } from "../../../hooks/useAuth"
 import { useSelector } from "react-redux"
 import DropdownMenuEllipsis from "../dropdown-ellipsis"
 import HoverCardUser from "../hover-card-user"
+import UserInfo from "./UserInfo"
 import LikeButton from "./like-button"
 import CommentLikeButton from "./comment-like-button"
 import BookmarkButton from "./bookmark-button"
@@ -343,18 +344,13 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                 </div>
 
                 <div className="w-full flex items-center justify-between gap-2 z-0">
-                  <Link
-                    href="/profile"
+                  <UserInfo
+                    userId={currentPost.user_id}
+                    username={userName}
+                    avatar={userAvatar}
+                    size="lg"
                     className="flex items-center gap-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <img
-                      src={userAvatar}
-                      alt={userName}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-white"
-                    />
-                    <strong className="text-white">{userName}</strong>
-                  </Link>
+                  />
 
                   <div className="flex items-center gap-4 text-white text-sm">
                     <LikeButton
@@ -402,14 +398,14 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
             <div className="md:w-1/2 w-full">
               <DialogHeader className="max-w-3xl">
                 <DialogTitle className="flex items-center gap-3">
-                  <img
-                    src={userAvatar}
-                    alt={userName}
-                    className="w-8 h-8 rounded-full object-cover"
+                  <UserInfo
+                    userId={currentPost.user_id}
+                    username={userName}
+                    avatar={userAvatar}
+                    size="md"
+                    showName={true}
+                    onClick={(e) => e.stopPropagation()}
                   />
-                  <div>
-                    <p className="text-sm font-semibold">{userName}</p>
-                  </div>
                 </DialogTitle>
                 <div className="flex flex-col text-left">
                   <p className="text-xl font-semibold">{currentPost.title}</p>
@@ -475,6 +471,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                       avatarUrl={comment.userInfo?.avatar || '/img/user.png'} 
                       name={comment.userInfo?.name || `User ${comment.user_id}`} 
                       username={comment.userInfo?.username || `user${comment.user_id}`} 
+                      userId={comment.user_id}
                     />
                     <div className="flex-1">
                       <p className="text-sm font-medium">{comment.userInfo?.name || `User ${comment.user_id}`}</p>

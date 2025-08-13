@@ -139,8 +139,6 @@ export default function ProfileTabs({ targetUserId }: ProfileTabsProps) {
       <TabsList className="mx-auto space-x-80 border-b border-white/10 bg-transparent">
         <TabsTrigger value="post">Post</TabsTrigger>
         {isOwnProfile && <TabsTrigger value="saved">Saved</TabsTrigger>}
-        <TabsTrigger value="following">Following</TabsTrigger>
-        <TabsTrigger value="followers">Followers</TabsTrigger>
       </TabsList>
 
       <TabsContent value="post">
@@ -221,46 +219,6 @@ export default function ProfileTabs({ targetUserId }: ProfileTabsProps) {
           )}
         </TabsContent>
       )}
-
-      {/* Following */}
-      <TabsContent value="following" className="mt-6 mx-auto">
-        <div className="flex items-center space-x-4">
-          <div className="w-10 h-10 rounded-full overflow-hidden">
-            <img
-              src="https://ui.shadcn.com/avatars/01.png"
-              alt="Avatar"
-              className="object-cover"
-            />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-medium text-sm">Sofia Davis</span>
-            <span className="text-gray-500 text-sm">m@example.com</span>
-          </div>
-          <button className="ml-auto flex items-center border border-gray-300 rounded-md px-3 py-1 text-sm font-medium hover:bg-gray-100 transition cursor-pointer">
-            Follow
-          </button>
-        </div>
-      </TabsContent>
-
-      {/* Followers */}
-      <TabsContent value="followers" className="mt-6 mx-auto">
-        <div className="flex items-center space-x-4">
-          <div className="w-10 h-10 rounded-full overflow-hidden">
-            <img
-              src="https://ui.shadcn.com/avatars/01.png"
-              alt="Avatar"
-              className="object-cover"
-            />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-medium text-sm">John Dofe</span>
-            <span className="text-gray-500 text-sm">m@example.com</span>
-          </div>
-          <button className="ml-auto flex items-center border border-gray-300 rounded-md px-3 py-1 text-sm font-medium hover:bg-gray-100 transition cursor-pointer">
-            Follow
-          </button>
-        </div>
-      </TabsContent>
     </Tabs>
   );
 }

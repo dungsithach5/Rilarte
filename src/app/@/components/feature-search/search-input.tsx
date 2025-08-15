@@ -1,23 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { fetchColors } from "../../../services/Api/posts";
+import UserSearchResults from "./search-user";
+import SearchTags from "./search-tag";
+import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { setKeyword } from "../../../context/searchSlice";
 
-interface SearchInputProps {
-  onSearch: (keyword: string) => void;
-  initialKeyword?: string;
-}
-
-export default function SearchInput({ onSearch, initialKeyword = "" }: SearchInputProps) {
-  const [inputValue, setInputValue] = useState(initialKeyword);
-  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+export default function SearchInput() {
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const [inputValue, setInputValue] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [colors, setColors] = useState<string[]>([]);
 
-  useEffect(() => {
-    setInputValue(initialKeyword);
-  }, [initialKeyword]);
-
+  // Load colors for suggestion box
   useEffect(() => {
     async function loadColors() {
       try {
@@ -30,33 +29,43 @@ export default function SearchInput({ onSearch, initialKeyword = "" }: SearchInp
     loadColors();
   }, []);
 
+  // Submit search form
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(inputValue.trim());
+    if (inputValue.trim() !== "") {
+      dispatch(setKeyword(inputValue.trim()));
+      setShowSuggestions(false);
+    }
   };
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(event.target.value);
-    setShowSuggestions(true);
+  // Input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+    setShowSuggestions(value.trim() === "");
   };
 
   const handleInputFocus = () => {
-    setShowSuggestions(true);
+    if (inputValue.trim() === "") setShowSuggestions(true);
   };
 
   const handleInputBlur = () => {
-    setTimeout(() => {
-      setShowSuggestions(false);
-    }, 100);
+    setTimeout(() => setShowSuggestions(false), 100);
   };
 
-  const trendingTags: string[] = [
-    '#nature',
-    'textile art',
-    'packaging',
-    'art',
-    'ceramics',
-  ];
+  // Click tag => set input & dispatch keyword
+  const handleSelectTag = (tag: string) => {
+    setInputValue(tag);
+    dispatch(setKeyword(tag));
+    setShowSuggestions(false);
+  };
+
+  // Click color => set input & dispatch keyword
+  const handleSelectColor = (color: string) => {
+    setInputValue(color);
+    dispatch(setKeyword(color));
+    setShowSuggestions(false);
+  };
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full max-w-md">
@@ -79,52 +88,32 @@ export default function SearchInput({ onSearch, initialKeyword = "" }: SearchInp
         </button>
       </div>
 
-      {showSuggestions && (
-        <div className="absolute top-12 z-10 border bg-white rounded-lg p-5 text-[#e0e0e0] shadow-lg border-t border-[#3a3a3a]">
-          <h3 className="text-black text-sm uppercase mb-4 tracking-wider">
-            Trending
-          </h3>
-          <div className="flex flex-wrap gap-2 mb-6">
-            {trendingTags.map((tag) => (
-              <span
-                key={tag}
-                className="bg-[#3a3a3a] text-[#e0e0e0] px-4 py-2 rounded-full text-sm flex items-center cursor-pointer hover:bg-[#4a4a4a] transition-colors duration-200"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  setInputValue(tag);
-                  onSearch(tag);
-                  setShowSuggestions(false);
-                }}
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
+      {/* Suggestions */}
+      {showSuggestions && inputValue.trim() === "" && (
+        <div className="absolute top-12 z-10 border bg-white rounded-lg p-5 shadow-lg w-full">
+          {/* Trending Tags */}
+          <h3 className="text-black text-sm uppercase mb-4 tracking-wider">Trending Tags</h3>
+          <SearchTags onSelectTag={handleSelectTag} />
 
-          <h3 className="text-black text-sm uppercase mb-4 tracking-wider">
-            Colors
-          </h3>
+          {/* Colors */}
+          <h3 className="text-black text-sm uppercase mb-4 tracking-wider">Colors</h3>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6">
             {colors.length > 0 ? (
               colors.map((colorCode) => (
                 <React.Fragment key={colorCode}>
                   <span
-                    className="w-8 h-8 rounded-full border border-gray-700 cursor-pointer transform hover:scale-110 transition-transform duration-200"
+                    className="w-8 h-8 rounded-full border border-gray-700 cursor-pointer hover:scale-110"
                     style={{ backgroundColor: colorCode }}
                     onMouseDown={(e) => {
                       e.preventDefault();
-                      setInputValue(colorCode);
-                      onSearch(colorCode);
-                      setShowSuggestions(false);
+                      handleSelectColor(colorCode);
                     }}
                   ></span>
                   <span
                     className="bg-[#3a3a3a] text-[#e0e0e0] px-3 py-1 rounded text-xs cursor-pointer"
                     onMouseDown={(e) => {
                       e.preventDefault();
-                      setInputValue(colorCode);
-                      onSearch(colorCode);
-                      setShowSuggestions(false);
+                      handleSelectColor(colorCode);
                     }}
                   >
                     {colorCode}
@@ -136,6 +125,19 @@ export default function SearchInput({ onSearch, initialKeyword = "" }: SearchInp
             )}
           </div>
         </div>
+      )}
+
+      {/* User search */}
+      {inputValue.trim() !== "" && (
+        <UserSearchResults
+          keyword={inputValue}
+          onSelect={(user) => {
+            setInputValue(user.username);
+            dispatch(setKeyword(user.username));
+            router.push(`/profile/${user.id}`);
+            setShowSuggestions(false);
+          }}
+        />
       )}
     </form>
   );

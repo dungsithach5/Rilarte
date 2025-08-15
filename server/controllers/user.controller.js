@@ -224,6 +224,32 @@ exports.login = async (req, res) => {
   }
 };
 
+exports.searchUsers = async (req, res) => {
+  try {
+    const { keyword } = req.query;
+    if (!keyword) return res.status(400).json({ success: false, users: [], message: 'Keyword is required' });
+
+    const users = await prisma.users.findMany({
+      where: {
+        OR: [
+          { username: { contains: keyword } },
+        ]
+      },
+      select: {
+        id: true,
+        username: true,
+        avatar_url: true
+      },
+      take: 10
+    });
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({ success: false, users: [], message: 'Error searching users' });
+  }
+};
+
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await prisma.users.findMany({

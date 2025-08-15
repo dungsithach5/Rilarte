@@ -5,7 +5,10 @@ const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const { testSendMail, resetPassword, login, register } = require('../controllers/user.controller');
+const { testSendMail, resetPassword, login, register, searchUsers } = require('../controllers/user.controller');
+
+// Search
+router.get('/search', searchUsers);
 
 // Validation helper
 const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;

@@ -71,18 +71,40 @@ export function LoginForm({
       Cookies.set('token', data.token, { expires: 1, secure: false, sameSite: 'lax' })
       localStorage.setItem('user', JSON.stringify(data.user))
 
-      const avatarUrl = data.user?.avatar && data.user.avatar !== ''
-        ? data.user.avatar
-        : '/img/user.png';
+      // Lấy thông tin onboarded từ API
+      try {
+        const userResponse = await fetch(`http://localhost:5001/api/users/email/${formData.email}`);
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          console.log('User data with onboarded:', userData);
+          
+          // Cập nhật user trong localStorage với thông tin onboarded
+          const updatedUser = {
+            ...data.user,
+            onboarded: userData.user.onboarded,
+            gender: userData.user.gender,
+            topics: userData.user.topics
+          };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          
+          const avatarUrl = data.user?.avatar_url || data.user?.avatar || '/img/user.png';
 
-      dispatch(loginSuccess({
-        avatar: avatarUrl,
-        token: data.token,
-      }));
-      console.log('Dispatching loginSuccess with:', {
-        avatar: avatarUrl,
-        token: data.token,
-      });
+          dispatch(loginSuccess({
+            avatar: avatarUrl,
+            token: data.token,
+            user: updatedUser // Thêm thông tin user đầy đủ
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to get user onboarded info:', error);
+        // Fallback nếu không lấy được thông tin onboarded
+        const avatarUrl = data.user?.avatar_url || data.user?.avatar || '/img/user.png';
+
+        dispatch(loginSuccess({
+          avatar: avatarUrl,
+          token: data.token,
+        }));
+      }
 
       router.push("/")
       

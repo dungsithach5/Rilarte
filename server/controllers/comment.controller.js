@@ -2,7 +2,22 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 exports.getAllComments = async (req, res) => {
     try {
-        const comments = await prisma.comment.findMany();
+        const { post_id } = req.query;
+        
+        let comments;
+        if (post_id) {
+            // Filter comments by post_id
+            comments = await prisma.comments.findMany({
+                where: { post_id: Number(post_id) },
+                orderBy: { createdAt: 'desc' }
+            });
+        } else {
+            // Get all comments
+            comments = await prisma.comments.findMany({
+                orderBy: { createdAt: 'desc' }
+            });
+        }
+        
         res.status(200).json(comments);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching comments', error });
@@ -11,7 +26,7 @@ exports.getAllComments = async (req, res) => {
 
 exports.getCommentById = async (req, res) => {
     try {
-        const comment = await prisma.comment.findUnique({ where: { id: Number(req.params.id) } });
+        const comment = await prisma.comments.findUnique({ where: { id: Number(req.params.id) } });
         if (!comment) {
             return res.status(404).json({ message: 'Comment not found' });
         }
@@ -23,9 +38,10 @@ exports.getCommentById = async (req, res) => {
 
 exports.createComment = async (req, res) => {
     try {
-        const { user_id, post_id, content, parent_id } = req.body;
+        const { post_id, content, parent_id } = req.body;
+        const user_id = req.user.id; // Get from JWT token
 
-        const newComment = await prisma.comment.create({
+        const newComment = await prisma.comments.create({
             data: {
                 user_id,
                 post_id,
@@ -39,14 +55,14 @@ exports.createComment = async (req, res) => {
         // Tạo notification cho chủ post hoặc chủ comment cha
         let targetUserId = null;
         if (parent_id) {
-            const parentComment = await prisma.comment.findUnique({ where: { id: parent_id } });
+            const parentComment = await prisma.comments.findUnique({ where: { id: parent_id } });
             targetUserId = parentComment?.user_id;
         } else {
             const post = await prisma.posts.findUnique({ where: { id: post_id } });
             targetUserId = post?.user_id;
         }
         if (targetUserId && targetUserId !== user_id) {
-            await prisma.notification.create({
+            await prisma.notifications.create({
                 data: {
                     user_id: targetUserId,
                     type: 'comment',
@@ -60,13 +76,14 @@ exports.createComment = async (req, res) => {
 
         res.status(201).json(newComment);
     } catch (error) {
+        console.error('Error creating comment:', error);
         res.status(400).json({ message: 'Error creating comment', error });
     }
 };
 
 exports.updateComment = async (req, res) => {
     try {
-        const updatedComment = await prisma.comment.update({
+        const updatedComment = await prisma.comments.update({
             where: { id: Number(req.params.id) },
             data: req.body
         });
@@ -78,7 +95,7 @@ exports.updateComment = async (req, res) => {
 
 exports.deleteComment = async (req, res) => {
     try {
-        await prisma.comment.delete({ where: { id: Number(req.params.id) } });
+        await prisma.comments.delete({ where: { id: Number(req.params.id) } });
         res.status(200).json({ message: 'Comment deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error deleting comment', error });
@@ -90,7 +107,7 @@ exports.getCommentsByPostId = async (req, res) => {
         const post_id = Number(req.params.post_id);
 
         //comment gốc
-        const comments = await prisma.comment.findMany({
+        const comments = await prisma.comments.findMany({
             where: {
                 post_id,
                 parent_id: null

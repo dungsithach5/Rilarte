@@ -1,17 +1,20 @@
+// Home.tsx
 "use client";
 
+import axios from "axios";
 import { useEffect, useState } from "react";
 import Masonry from "react-masonry-css";
-import { Search,Frown, MoreVertical } from "lucide-react";
-import RotatingText from './@/components/RotatingText/RotatingText'
+import { Frown } from "lucide-react";
+import RotatingText from './@/components/RotatingText/RotatingText';
+import { useSelector } from "react-redux";
+import { RootState } from "./context/store";
 
-import { fetchPosts } from "./services/Api/posts";
+import { fetchPosts, fetchPostsByColor } from "./services/Api/posts";
 import { fetchBannedKeywords } from "./services/Api/bannedKeywords";
 
 import { ComposerComment } from "./@/components/model-comment/ComposerComment";
 import SkeletonPost from "./@/components/skeleton-post";
 import { useAuth } from "./hooks/useAuth";
-import axios from "axios";
 
 const breakpointColumnsObj = {
   default: 6,
@@ -20,104 +23,109 @@ const breakpointColumnsObj = {
 };
 
 export default function Home() {
+  const { keyword, color } = useSelector((state: RootState) => state.search);
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
-  const [searchInput, setSearchInput] = useState("");
   const [bannedKeywords, setBannedKeywords] = useState<string[]>([]);
   const [violation, setViolation] = useState(false);
-  const { user } = useAuth(true);
-  const { session, status } = useAuth(true);
-  
+  const { user, session } = useAuth(true);
+  const [popularTags, setPopularTags] = useState<string[]>([]);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  // Load banned keywords once
+  // Load banned keywords
   useEffect(() => {
-    const loadBanned = async () => {
-      try {
-        const words = await fetchBannedKeywords();
-        setBannedKeywords(words);
-      } catch (err) {
-        console.error("Error loading banned keywords", err);
-      }
-    };
-    loadBanned();
+    fetchBannedKeywords()
+      .then(setBannedKeywords)
+      .catch(console.error);
   }, []);
 
-  // Load default posts on first load
+  // Fetch posts by keyword or color
   useEffect(() => {
-    const loadPosts = async () => {
-      try {
-        const data = await fetchPosts("");
-        const mapped = data.map((item: any) => ({
-          id: item.id,
-          name: user?.username || user?.name,
-          title: item.title,
-          content: item.content,
-          image_url: item.image_url,
-        }));
-        setPosts(mapped);
-      } catch (err) {
-        console.error("Error loading posts", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadPosts();
-  }, [user]);
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const keyword = searchInput.trim().toLowerCase();
-
-    // Check violation
-    const foundViolation = bannedKeywords.some((word) =>
-      keyword.includes(word)
+    // Kiểm tra vi phạm keyword nếu có
+    const foundViolation = keyword && bannedKeywords.some((word) =>
+      keyword.toLowerCase().includes(word)
     );
+
     if (foundViolation) {
       setViolation(true);
       setPosts([]);
       return;
     }
 
-    setViolation(false);
     setIsLoading(true);
 
-    setTimeout(async () => {
-      try {
-        const data = await fetchPosts(keyword);
-        const mapped = data.map((item: any) => ({
-          id: item.id,
-          name: user?.username || user?.name,
-          title: item.title,
-          content: item.content,
-          image_url: item.image_url,
-        }));
-        setPosts(mapped);
-      } catch (err) {
-        console.error("Error fetching posts", err);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 1000);
-  };
+    if (color) {
+      fetchPostsByColor(color)
+        .then((data) => {
+          const mapped = data.map((item: any) => ({
+            id: item.id,
+            name: item.username || user?.username || user?.name,
+            title: item.title,
+            content: item.content,
+            image_url: item.image_url,
+            tags: item.tags || [],
+          }));
+          setPosts(mapped);
+          setViolation(false);
+        })
+        .catch(console.error)
+        .finally(() => setIsLoading(false));
+    } else {
+      fetchPosts(keyword)
+        .then((data) => {
+          const mapped = data.map((item: any) => ({
+            id: item.id,
+            name: item.username || user?.username || user?.name,
+            title: item.title,
+            content: item.content,
+            image_url: item.image_url,
+            tags: item.tags || [],
+          }));
+          setPosts(mapped);
+          setViolation(false);
+        })
+        .catch(console.error)
+        .finally(() => setIsLoading(false));
+    }
+  }, [keyword, color, bannedKeywords, user]);
 
-  // delete post
+  // Tính popular tags
+  useEffect(() => {
+    if (!posts.length) return;
+    const tagCount: Record<string, number> = {};
+    posts.forEach((post) => {
+      (post.tags || []).forEach((tag: string) => {
+        if (tag.length > 3) {
+          tagCount[tag] = (tagCount[tag] || 0) + 1;
+        }
+      });
+    });
+    const sortedTags = Object.entries(tagCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([tag]) => tag);
+    setPopularTags(sortedTags);
+  }, [posts]);
+
   const handleDeletePost = async (postId: number) => {
     try {
-      await axios.delete(`http://localhost:5000/api/posts/${postId}`);
-      setPosts((prev) => prev.filter((p) => p.id !== postId));
+      await axios.delete(`http://localhost:5001/api/posts/${postId}`);
+      setPosts(prev => prev.filter(p => p.id !== postId));
     } catch (err) {
       console.error("Error deleting post", err);
     }
   };
 
+  const filteredPosts = selectedTag
+    ? posts.filter((post) => post.tags?.includes(selectedTag))
+    : posts;
+
   return (
-    <section>
+    <section className="mt-20">
       {/* Banner */}
       <section className="w-full overflow-hidden">
         <div className="flex h-full flex-col px-6">
-          <h1
-            className="font-bold leading-tight text-[clamp(2.5rem,10vw,8rem)] flex flex-wrap items-center gap-2"
-          >
+          <h1 className="font-bold leading-tight text-[clamp(2.5rem,10vw,8rem)] flex flex-wrap items-center gap-2">
             Unleash your{" "}
             <RotatingText
               texts={["creative", "vivid", "pure", "real", "fluid", "cool", "artsy"]}
@@ -133,38 +141,35 @@ export default function Home() {
             />
             energy
           </h1>
-
           <p className="text-lg md:text-xl text-gray-800">
             Step into a world where visuals speak and creativity knows no limits 
-            <br/>
-             a space to express, inspire, and connect through art.
+            <br />
+            a space to express, inspire, and connect through art.
           </p>
         </div>
       </section>
 
-
       {/* Search & Filter */}
       <section className="w-full px-6 mt-12 flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <div className="w-1/3">
-            <form onSubmit={handleSearch} className="relative">
-              <input
-                type="text"
-                name="search"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search..."
-                className="w-full p-3 px-4 pr-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#2C343A]"
-              />
+          {/* filter Tags */}
+          <div className="flex gap-2 w-auto">
+            <label className="text-sm">Popular Tags:</label>
+            {popularTags.map((tag) => (
               <button
-                type="submit"
-                className="absolute h-10 w-10 bg-black rounded-full flex justify-center items-center top-1/2 right-1 -translate-y-1/2 text-white cursor-pointer"
+                key={tag}
+                onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
+                className={`px-4 py-2 rounded-full border text-sm font-medium shadow-sm transition-colors
+                  ${tag === selectedTag
+                    ? "bg-black text-white border-black"
+                    : "bg-white text-black hover:bg-black hover:text-white border-gray-300"}`}
               >
-                <Search size={20} />
+                #{tag}
               </button>
-            </form>
+            ))}
           </div>
 
+          {/* Sort UI */}
           <div className="w-auto">
             <select className="p-2 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2C343A]">
               <option value="popular">Popular</option>
@@ -172,6 +177,12 @@ export default function Home() {
             </select>
           </div>
         </div>
+
+        {selectedTag && (
+          <div className="px-2 text-sm text-gray-600">
+            Showing results for tag: <span className="font-semibold text-black">#{selectedTag}</span>
+          </div>
+        )}
       </section>
 
       {/* Posts */}
@@ -179,7 +190,7 @@ export default function Home() {
         {violation ? (
           <div className="mt-12 text-center w-full flex justify-center items-center">
             <div className="flex flex-col justify-center items-center space-y-6">
-              <Frown className="text-gray-400" size={120}/>
+              <Frown className="text-gray-400" size={120} />
               <div>
                 The topic you are looking for violates our <strong>Community Guidelines</strong>, 
                 <br />so we are currently unable to display the search results.
@@ -187,27 +198,28 @@ export default function Home() {
             </div>
           </div>
         ) : isLoading ? (
-            <Masonry
-              breakpointCols={breakpointColumnsObj}
-              className="flex gap-4"
-              columnClassName="flex flex-col gap-4"
-            >
-              {Array.from({ length: 20 }).map((_, i) => (
-                <SkeletonPost key={i} index={i} />
-              ))}
-            </Masonry>
+          <Masonry
+            breakpointCols={breakpointColumnsObj}
+            className="flex gap-4"
+            columnClassName="flex flex-col gap-4"
+          >
+            {Array.from({ length: 20 }).map((_, i) => (
+              <SkeletonPost key={i} index={i} />
+            ))}
+          </Masonry>
         ) : (
           <Masonry
             breakpointCols={breakpointColumnsObj}
             className="flex gap-4"
             columnClassName="flex flex-col"
           >
-            {posts.map((post) => (
+            {filteredPosts.map((post) => (
               <ComposerComment
                 key={post.id}
                 post={post}
-                currentUserId={session?.user?.id}
+                currentUserId={session?.user?.id ? Number(session.user.id) : undefined}
                 onDelete={handleDeletePost}
+                relatedPosts={filteredPosts.filter((p) => p.id !== post.id)}
               />
             ))}
           </Masonry>

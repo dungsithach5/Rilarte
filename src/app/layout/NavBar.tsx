@@ -1,13 +1,16 @@
 'use client'
 
-import { useSelector } from "react-redux"
-import type { RootState } from "../context/store"
+import { useSelector, useDispatch } from "react-redux"
+import type { RootState, AppDispatch } from "../context/store"
 import Link from 'next/link'
 import { useSession } from "next-auth/react"
 import DropdownUser from "../@/components/dropdown-user"
 import { useRouter } from 'next/navigation'
+import { setColor, setKeyword } from "../context/searchSlice";
+import SearchInput from "../@/components/feature-search/search-input"
 
 export function NavBar() {
+  const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated, avatar } = useSelector((state: RootState) => state.user)
   const { data: session } = useSession()
   const router = useRouter()
@@ -16,11 +19,30 @@ export function NavBar() {
     router.push('/auth')
   }
 
+  function isHexColor(str: string): boolean {
+    const hexColorRegex = /^#([0-9A-Fa-f]{3}){1,2}$/;
+    return hexColorRegex.test(str);
+  }
+
+  const handleSearch = (keyword: string) => {
+    const trimmed = keyword.trim();
+  
+    if (isHexColor(trimmed)) {
+      dispatch(setColor(trimmed));
+    } else {
+      dispatch(setKeyword(trimmed));
+    }
+  
+    router.push("/");
+  };
+
   return (
-    <nav className="w-full mx-auto flex items-center justify-between px-6 py-2 rounded-full">
+    <nav className="fixed z-50 bg-white w-full mx-auto flex items-center justify-between px-6 py-2 rounded-full">
       <Link href="/" className="text-xl font-bold text-black">
         Elarte
       </Link>
+
+      <SearchInput onSearch={handleSearch} />
 
       {(session || isAuthenticated) ? (
         <div className="flex items-center gap-4">

@@ -7,7 +7,12 @@ const {
     createPost,
     updatePost,
     deletePost,
+    getColors,
+    getPostsByColor,
 } = require('../controllers/post.controller');
+
+router.get('/colors', getColors);
+router.get('/by-color', getPostsByColor);
 
 router
     .route('/')

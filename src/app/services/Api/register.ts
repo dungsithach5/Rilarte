@@ -6,8 +6,22 @@ export const registerUser = async (formData: {
   password: string;
   confirmPassword: string;
 }) => {
-  const response = await API.post('/users/register', formData)
-  return response.data
+  try {
+    const response = await API.post('/users/register', formData);
+    return response.data;
+  } catch (error: any) {
+    // Handle axios error response
+    if (error.response && error.response.data) {
+      // Server responded with error status
+      throw new Error(error.response.data.message || 'Registration failed');
+    } else if (error.request) {
+      // Network error
+      throw new Error('Network error. Please check your connection.');
+    } else {
+      // Other error
+      throw new Error('An unexpected error occurred.');
+    }
+  }
 }
 
 export const sendOtp = async (email: string) => {

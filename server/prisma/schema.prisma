@@ -179,7 +179,6 @@ model users {
   updatedAt                            DateTime        @default(now()) @db.DateTime(0)
   onboarded                            Boolean         @default(false)
   gender                               String?         @db.VarChar(50)
-  topics                               String?         @db.Text
   emailVerified                        DateTime?
   image                                String?         @db.VarChar(255)
   Account                              Account[]
@@ -195,9 +194,31 @@ model users {
   report_posts                         report_posts[]
   saved_posts                          saved_posts[]
 
+  userTopics user_topics[]
   posts posts[]
 }
 
+model topics {
+  id        Int           @id @default(autoincrement())
+  name      String        @unique @db.VarChar(50)
+  image_url String?       @db.VarChar(255)
+  createdAt DateTime      @default(now()) @db.DateTime(0)
+  updatedAt DateTime      @default(now()) @db.DateTime(0)
+  users     user_topics[]
+}
+
+model user_topics {
+  id       Int    @id @default(autoincrement())
+  user_id  Int
+  topic_id Int
+
+  user  users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  topic topics @relation(fields: [topic_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, topic_id])
+  @@index([user_id])
+  @@index([topic_id])
+}
 model Account {
   id                String  @id
   userId            Int

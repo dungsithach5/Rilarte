@@ -451,7 +451,7 @@ exports.onboarding = async (req, res) => {
 };
 
 // Thêm route test gửi mail
-async function testSendMail(req, res) {
+exports.testSendMail = async(req, res) => {
   try {
     await sendMail({
       to: req.body.to || process.env.EMAIL_USER,
@@ -465,4 +465,30 @@ async function testSendMail(req, res) {
   }
 }
 
-module.exports.testSendMail = testSendMail;
+exports.setUserTopics = async (req, res) => {
+  try {
+    const { topics } = req.body; // mảng ID [1,2,3]
+    const userId = parseInt(req.params.id);
+
+    // Xóa topics cũ
+    await prisma.user_topics.deleteMany({ where: { user_id: userId } });
+
+    // Thêm mới
+    const data = topics.map((topicId) => ({
+      user_id: userId,
+      topic_id: topicId,
+    }));
+    await prisma.user_topics.createMany({ data });
+
+    // Đánh dấu user đã onboard
+    await prisma.users.update({
+      where: { id: userId },
+      data: { onboarded: true },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error setting user topics:", err);
+    res.status(500).json({ error: "Failed to set user topics" });
+  }
+};

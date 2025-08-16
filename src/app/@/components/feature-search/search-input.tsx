@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { fetchColors } from "../../../services/Api/posts";
 import UserSearchResults from "./search-user";
-import SearchTags from "./search-tag";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { setKeyword } from "../../../context/searchSlice";
@@ -29,12 +28,12 @@ export default function SearchInput() {
     loadColors();
   }, []);
 
-  // Submit search form
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim() !== "") {
       dispatch(setKeyword(inputValue.trim()));
       setShowSuggestions(false);
+      router.push(`/explore?search=${encodeURIComponent(inputValue.trim())}`);
     }
   };
 
@@ -53,18 +52,11 @@ export default function SearchInput() {
     setTimeout(() => setShowSuggestions(false), 100);
   };
 
-  // Click tag => set input & dispatch keyword
-  const handleSelectTag = (tag: string) => {
-    setInputValue(tag);
-    dispatch(setKeyword(tag));
-    setShowSuggestions(false);
-  };
-
-  // Click color => set input & dispatch keyword
   const handleSelectColor = (color: string) => {
     setInputValue(color);
     dispatch(setKeyword(color));
     setShowSuggestions(false);
+    router.push(`/explore?color=${encodeURIComponent(color)}`);
   };
 
   return (
@@ -91,12 +83,10 @@ export default function SearchInput() {
       {/* Suggestions */}
       {showSuggestions && inputValue.trim() === "" && (
         <div className="absolute top-12 z-10 border bg-white rounded-lg p-5 shadow-lg w-full">
-          {/* Trending Tags */}
-          <h3 className="text-black text-sm uppercase mb-4 tracking-wider">Trending Tags</h3>
-          <SearchTags onSelectTag={handleSelectTag} />
-
           {/* Colors */}
-          <h3 className="text-black text-sm uppercase mb-4 tracking-wider">Colors</h3>
+          <h3 className="text-black text-sm uppercase mb-4 tracking-wider">
+            Colors
+          </h3>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6">
             {colors.length > 0 ? (
               colors.map((colorCode) => (

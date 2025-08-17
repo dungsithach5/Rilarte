@@ -2,31 +2,40 @@
 
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 import Masonry from "react-masonry-css";
-import { Frown } from "lucide-react";
 import RotatingText from './@/components/RotatingText/RotatingText';
-import { useAuth } from "./hooks/useAuth";
-import { fetchPosts } from "./services/Api/posts";
-import { createPostSlug } from "./../lib/utils";
 import { ComposerComment } from "./@/components/model-comment/ComposerComment";
 import SkeletonPost from "./@/components/skeleton-post";
+import { createPostSlug } from "./../lib/utils";
 
 const breakpointColumnsObj = { default: 6, 1024: 2, 640: 2 };
 
 export default function FeedPage() {
-  const { user, session } = useAuth(true);
+  const router = useRouter();
+  const reduxUser = useSelector((state: any) => state.user.user); // Lấy user từ Redux
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
   const [popularTags, setPopularTags] = useState<string[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  // Fetch feed posts
+  // Redirect user chưa onboard
   useEffect(() => {
-    if (!user) return;
+    if (!reduxUser) return;
+    if (reduxUser.onboarded === false) {
+      router.replace("/onboarding");
+    }
+  }, [reduxUser, router]);
+
+  // Fetch personalized feed
+  useEffect(() => {
+    if (!reduxUser || !reduxUser.onboarded) return;
     setIsLoading(true);
-    fetchPosts(user.id)
-      .then((data) => {
-        const mapped = data.map((item: any) => ({
+    axios
+      .get(`http://localhost:5001/api/users/${reduxUser.id}/feed`)
+      .then((res) => {
+        const mapped = res.data.map((item: any) => ({
           ...item,
           slug: createPostSlug(item.title, item.id),
         }));
@@ -34,9 +43,9 @@ export default function FeedPage() {
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
-  }, [user]);
+  }, [reduxUser]);
 
-  // Tính popular tags
+  // Compute popular tags
   useEffect(() => {
     if (!posts.length) return;
     const tagCount: Record<string, number> = {};
@@ -110,12 +119,6 @@ export default function FeedPage() {
               </button>
             ))}
           </div>
-          {/* <div className="w-auto">
-            <select className="p-2 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2C343A]">
-              <option value="popular">Popular</option>
-              <option value="following">Following</option>
-            </select>
-          </div> */}
         </div>
       </section>
 
@@ -141,7 +144,7 @@ export default function FeedPage() {
               <ComposerComment
                 key={post.id}
                 post={post}
-                currentUserId={session?.user?.id ? Number(session.user.id) : undefined}
+                currentUserId={reduxUser?.id}
                 onDelete={handleDeletePost}
                 relatedPosts={filteredPosts.filter((p) => p.id !== post.id)}
               />

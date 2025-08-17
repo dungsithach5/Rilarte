@@ -3,7 +3,7 @@ import API from './index';
 export interface OnboardingData {
   email: string;
   gender: string;
-  topics: string;
+  topics: string[];
 }
 
 export const submitOnboarding = async (data: OnboardingData) => {

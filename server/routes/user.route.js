@@ -159,10 +159,10 @@ router.post('/onboarding', async (req, res) => {
     const { email, gender, topics } = req.body;
 
     // Input validation
-    if (!email || !gender || !topics) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email, gender và topics là bắt buộc' 
+    if (!email || !gender || !topics || !Array.isArray(topics)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, gender và topics là bắt buộc'
       });
     }
 
@@ -190,20 +190,22 @@ router.post('/onboarding', async (req, res) => {
       data: {
         onboarded: true,
         gender: gender,
-        topics: topics
+        userTopics: {
+          deleteMany: {},
+          create: topics.map(topicId => ({
+            topic: { connect: { id: topicId } }
+          }))
+        }
+      },
+      include: { 
+        userTopics: { include: { topic: true } } 
       }
     });
 
     res.status(200).json({
       success: true,
       message: 'Onboarding completed successfully',
-      user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        gender: updatedUser.gender,
-        topics: updatedUser.topics,
-        onboarded: updatedUser.onboarded
-      }
+      user: updatedUser
     });
     
     console.log('Onboarding completed for user:', updatedUser.email, 'onboarded:', updatedUser.onboarded);
@@ -262,6 +264,59 @@ router.post('/reset-onboarding', async (req, res) => {
     });
   }
 });
+
+router.get("/:id/feed", async (req, res) => {
+  const userId = Number(req.params.id);
+  if (!userId) return res.status(400).json({ message: "Invalid user ID" });
+
+  try {
+    // Lấy các topic của user
+    const userTopics = await prisma.user_topics.findMany({
+      where: { user_id: userId },
+      select: { topic_id: true },
+    });
+    const topicIds = userTopics.map(ut => ut.topic_id);
+
+    // Lấy posts theo topic
+    const posts = await prisma.posts.findMany({
+      where: {
+        postTags: {
+          some: {
+            tag_id: { in: topicIds },
+          },
+        },
+      },
+      include: {
+        postTags: {
+          include: {
+            tag: true,
+          },
+        },
+        users: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
+    const postsWithTags = posts.map(post => ({
+      id: post.id,
+      user_id: post.user_id,
+      user_name: post.user_name,
+      title: post.title,
+      content: post.content,
+      image_url: post.image_url,
+      dominant_color: post.dominant_color,
+      createdAt: post.createdAt,
+      tags: post.postTags.map(pt => pt.tag.name),
+    }));
+
+    res.json(postsWithTags);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching feed" });
+  }
+});
+
 
 // Google OAuth route
 router.post('/auth/google', async (req, res) => {
@@ -336,7 +391,11 @@ router.get('/email/:email', async (req, res) => {
         username: true,
         onboarded: true,
         gender: true,
-        topics: true
+        userTopics: {
+          select: {
+            topic: true
+          }
+        }
       }
     });
 

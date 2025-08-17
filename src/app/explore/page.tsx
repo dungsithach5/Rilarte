@@ -79,7 +79,6 @@ export default function ExplorePage() {
     });
     const sortedTags = Object.entries(tagCount)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
       .map(([tag]) => tag);
     setPopularTags(sortedTags);
   }, [posts]);
@@ -128,7 +127,6 @@ export default function ExplorePage() {
       <section className="w-full px-6 mt-12 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div className="flex gap-2 w-auto">
-            <label className="text-sm">Popular Tags:</label>
             {popularTags.map((tag) => (
               <button
                 key={tag}
@@ -142,19 +140,13 @@ export default function ExplorePage() {
               </button>
             ))}
           </div>
-          <div className="w-auto">
+          {/* <div className="w-auto">
             <select className="p-2 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2C343A]">
               <option value="popular">Popular</option>
               <option value="following">Following</option>
             </select>
-          </div>
+          </div> */}
         </div>
-
-        {selectedTag && (
-          <div className="px-2 text-sm text-gray-600">
-            Showing results for tag: <span className="font-semibold text-black">#{selectedTag}</span>
-          </div>
-        )}
       </section>
 
       {/* Posts */}

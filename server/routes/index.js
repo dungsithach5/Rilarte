@@ -11,4 +11,6 @@ module.exports = (app) => {
     app.use('/api/banned_keywords', require('./bannedKeywords.route'));
     app.use('/api/reports', require('./report.route'));
     app.use('/api/saved-posts', require('./savedPost.route'));
+    app.use('/api/topics', require('./topic.route'));
+    app.use('/api/feed', require('./feed.route'));
 }

@@ -400,55 +400,70 @@ exports.createUser = exports.register;
 
 exports.onboarding = async (req, res) => {
   try {
-    const { email, gender, topics } = req.body;
+    const { email, gender, topics } = req.body; // topics = [1,2,3]
 
-    // Input validation
-    if (!email || !gender || !topics) {
+    // 1. Validate input
+    if (!email || !gender || !topics || !Array.isArray(topics)) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Email, gender và topics là bắt buộc' 
+        message: "Email, gender và topics là bắt buộc" 
       });
     }
 
-    // Tìm user theo email
+    // 2. Tìm user theo email
     const user = await prisma.users.findUnique({ where: { email } });
     if (!user) {
       return res.status(404).json({ 
         success: false, 
-        message: 'Không tìm thấy user' 
+        message: "Không tìm thấy user" 
       });
     }
 
-    // Cập nhật thông tin onboarding
+    // 3. Thêm dữ liệu vào bảng user_topics
+    await prisma.user_topics.createMany({
+      data: topics.map(topicId => ({
+        user_id: user.id,
+        topic_id: topicId
+      })),
+      skipDuplicates: true // tránh lỗi trùng lặp
+    });
+
+    // 4. Update user: chỉ cập nhật gender + onboarded
     const updatedUser = await prisma.users.update({
       where: { email },
       data: {
         gender,
-        topics: Array.isArray(topics) ? topics : [topics],
         onboarded: true
+      },
+      include: {
+        userTopics: {
+          include: { topic: true }
+        }
       }
     });
 
+    // 5. Trả về kết quả
     res.status(200).json({
       success: true,
-      message: 'Onboarding completed successfully',
+      message: "Onboarding completed successfully",
       user: {
         id: updatedUser.id,
         email: updatedUser.email,
         gender: updatedUser.gender,
-        topics: updatedUser.topics,
-        onboarded: updatedUser.onboarded
+        onboarded: updatedUser.onboarded,
+        topics: updatedUser.userTopics.map(ut => ut.topic)
       }
     });
 
   } catch (error) {
-    console.error('Onboarding error:', error);
+    console.error("Onboarding error:", error);
     res.status(500).json({ 
       success: false, 
-      message: 'Lỗi server trong quá trình onboarding' 
+      message: "Lỗi server trong quá trình onboarding" 
     });
   }
 };
+
 
 // Thêm route test gửi mail
 exports.testSendMail = async(req, res) => {
@@ -464,31 +479,37 @@ exports.testSendMail = async(req, res) => {
     res.status(500).json({ error: err.message });
   }
 }
-
-exports.setUserTopics = async (req, res) => {
+exports.getUserFeed = async (req, res) => {
   try {
-    const { topics } = req.body; // mảng ID [1,2,3]
     const userId = parseInt(req.params.id);
 
-    // Xóa topics cũ
-    await prisma.user_topics.deleteMany({ where: { user_id: userId } });
-
-    // Thêm mới
-    const data = topics.map((topicId) => ({
-      user_id: userId,
-      topic_id: topicId,
-    }));
-    await prisma.user_topics.createMany({ data });
-
-    // Đánh dấu user đã onboard
-    await prisma.users.update({
-      where: { id: userId },
-      data: { onboarded: true },
+    // 1. Lấy topics user đã chọn
+    const userTopics = await prisma.user_topics.findMany({
+      where: { user_id: userId },
+      include: { topic: true },
     });
 
-    res.json({ success: true });
+    // 2. Lấy posts có tag trùng topic
+    const posts = await prisma.posts.findMany({
+      where: {
+        post_topics: {
+          some: {
+            topic_id: { in: userTopics.map((ut) => ut.topic_id) },
+          },
+        },
+      },
+      include: {
+        users: true,
+        post_topics: { include: { topics: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
+    res.json(posts);
   } catch (err) {
-    console.error("Error setting user topics:", err);
-    res.status(500).json({ error: "Failed to set user topics" });
+    console.error("Error fetching feed:", err);
+    res.status(500).json({ error: "Failed to fetch feed" });
   }
 };
+

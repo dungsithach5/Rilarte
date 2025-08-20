@@ -109,15 +109,6 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
       userId = reduxUser?.id || session?.user?.id;
     }
     
-    // Debug logging
-    console.log('=== BOOKMARK DEBUG ===');
-    console.log('currentUserId prop:', currentUserId);
-    console.log('reduxUser:', reduxUser);
-    console.log('reduxUser.id:', reduxUser?.id);
-    console.log('session?.user:', session?.user);
-    console.log('session?.user?.id:', session?.user?.id);
-    console.log('Final userId:', userId);
-    
     // Check if user is authenticated
     if (!session?.user && !reduxUser) {
       alert('Please login to save posts');
@@ -314,38 +305,39 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
 
   // Auto-open modal if URL contains this post's slug
   useEffect(() => {
-    const urlSlug = searchParams?.get('post')
-    if (!open && urlSlug && String(urlSlug) === String(post?.slug)) {
-      if (!isClosingRef.current) setOpen(true)
-    } else if (!urlSlug && isClosingRef.current) {
-      // URL cleared; allow future auto-opens
-      isClosingRef.current = false
+    const urlSlug = searchParams?.get('post');
+    if (!open && urlSlug && String(urlSlug) === String(post?.slug) && !isClosingRef.current) {
+      setOpen(true);
+    } else if (!urlSlug) {
+      isClosingRef.current = false;
     }
-  }, [searchParams, post?.slug, open])
+  }, [searchParams, post?.slug, open]);
 
   const handleSelectRelatedPost = (newPost: any) => {
-    setLoading(true)
-    setTimeout(() => {
-      setCurrentPost(newPost)
-      setLikeCount(newPost.likeCount || 0)
-      setLiked(false)
-      setBookmarked(false)
-      setComments([])
-      setLoading(false)
-    }, 1000)
+    setOpen(false); 
+    isClosingRef.current = true;
 
-    // Update slug in URL while staying on the same page
-    try {
-      const params = new URLSearchParams(searchParams?.toString())
-      if (newPost?.slug) {
-        params.set('post', String(newPost.slug))
-        const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname
-        router.replace(nextUrl, { scroll: false })
+    setTimeout(() => {
+      setCurrentPost(newPost);
+      setLikeCount(newPost.likeCount || 0);
+      setLiked(false);
+      setBookmarked(false);
+      setComments([]);
+      setLoading(false);
+
+      try {
+        const params = new URLSearchParams(searchParams?.toString());
+        if (newPost?.slug) {
+          params.set('post', String(newPost.slug));
+          const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
+          router.replace(nextUrl, { scroll: false });
+        }
+      } catch (err) {
+        console.log("Error :", err);
       }
-    } catch (err) {
-      // noop
-    }
-  }
+      isClosingRef.current = false; 
+    }, 150);
+  };
 
   return (
     <Dialog
@@ -356,22 +348,23 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
           if (nextOpen) {
             isClosingRef.current = false
             if (currentPost?.slug) {
-              params.set('post', String(currentPost.slug))
+              params.set("post", String(currentPost.slug))
               const nextUrl = `${pathname}?${params.toString()}`
               router.replace(nextUrl, { scroll: false })
             }
-            setOpen(true)
           } else {
             isClosingRef.current = true
-            if (params.get('post') === String(currentPost?.slug)) {
-              params.delete('post')
+            if (params.get("post") === String(currentPost?.slug)) {
+              params.delete("post")
             }
-            const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname
+            const nextUrl =
+              params.size > 0 ? `${pathname}?${params.toString()}` : pathname
             router.replace(nextUrl, { scroll: false })
-            setOpen(false)
           }
+
+          setOpen(nextOpen)
         } catch (err) {
-          console.log('Error', err)
+          console.log("Error", err)
         }
       }}
     >

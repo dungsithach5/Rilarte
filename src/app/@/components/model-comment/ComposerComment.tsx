@@ -321,11 +321,13 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
       <DialogTrigger asChild>
         <div key={currentPost.id} className="mb-4 break-inside-avoid cursor-pointer">
           <div className="mx-auto">
-            <div className="relative group cursor-pointer">
+          <div className="relative group cursor-pointer">
               <img
                 src={currentPost.image_url}
                 alt="Post"
                 className="w-full rounded-sm object-cover"
+                onContextMenu={(e) => currentPost.download_protected && e.preventDefault()}
+                onDragStart={(e) => currentPost.download_protected && e.preventDefault()}
               />
               <div
                 className={`absolute inset-0 bg-black/30 rounded-lg transition-opacity duration-300 flex items-end p-4
@@ -339,6 +341,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                     isOwner={isOwner}
                     onDelete={onDelete}
                     postId={currentPost.id}
+                    downloadProtected={currentPost.download_protected} // NEW
                   />
                 </div>
 
@@ -420,6 +423,8 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                     src={currentPost.image_url}
                     alt="Post"
                     className="object-contain h-full"
+                    onContextMenu={(e) => currentPost.download_protected && e.preventDefault()}
+                    onDragStart={(e) => currentPost.download_protected && e.preventDefault()}
                   />
                 </div>
               </DialogHeader>

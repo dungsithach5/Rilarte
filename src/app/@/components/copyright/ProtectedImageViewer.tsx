@@ -34,6 +34,10 @@ export default function ProtectedImageViewer({ imageUrl, postInfo }: ProtectedIm
     }
   };
 
+  const displayUrl = postInfo.download_protected
+    ? `http://localhost:5001/api/download/protected-image?url=${encodeURIComponent(imageUrl)}`
+    : imageUrl;
+
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader>
@@ -46,11 +50,12 @@ export default function ProtectedImageViewer({ imageUrl, postInfo }: ProtectedIm
         {/* Image */}
         <div className="relative">
           <img
-            src={imageUrl}
+            src={displayUrl}
             alt="Protected content"
             className="w-full rounded-lg"
-            onContextMenu={handleRightClick}
-            onDragStart={handleDownloadAttempt}
+            draggable={false}
+            onContextMenu={(e) => postInfo.download_protected && e.preventDefault()}
+            onDragStart={(e) => postInfo.download_protected && e.preventDefault()}
           />
           
           {postInfo.watermark_enabled && (
@@ -76,14 +81,13 @@ export default function ProtectedImageViewer({ imageUrl, postInfo }: ProtectedIm
         </div>
 
         {/* Download Button */}
-        <Button
-          onClick={handleDownloadAttempt}
-          disabled={postInfo.download_protected}
-          className="w-full"
-        >
-          <Download className="h-4 w-4 mr-2" />
-          {postInfo.download_protected ? 'Download Protected' : 'Download'}
-        </Button>
+        {!postInfo.download_protected ? (
+          <Button className="w-full" onClick={() => window.open(imageUrl, '_blank')}>
+            Download
+          </Button>
+        ) : (
+          <Button className="w-full" disabled>Download Protected</Button>
+        )}
 
         {/* Warning Message */}
         {showDownloadWarning && (

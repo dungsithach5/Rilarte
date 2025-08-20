@@ -71,6 +71,8 @@ export default function RelatedPosts({
                 src={post.image_url}
                 alt={post.title}
                 className="w-full rounded-sm cursor-pointer hover:opacity-80 transition-all"
+                onContextMenu={(e) => post.download_protected && e.preventDefault()}
+                onDragStart={(e) => post.download_protected && e.preventDefault()}
               />
               <div
                 className={`absolute inset-0 bg-black/30 rounded-lg transition-opacity duration-300 flex items-end p-4
@@ -84,6 +86,7 @@ export default function RelatedPosts({
                     isOwner={isOwner}
                     onDelete={onDelete}
                     postId={post.id}
+                    downloadProtected={post.download_protected}
                   />
                 </div>
 

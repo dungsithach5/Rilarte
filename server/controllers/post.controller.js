@@ -121,6 +121,14 @@ exports.getAllPosts = async (req, res) => {
         content: true,
         image_url: true,
         dominant_color: true,
+        //chặn download
+        download_protected: true,
+        allow_download: true,
+        watermark_enabled: true,
+        watermark_text: true,
+        watermark_position: true,
+        license_type: true,
+        license_description: true,
         createdAt: true,
       },
       orderBy: {

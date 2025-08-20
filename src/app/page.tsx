@@ -64,6 +64,7 @@ export default function Home() {
             content: item.content,
             image_url: item.image_url,
             tags: item.tags || [],
+            download_protected: item.download_protected,
           }));
           setPosts(mapped);
           setViolation(false);
@@ -80,6 +81,7 @@ export default function Home() {
             content: item.content,
             image_url: item.image_url,
             tags: item.tags || [],
+            download_protected: item.download_protected,
           }));
           setPosts(mapped);
           setViolation(false);

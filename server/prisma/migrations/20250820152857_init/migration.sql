@@ -92,6 +92,15 @@ CREATE TABLE `posts` (
     `content` TEXT NOT NULL,
     `image_url` VARCHAR(255) NOT NULL,
     `dominant_color` VARCHAR(7) NULL,
+    `license_type` VARCHAR(50) NULL,
+    `license_description` TEXT NULL,
+    `watermark_enabled` BOOLEAN NOT NULL DEFAULT false,
+    `watermark_text` VARCHAR(100) NULL,
+    `watermark_position` VARCHAR(20) NULL,
+    `download_protected` BOOLEAN NOT NULL DEFAULT false,
+    `allow_download` BOOLEAN NOT NULL DEFAULT true,
+    `copyright_owner_id` INTEGER NULL,
+    `copyright_year` INTEGER NULL,
     `createdAt` DATETIME(0) NOT NULL,
     `updatedAt` DATETIME(0) NOT NULL,
 
@@ -169,12 +178,35 @@ CREATE TABLE `users` (
     `updatedAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
     `onboarded` BOOLEAN NOT NULL DEFAULT false,
     `gender` VARCHAR(50) NULL,
-    `topics` TEXT NULL,
     `emailVerified` DATETIME(3) NULL,
     `image` VARCHAR(255) NULL,
 
     UNIQUE INDEX `username`(`username`),
     UNIQUE INDEX `email`(`email`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `topics` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(50) NOT NULL,
+    `image_url` VARCHAR(255) NULL,
+    `createdAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+
+    UNIQUE INDEX `topics_name_key`(`name`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `user_topics` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `user_id` INTEGER NOT NULL,
+    `topic_id` INTEGER NOT NULL,
+
+    INDEX `user_topics_user_id_idx`(`user_id`),
+    INDEX `user_topics_topic_id_idx`(`topic_id`),
+    UNIQUE INDEX `user_topics_user_id_topic_id_key`(`user_id`, `topic_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -243,6 +275,23 @@ CREATE TABLE `saved_posts` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `copyrightViolation` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `post_id` INTEGER NOT NULL,
+    `reporter_id` INTEGER NOT NULL,
+    `violation_type` VARCHAR(50) NOT NULL,
+    `description` TEXT NOT NULL,
+    `status` VARCHAR(20) NOT NULL,
+    `createdAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
+
+    INDEX `copyrightViolation_post_id_idx`(`post_id`),
+    INDEX `copyrightViolation_reporter_id_idx`(`reporter_id`),
+    INDEX `copyrightViolation_status_idx`(`status`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `comment_likes` ADD CONSTRAINT `comment_likes_comment_id_fkey` FOREIGN KEY (`comment_id`) REFERENCES `comments`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -301,6 +350,12 @@ ALTER TABLE `report_posts` ADD CONSTRAINT `report_posts_post_id_fkey` FOREIGN KE
 ALTER TABLE `report_posts` ADD CONSTRAINT `report_posts_reporter_id_fkey` FOREIGN KEY (`reporter_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `user_topics` ADD CONSTRAINT `user_topics_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `user_topics` ADD CONSTRAINT `user_topics_topic_id_fkey` FOREIGN KEY (`topic_id`) REFERENCES `topics`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `Account` ADD CONSTRAINT `Account_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -311,3 +366,9 @@ ALTER TABLE `saved_posts` ADD CONSTRAINT `saved_posts_user_id_fkey` FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE `saved_posts` ADD CONSTRAINT `saved_posts_post_id_fkey` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `copyrightViolation` ADD CONSTRAINT `copyrightViolation_post_id_fkey` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `copyrightViolation` ADD CONSTRAINT `copyrightViolation_reporter_id_fkey` FOREIGN KEY (`reporter_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

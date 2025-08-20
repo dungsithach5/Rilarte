@@ -30,10 +30,7 @@ export default function FeedPage() {
 
   // Fetch personalized feed
   useEffect(() => {
-      console.log("Redux user inside useEffect:", reduxUser);
     if (!reduxUser || !reduxUser.onboarded) return;
-    console.log("Fetching feed for userId:", reduxUser.id);
-    setIsLoading(true);
     axios
       .get(`http://localhost:5001/api/users/${reduxUser.id}/feed`)
       .then((res) => {

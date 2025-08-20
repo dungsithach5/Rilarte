@@ -11,9 +11,12 @@ import SearchInput from "../@/components/feature-search/search-input"
 
 export function NavBar() {
   const dispatch = useDispatch<AppDispatch>();
-  const { isAuthenticated, avatar } = useSelector((state: RootState) => state.user)
+  const { isAuthenticated, avatar, user } = useSelector((state: RootState) => state.user)
   const { data: session } = useSession()
   const router = useRouter()
+
+  // Lấy user ID từ Redux hoặc session
+  const currentUserId = user?.id || session?.user?.id;
 
   const handleLogin = () => {
     router.push('/auth')
@@ -46,6 +49,12 @@ export function NavBar() {
 
       {(session || isAuthenticated) ? (
         <div className="flex items-center gap-4">
+          <Link 
+            href="/users" 
+            className="px-4 py-2 text-sm text-gray-700 hover:text-black transition-colors"
+          >
+            Users
+          </Link>
           <DropdownUser
             avatar={
               <img
@@ -54,6 +63,7 @@ export function NavBar() {
                 className="w-10 h-10 rounded-full object-cover"
               />
             }
+            userId={currentUserId}
           />
         </div>
       ) : (

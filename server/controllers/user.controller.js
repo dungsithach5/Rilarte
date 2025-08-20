@@ -224,6 +224,32 @@ exports.login = async (req, res) => {
   }
 };
 
+exports.searchUsers = async (req, res) => {
+  try {
+    const { keyword } = req.query;
+    if (!keyword) return res.status(400).json({ success: false, users: [], message: 'Keyword is required' });
+
+    const users = await prisma.users.findMany({
+      where: {
+        OR: [
+          { username: { contains: keyword } },
+        ]
+      },
+      select: {
+        id: true,
+        username: true,
+        avatar_url: true
+      },
+      take: 10
+    });
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({ success: false, users: [], message: 'Error searching users' });
+  }
+};
+
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await prisma.users.findMany({
@@ -374,58 +400,73 @@ exports.createUser = exports.register;
 
 exports.onboarding = async (req, res) => {
   try {
-    const { email, gender, topics } = req.body;
+    const { email, gender, topics } = req.body; // topics = [1,2,3]
 
-    // Input validation
-    if (!email || !gender || !topics) {
+    // 1. Validate input
+    if (!email || !gender || !topics || !Array.isArray(topics)) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Email, gender và topics là bắt buộc' 
+        message: "Email, gender và topics là bắt buộc" 
       });
     }
 
-    // Tìm user theo email
+    // 2. Tìm user theo email
     const user = await prisma.users.findUnique({ where: { email } });
     if (!user) {
       return res.status(404).json({ 
         success: false, 
-        message: 'Không tìm thấy user' 
+        message: "Không tìm thấy user" 
       });
     }
 
-    // Cập nhật thông tin onboarding
+    // 3. Thêm dữ liệu vào bảng user_topics
+    await prisma.user_topics.createMany({
+      data: topics.map(topicId => ({
+        user_id: user.id,
+        topic_id: topicId
+      })),
+      skipDuplicates: true // tránh lỗi trùng lặp
+    });
+
+    // 4. Update user: chỉ cập nhật gender + onboarded
     const updatedUser = await prisma.users.update({
       where: { email },
       data: {
         gender,
-        topics: Array.isArray(topics) ? topics : [topics],
         onboarded: true
+      },
+      include: {
+        userTopics: {
+          include: { topic: true }
+        }
       }
     });
 
+    // 5. Trả về kết quả
     res.status(200).json({
       success: true,
-      message: 'Onboarding completed successfully',
+      message: "Onboarding completed successfully",
       user: {
         id: updatedUser.id,
         email: updatedUser.email,
         gender: updatedUser.gender,
-        topics: updatedUser.topics,
-        onboarded: updatedUser.onboarded
+        onboarded: updatedUser.onboarded,
+        topics: updatedUser.userTopics.map(ut => ut.topic)
       }
     });
 
   } catch (error) {
-    console.error('Onboarding error:', error);
+    console.error("Onboarding error:", error);
     res.status(500).json({ 
       success: false, 
-      message: 'Lỗi server trong quá trình onboarding' 
+      message: "Lỗi server trong quá trình onboarding" 
     });
   }
 };
 
+
 // Thêm route test gửi mail
-async function testSendMail(req, res) {
+exports.testSendMail = async(req, res) => {
   try {
     await sendMail({
       to: req.body.to || process.env.EMAIL_USER,
@@ -438,5 +479,37 @@ async function testSendMail(req, res) {
     res.status(500).json({ error: err.message });
   }
 }
+exports.getUserFeed = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
 
-module.exports.testSendMail = testSendMail;
+    // 1. Lấy topics user đã chọn
+    const userTopics = await prisma.user_topics.findMany({
+      where: { user_id: userId },
+      include: { topic: true },
+    });
+
+    // 2. Lấy posts có tag trùng topic
+    const posts = await prisma.posts.findMany({
+      where: {
+        post_topics: {
+          some: {
+            topic_id: { in: userTopics.map((ut) => ut.topic_id) },
+          },
+        },
+      },
+      include: {
+        users: true,
+        post_topics: { include: { topics: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
+    res.json(posts);
+  } catch (err) {
+    console.error("Error fetching feed:", err);
+    res.status(500).json({ error: "Failed to fetch feed" });
+  }
+};
+

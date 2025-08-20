@@ -2,49 +2,73 @@
 
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
 import Masonry from "react-masonry-css";
-import RotatingText from './@/components/RotatingText/RotatingText';
-import { ComposerComment } from "./@/components/model-comment/ComposerComment";
-import SkeletonPost from "./@/components/skeleton-post";
-import { createPostSlug } from "./../lib/utils";
+import { Frown } from "lucide-react";
+import RotatingText from '../@/components/RotatingText/RotatingText';
+import { useSearchParams } from "next/navigation";
+import { fetchPosts, fetchPostsByColor } from "../services/Api/posts";
+import { fetchBannedKeywords } from "../services/Api/bannedKeywords";
+import { createPostSlug } from "../../lib/utils";
+import { ComposerComment } from "../@/components/model-comment/ComposerComment";
+import SkeletonPost from "../@/components/skeleton-post";
+import { useAuth } from "../hooks/useAuth";
 
 const breakpointColumnsObj = { default: 6, 1024: 2, 640: 2 };
 
-export default function FeedPage() {
-  const router = useRouter();
-  const reduxUser = useSelector((state: any) => state.user.user); // Lấy user từ Redux
+export default function ExplorePage() {
+  const searchParams = useSearchParams();
+  const searchKeyword = searchParams.get("search") || "";
+  const searchColor = searchParams.get("color") || "";
+
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
+  const [bannedKeywords, setBannedKeywords] = useState<string[]>([]);
+  const [violation, setViolation] = useState(false);
+  const { user, session } = useAuth(true);
   const [popularTags, setPopularTags] = useState<string[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  // Redirect user chưa onboard
+  // Load banned keywords
   useEffect(() => {
-    if (!reduxUser) return;
-    if (reduxUser.onboarded === false) {
-      router.replace("/onboarding");
-    }
-  }, [reduxUser, router]);
+    fetchBannedKeywords()
+      .then(setBannedKeywords)
+      .catch(console.error);
+  }, []);
 
-  // Fetch personalized feed
+  // Fetch posts by keyword or color
   useEffect(() => {
-    if (!reduxUser || !reduxUser.onboarded) return;
-    axios
-      .get(`http://localhost:5001/api/users/${reduxUser.id}/feed`)
-      .then((res) => {
-        const mapped = res.data.map((item: any) => ({
+    const keyword = searchKeyword;
+    const color = searchColor;
+
+    const foundViolation = keyword && bannedKeywords.some((word) =>
+      keyword.toLowerCase().includes(word)
+    );
+
+    if (foundViolation) {
+      setViolation(true);
+      setPosts([]);
+      return;
+    }
+
+    setIsLoading(true);
+
+    const fetcher = color ? fetchPostsByColor : fetchPosts;
+    const param = color || keyword;
+
+    fetcher(param)
+      .then((data) => {
+        const mapped = data.map((item: any) => ({
           ...item,
-          slug: createPostSlug(item.title, item.id),
+          slug: `/post/${createPostSlug(item.title, item.id)}`, // slug cố định
         }));
         setPosts(mapped);
+        setViolation(false);
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
-  }, [reduxUser]);
+  }, [searchKeyword, searchColor, bannedKeywords, user]);
 
-  // Compute popular tags
+  // Popular tags
   useEffect(() => {
     if (!posts.length) return;
     const tagCount: Record<string, number> = {};
@@ -62,7 +86,7 @@ export default function FeedPage() {
   const handleDeletePost = async (postId: number) => {
     try {
       await axios.delete(`http://localhost:5001/api/posts/${postId}`);
-      setPosts((prev) => prev.filter((p) => p.id !== postId));
+      setPosts(prev => prev.filter(p => p.id !== postId));
     } catch (err) {
       console.error("Error deleting post", err);
     }
@@ -78,7 +102,7 @@ export default function FeedPage() {
       <section className="w-full overflow-hidden">
         <div className="flex h-full flex-col px-6">
           <h1 className="font-bold leading-tight text-[clamp(2.5rem,10vw,8rem)] flex flex-wrap items-center gap-2">
-            Unleash your{" "}
+            Explore your{" "}
             <RotatingText
               texts={["creative", "vivid", "pure", "real", "fluid", "cool", "artsy"]}
               mainClassName="px-2 sm:px-2 md:px-5 bg-black text-white overflow-hidden py-0.5 sm:py-1 md:py-1 justify-center rounded-xl"
@@ -94,9 +118,7 @@ export default function FeedPage() {
             energy
           </h1>
           <p className="text-lg md:text-xl text-gray-800">
-            Step into a world where visuals speak and creativity knows no limits 
-            <br />
-            a space to express, inspire, and connect through art.
+            Discover new visuals, trending topics, and inspirations across the platform.
           </p>
         </div>
       </section>
@@ -118,12 +140,28 @@ export default function FeedPage() {
               </button>
             ))}
           </div>
+          {/* <div className="w-auto">
+            <select className="p-2 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2C343A]">
+              <option value="popular">Popular</option>
+              <option value="following">Following</option>
+            </select>
+          </div> */}
         </div>
       </section>
 
       {/* Posts */}
       <section className="px-6 mt-6 pb-20">
-        {isLoading ? (
+        {violation ? (
+          <div className="mt-12 text-center w-full flex justify-center items-center">
+            <div className="flex flex-col justify-center items-center space-y-6">
+              <Frown className="text-gray-400" size={120} />
+              <div>
+                The topic you are looking for violates our <strong>Community Guidelines</strong>, 
+                <br />so we are currently unable to display the search results.
+              </div>
+            </div>
+          </div>
+        ) : isLoading ? (
           <Masonry
             breakpointCols={breakpointColumnsObj}
             className="flex gap-4"
@@ -143,7 +181,7 @@ export default function FeedPage() {
               <ComposerComment
                 key={post.id}
                 post={post}
-                currentUserId={reduxUser?.id}
+                currentUserId={session?.user?.id ? Number(session.user.id) : undefined}
                 onDelete={handleDeletePost}
                 relatedPosts={filteredPosts.filter((p) => p.id !== post.id)}
               />

@@ -13,4 +13,6 @@ module.exports = (app) => {
     app.use('/api/reports', require('./report.route'));
     app.use('/api/saved-posts', require('./savedPost.route'));
     app.use('/api/download', require('./downloadProtection.route'));
+    app.use('/api/topics', require('./topic.route'));
+    app.use('/api/feed', require('./feed.route'));
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import {
   Dialog,
@@ -15,6 +16,7 @@ import { useAuth } from "../../../hooks/useAuth"
 import { useSelector } from "react-redux"
 import DropdownMenuEllipsis from "../dropdown-ellipsis"
 import HoverCardUser from "../hover-card-user"
+import UserInfo from "./UserInfo"
 import LikeButton from "./like-button"
 import CommentLikeButton from "./comment-like-button"
 import BookmarkButton from "./bookmark-button"
@@ -48,6 +50,12 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
   const [loading, setLoading] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dialogContentRef = useRef<HTMLDivElement>(null)
+  const [open, setOpen] = useState(false)
+  const isClosingRef = useRef(false)
+
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const [comment, setComment] = useState('')
   const [comments, setComments] = useState<Comment[]>([])
@@ -100,15 +108,6 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
     if (!userId) {
       userId = reduxUser?.id || session?.user?.id;
     }
-    
-    // Debug logging
-    console.log('=== BOOKMARK DEBUG ===');
-    console.log('currentUserId prop:', currentUserId);
-    console.log('reduxUser:', reduxUser);
-    console.log('reduxUser.id:', reduxUser?.id);
-    console.log('session?.user:', session?.user);
-    console.log('session?.user?.id:', session?.user?.id);
-    console.log('Final userId:', userId);
     
     // Check if user is authenticated
     if (!session?.user && !reduxUser) {
@@ -304,20 +303,71 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
     getCommentsData();
   }, [post, session, reduxUser])
 
+  // Auto-open modal if URL contains this post's slug
+  useEffect(() => {
+    const urlSlug = searchParams?.get('post');
+    if (!open && urlSlug && String(urlSlug) === String(post?.slug) && !isClosingRef.current) {
+      setOpen(true);
+    } else if (!urlSlug) {
+      isClosingRef.current = false;
+    }
+  }, [searchParams, post?.slug, open]);
+
   const handleSelectRelatedPost = (newPost: any) => {
-    setLoading(true)
+    setOpen(false); 
+    isClosingRef.current = true;
+
     setTimeout(() => {
-      setCurrentPost(newPost)
-      setLikeCount(newPost.likeCount || 0)
-      setLiked(false)
-      setBookmarked(false)
-      setComments([])
-      setLoading(false)
-    }, 1000)
-  }
+      setCurrentPost(newPost);
+      setLikeCount(newPost.likeCount || 0);
+      setLiked(false);
+      setBookmarked(false);
+      setComments([]);
+      setLoading(false);
+
+      try {
+        const params = new URLSearchParams(searchParams?.toString());
+        if (newPost?.slug) {
+          params.set('post', String(newPost.slug));
+          const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
+          router.replace(nextUrl, { scroll: false });
+        }
+      } catch (err) {
+        console.log("Error :", err);
+      }
+      isClosingRef.current = false; 
+    }, 150);
+  };
 
   return (
-    <Dialog>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        try {
+          const params = new URLSearchParams(searchParams?.toString())
+          if (nextOpen) {
+            isClosingRef.current = false
+            if (currentPost?.slug) {
+              params.set("post", String(currentPost.slug))
+              const nextUrl = `${pathname}?${params.toString()}`
+              router.replace(nextUrl, { scroll: false })
+            }
+          } else {
+            isClosingRef.current = true
+            if (params.get("post") === String(currentPost?.slug)) {
+              params.delete("post")
+            }
+            const nextUrl =
+              params.size > 0 ? `${pathname}?${params.toString()}` : pathname
+            router.replace(nextUrl, { scroll: false })
+          }
+
+          setOpen(nextOpen)
+        } catch (err) {
+          console.log("Error", err)
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <div key={currentPost.id} className="mb-4 break-inside-avoid cursor-pointer">
           <div className="mx-auto">
@@ -346,18 +396,13 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                 </div>
 
                 <div className="w-full flex items-center justify-between gap-2 z-0">
-                  <Link
-                    href="/profile"
+                  <UserInfo
+                    userId={currentPost.user_id}
+                    username={userName}
+                    avatar={userAvatar}
+                    size="lg"
                     className="flex items-center gap-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <img
-                      src={userAvatar}
-                      alt={userName}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-white"
-                    />
-                    <strong className="text-white">{userName}</strong>
-                  </Link>
+                  />
 
                   <div className="flex items-center gap-4 text-white text-sm">
                     <LikeButton
@@ -405,14 +450,14 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
             <div className="md:w-1/2 w-full">
               <DialogHeader className="max-w-3xl">
                 <DialogTitle className="flex items-center gap-3">
-                  <img
-                    src={userAvatar}
-                    alt={userName}
-                    className="w-8 h-8 rounded-full object-cover"
+                  <UserInfo
+                    userId={currentPost.user_id}
+                    username={userName}
+                    avatar={userAvatar}
+                    size="md"
+                    showName={true}
+                    onClick={(e) => e.stopPropagation()}
                   />
-                  <div>
-                    <p className="text-sm font-semibold">{userName}</p>
-                  </div>
                 </DialogTitle>
                 <div className="flex flex-col text-left">
                   <p className="text-xl font-semibold">{currentPost.title}</p>
@@ -480,6 +525,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                       avatarUrl={comment.userInfo?.avatar || '/img/user.png'} 
                       name={comment.userInfo?.name || `User ${comment.user_id}`} 
                       username={comment.userInfo?.username || `user${comment.user_id}`} 
+                      userId={comment.user_id}
                     />
                     <div className="flex-1">
                       <p className="text-sm font-medium">{comment.userInfo?.name || `User ${comment.user_id}`}</p>

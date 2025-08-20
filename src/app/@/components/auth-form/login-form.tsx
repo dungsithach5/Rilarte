@@ -83,7 +83,7 @@ export function LoginForm({
             ...data.user,
             onboarded: userData.user.onboarded,
             gender: userData.user.gender,
-            topics: userData.user.topics
+            topics: userData.user.userTopics?.map((ut: any) => ut.topic) || []
           };
           localStorage.setItem('user', JSON.stringify(updatedUser));
           
@@ -121,7 +121,7 @@ export function LoginForm({
     try {
       console.log('2. Calling signIn...')
       const result = await signIn('google', { 
-        callbackUrl: '/' 
+        callbackUrl: '/onboarding' 
       })
       
       if (result?.error) {

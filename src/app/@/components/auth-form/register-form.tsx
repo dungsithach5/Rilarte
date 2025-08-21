@@ -36,6 +36,19 @@ export function RegisterForm({
       [e.target.id]: e.target.value
     })
     setError('') 
+    
+    // Reset OTP state khi email thay đổi
+    if (e.target.id === 'email') {
+      resetOtpState();
+    }
+  }
+
+  // Reset OTP state khi email thay đổi
+  const resetOtpState = () => {
+    setOtpSent(false);
+    setOtpVerified(false);
+    setOtp('');
+    setOtpError('');
   }
 
   const validateForm = () => {
@@ -61,11 +74,17 @@ export function RegisterForm({
   const handleSendOtp = async () => {
     setOtpLoading(true);
     setOtpError('');
-    try {
-      await sendOtp(formData.email);
-      setOtpSent(true);
-    } catch (err) {
-      setOtpError('Gửi mã OTP thất bại.');
+    
+          try {
+        const result = await sendOtp(formData.email);
+        
+        setOtpSent(true);
+        setOtpVerified(false); // Reset verification status khi gửi OTP mới
+        setOtp(''); // Reset OTP input
+        
+      } catch (err) {
+        setOtpError(`Gửi mã OTP thất bại: ${err instanceof Error ? err.message : 'Lỗi không xác định'}`);
+        setOtpSent(false); // Reset sent status nếu thất bại
     } finally {
       setOtpLoading(false);
     }
@@ -74,12 +93,19 @@ export function RegisterForm({
   const handleVerifyOtp = async () => {
     setOtpLoading(true);
     setOtpError('');
-    try {
-      await verifyOtp(formData.email, otp);
-      setOtpVerified(true);
-      setOtpError('');
-    } catch (err) {
-      setOtpError('Mã OTP không đúng hoặc đã hết hạn.');
+    
+          try {
+        const result = await verifyOtp(formData.email, otp);
+        
+        setOtpVerified(true);
+        setOtpError('');
+        
+        // Reset OTP input sau khi xác thực thành công
+        setOtp('');
+        
+      } catch (err) {
+        setOtpError('Mã OTP không đúng hoặc đã hết hạn.');
+        setOtpVerified(false); // Reset verification status
     } finally {
       setOtpLoading(false);
     }
@@ -87,22 +113,35 @@ export function RegisterForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Kiểm tra OTP verification
     if (!otpVerified) {
       setError('Bạn cần xác thực email bằng OTP trước khi đăng ký!');
       return;
     }
+    
+    // Kiểm tra OTP đã được gửi
+    if (!otpSent) {
+      setError('Bạn cần gửi mã OTP trước!');
+      return;
+    }
+    
+    // Kiểm tra form validation
     if (!validateForm()) {
       return;
     }
+    
     setLoading(true);
     setError('');
-    try {
-      const data = await registerUser(formData);
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      router.push("/auth");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+    
+          try {
+        const data = await registerUser(formData);
+        
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        router.push("/auth");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -112,16 +151,12 @@ export function RegisterForm({
     setLoading(true)
     
     try {
-      console.log('2. Calling signIn...')
       const result = await signIn('google', { 
         callbackUrl: '/' 
       })
       
       if (result?.error) {
-        console.log('4. Error:', result.error)
         setError('Google login failed: ' + result.error)
-      } else {
-        console.log('4. Success - redirecting...')
       }
     } catch (err) {
       setError('Google login failed: ' + (err as Error).message)
@@ -210,6 +245,8 @@ export function RegisterForm({
         {otpVerified && (
           <div className="text-green-600 text-xs mb-2">Email đã xác thực thành công!</div>
         )}
+        
+
         <div className="grid gap-3">
           <Label htmlFor="password">Password</Label>
           <Input 

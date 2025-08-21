@@ -1,6 +1,5 @@
 "use client";
 
-import axios from "axios";
 import { useState, useEffect } from "react";
 import Masonry from "react-masonry-css";
 import {
@@ -14,6 +13,7 @@ import { fetchPosts, fetchPostsByUserId } from "../../services/Api/posts";
 import { getSavedPosts } from "../../services/Api/savedPosts";
 import { useAuth } from "../../hooks/useAuth";
 import SkeletonPost from "./skeleton-post";
+import API from "../../services/Api";
 
 const breakpointColumnsObj = {
   default: 6,
@@ -127,7 +127,7 @@ export default function ProfileTabs({ targetUserId }: ProfileTabsProps) {
     if (!isOwnProfile) return;
     
     try {
-      await axios.delete(`http://localhost:5001/api/posts/${postId}`);
+      await API.delete(`/posts/${postId}`);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
     } catch (err) {
       console.error("Error deleting post", err);

@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import axios from "axios";
+import { MessageButton } from "./ui/MessageButton"; // Correct relative path
+import API from "../../services/Api";
 
 interface ProfileHeaderProps {
   targetUserId?: string;
+  onMessageClick?: (userId: bigint, username: string) => void; // Updated to bigint
 }
 
 interface UserProfile {
@@ -25,7 +27,7 @@ interface SessionUser {
   username?: string;
 }
 
-export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
+export default function ProfileHeader({ targetUserId, onMessageClick }: ProfileHeaderProps) {
   const { session, status, user } = useAuth(true);
   const [targetUser, setTargetUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +36,8 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
   // Xác định user hiện tại và user target
   const currentUserId = user?.id || session?.user?.id;
   const isOwnProfile = !targetUserId || currentUserId?.toString() === targetUserId;
+  
+
 
   useEffect(() => {
     const fetchTargetUser = async () => {
@@ -41,7 +45,7 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
       
       setIsLoading(true);
       try {
-        const response = await axios.get(`http://localhost:5001/api/users/public/${targetUserId}`);
+        const response = await API.get(`/users/public/${targetUserId}`);
         if (response.data.success) {
           setTargetUser(response.data.user);
         }
@@ -60,10 +64,10 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
     
     try {
       if (isFollowing) {
-        await axios.delete(`http://localhost:5001/api/follows/${currentUserId}/${targetUserId}`);
+        await API.delete(`/follows/${currentUserId}/${targetUserId}`);
         setIsFollowing(false);
       } else {
-        await axios.post(`http://localhost:5001/api/follows`, {
+        await API.post(`/follows`, {
           follower_id: currentUserId,
           following_id: targetUserId
         });
@@ -71,6 +75,12 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
       }
     } catch (error) {
       console.error('Error following/unfollowing:', error);
+    }
+  };
+
+  const handleMessageClick = (userId: bigint, username: string) => {
+    if (onMessageClick) {
+      onMessageClick(userId, username);
     }
   };
 
@@ -107,7 +117,7 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
         {targetUser?.bio && <p className="text-gray-300 mt-2">{targetUser.bio}</p>}
       </div>
 
-      {!isOwnProfile && (
+      {!isOwnProfile && targetUser && (
         <div className="flex justify-center gap-4 mt-4 text-center">
           <button 
             onClick={handleFollow}
@@ -119,11 +129,21 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
           >
             {isFollowing ? 'Following' : 'Follow'}
           </button>
-          <button className="border px-4 py-2 rounded-full cursor-pointer hover:text-white hover:bg-black">
-            Message
-          </button>
+          
+          <MessageButton
+            userId={BigInt(targetUser.id)}
+            username={targetUser.username || targetUser.name}
+            onMessageClick={handleMessageClick}
+            variant="outline"
+            size="md"
+          />
         </div>
       )}
+      
+      {/* Test button để debug */}
+
+      
+
     </section>
   );
 }

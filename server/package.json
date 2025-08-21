@@ -5,7 +5,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "test-email": "node test-email.js",
+    "test-database": "node test-database.js",
+    "test-transaction": "node test-transaction.js"
   },
   "prisma": {
     "seed": "node prisma/seed/seed.js"
@@ -21,8 +24,6 @@
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
-    "color-thief-node": "^1.0.4",
-    "colorthief": "^2.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
@@ -36,7 +37,8 @@
     "openai": "^5.10.1",
     "prisma": "^6.12.0",
     "sequelize": "^6.37.7",
-    "sharp": "^0.34.3"
+    "sharp": "^0.34.3",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "@faker-js/faker": "^9.9.0",

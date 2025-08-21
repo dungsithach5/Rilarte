@@ -1,6 +1,13 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+// Helper to serialize BigInt values safely to JSON (as strings)
+const serialize = (data) => {
+  return JSON.parse(
+    JSON.stringify(data, (_, value) => (typeof value === 'bigint' ? value.toString() : value))
+  );
+};
+
 // Save a post
 exports.savePost = async (req, res) => {
   try {
@@ -17,8 +24,8 @@ exports.savePost = async (req, res) => {
     const existingSave = await prisma.saved_posts.findUnique({
       where: {
         user_id_post_id: {
-          user_id: Number(user_id),
-          post_id: Number(post_id)
+          user_id: BigInt(user_id),
+          post_id: BigInt(post_id)
         }
       }
     });
@@ -32,18 +39,18 @@ exports.savePost = async (req, res) => {
     // Create saved post
     const savedPost = await prisma.saved_posts.create({
       data: {
-        user_id: Number(user_id),
-        post_id: Number(post_id),
+        user_id: BigInt(user_id),
+        post_id: BigInt(post_id),
         createdAt: new Date()
       }
     });
 
     console.log('Post saved:', { user_id, post_id });
-    res.status(201).json({
+    res.status(201).json(serialize({
       success: true,
       message: 'Post saved successfully',
       savedPost
-    });
+    }));
 
   } catch (error) {
     console.error('Error saving post:', error);
@@ -70,8 +77,8 @@ exports.unsavePost = async (req, res) => {
     const deletedSave = await prisma.saved_posts.delete({
       where: {
         user_id_post_id: {
-          user_id: Number(user_id),
-          post_id: Number(post_id)
+          user_id: BigInt(user_id),
+          post_id: BigInt(post_id)
         }
       }
     });
@@ -110,7 +117,7 @@ exports.getSavedPosts = async (req, res) => {
 
     const savedPosts = await prisma.saved_posts.findMany({
       where: {
-        user_id: Number(user_id)
+        user_id: BigInt(user_id)
       },
       include: {
         post: {
@@ -148,7 +155,7 @@ exports.getSavedPosts = async (req, res) => {
     });
 
     console.log(`Retrieved ${transformedPosts.length} saved posts for user ${user_id}`);
-    res.status(200).json(transformedPosts);
+    res.status(200).json(serialize(transformedPosts));
 
   } catch (error) {
     console.error('Error getting saved posts:', error);
@@ -167,8 +174,8 @@ exports.checkSavedPost = async (req, res) => {
     const savedPost = await prisma.saved_posts.findUnique({
       where: {
         user_id_post_id: {
-          user_id: Number(user_id),
-          post_id: Number(post_id)
+          user_id: BigInt(user_id),
+          post_id: BigInt(post_id)
         }
       }
     });

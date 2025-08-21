@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from '../services/Api';
 import Link from 'next/link';
 import { useAuth } from '../hooks/useAuth';
 
 interface User {
-  id: number;
+  id: string; // Changed to string to match BigInt from database
   username: string;
   avatar_url?: string;
   image?: string;
@@ -21,7 +21,7 @@ export default function UsersPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/users/public');
+        const response = await API.get('/users/public');
         if (response.data.success) {
           setUsers(response.data.users);
         }

@@ -4,6 +4,13 @@ const prisma = new PrismaClient();
 const ColorThief = require('colorthief');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
+// Helper to serialize BigInt values safely to JSON (as strings)
+const serialize = (data) => {
+  return JSON.parse(
+    JSON.stringify(data, (_, value) => (typeof value === 'bigint' ? value.toString() : value))
+  );
+};
+
 function rgbToHex(r, g, b) {
   return (
     "#" +
@@ -142,7 +149,7 @@ exports.getAllPosts = async (req, res) => {
       })
     );
 
-    res.status(200).json(postsWithTags);
+    res.status(200).json(serialize(postsWithTags));
   } catch (error) {
     console.error("Error fetching posts:", error);
     res.status(500).json({

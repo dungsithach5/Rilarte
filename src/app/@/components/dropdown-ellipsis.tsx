@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../components/ui/dialog";
-import axios from "axios"
+import API from "../../services/Api"
 import { Button } from "../components/ui/button";
 import { Ellipsis, Download, Trash2, Flag } from "lucide-react";
 import toast, { Toaster } from 'react-hot-toast'
@@ -69,7 +69,7 @@ export default function DropdownMenuEllipsis ({
 
     const delayedPromise = new Promise(async (resolve, reject) => {
       try {
-        const res = await axios.post("http://localhost:5000/api/reports", {
+        const res = await API.post("/reports", {
           post_id: postId,
           reason: reportReason,
         });

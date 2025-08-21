@@ -62,7 +62,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.likeCount || 0)
   const [bookmarked, setBookmarked] = useState(false)
-  const { session } = useAuth(true)
+  const { session } = useAuth(false)
   const reduxUser = useSelector((state: any) => state.user.user)
 
   const googleUser = session?.user
@@ -338,7 +338,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
     try {
       const params = new URLSearchParams(searchParams?.toString())
       if (newPost?.slug) {
-        params.set('post', String(newPost.slug))
+        params.set('post', String(newPost.slug || ''))
         const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname
         router.replace(nextUrl, { scroll: false })
       }
@@ -352,7 +352,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
       open={open}
       onOpenChange={(nextOpen) => {
         try {
-          const params = new URLSearchParams(searchParams?.toString())
+          const params = new URLSearchParams(searchParams?.toString() || '')
           if (nextOpen) {
             isClosingRef.current = false
             if (currentPost?.slug) {
@@ -363,7 +363,8 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
             setOpen(true)
           } else {
             isClosingRef.current = true
-            if (params.get('post') === String(currentPost?.slug)) {
+            const postParam = params.get('post');
+            if (postParam && postParam === String(currentPost?.slug)) {
               params.delete('post')
             }
             const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname

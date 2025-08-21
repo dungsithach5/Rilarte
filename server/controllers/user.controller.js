@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { sendMail } = require('../utils/mailer');
@@ -29,15 +28,28 @@ exports.sendOtp = async (req, res) => {
   otpStore[email] = { otp, expires: Date.now() + 5 * 60 * 1000 };
 
   try {
+    console.log(`📧 Đang gửi OTP ${otp} đến email: ${email}`);
+    
     await sendMail({
       to: email,
       subject: 'Your OTP Code',
       text: `Your OTP code is: ${otp}`,
       html: `<b>Your OTP code is: ${otp}</b>`
     });
+    
+    console.log(`✅ OTP đã được gửi thành công đến ${email}`);
     res.json({ message: 'OTP sent to email!' });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to send OTP', error: err.message });
+    console.error(`❌ Lỗi gửi OTP đến ${email}:`, err);
+    
+    // Xóa OTP khỏi store nếu gửi thất bại
+    delete otpStore[email];
+    
+    res.status(500).json({ 
+      message: 'Failed to send OTP', 
+      error: err.message,
+      details: 'Please check your email configuration and try again'
+    });
   }
 };
 
@@ -55,10 +67,24 @@ exports.verifyOtp = (req, res) => {
 
 exports.register = async (req, res) => {
   try {
+    console.log('📝 Registration request received:', {
+      body: req.body,
+      headers: req.headers,
+      method: req.method,
+      url: req.url
+    });
+
     const { username, email, password, confirmPassword } = req.body;
+    console.log('📝 Registration data:', { username, email, hasPassword: !!password, hasConfirmPassword: !!confirmPassword });
 
     // Input validation
     if (!username || !email || !password || !confirmPassword) {
+      console.log('❌ Validation failed - missing fields:', {
+        hasUsername: !!username,
+        hasEmail: !!email,
+        hasPassword: !!password,
+        hasConfirmPassword: !!confirmPassword
+      });
       return res.status(400).json({ 
         success: false, 
         message: 'All fields are required' 
@@ -67,6 +93,7 @@ exports.register = async (req, res) => {
 
     // Email validation
     if (!validateEmail(email)) {
+      console.log('❌ Email validation failed:', email);
       return res.status(400).json({ 
         success: false, 
         message: 'Please enter a valid email address' 
@@ -75,6 +102,11 @@ exports.register = async (req, res) => {
 
     // Password confirmation check
     if (password !== confirmPassword) {
+      console.log('❌ Password confirmation failed:', {
+        passwordLength: password?.length,
+        confirmPasswordLength: confirmPassword?.length,
+        passwordsMatch: password === confirmPassword
+      });
       return res.status(400).json({ 
         success: false, 
         message: 'Passwords do not match' 
@@ -83,6 +115,11 @@ exports.register = async (req, res) => {
 
     // Password strength validation
     if (!validatePassword(password)) {
+      console.log('❌ Password strength validation failed:', {
+        passwordLength: password?.length,
+        hasLetters: /[a-zA-Z]/.test(password),
+        hasNumbers: /\d/.test(password)
+      });
       return res.status(400).json({ 
         success: false, 
         message: 'Password must be at least 8 characters long and contain both letters and numbers' 
@@ -90,28 +127,37 @@ exports.register = async (req, res) => {
     }
 
     // Check if email already exists
+    console.log('🔍 Checking if email already exists:', email);
     const existingUser = await prisma.users.findUnique({ where: { email } });
     if (existingUser) {
+      console.log('❌ Email already exists:', email);
       return res.status(400).json({ 
         success: false, 
         message: 'Email already exists' 
       });
     }
+    console.log('✅ Email is available');
 
     // Check if username already exists
+    console.log('🔍 Checking if username already exists:', username);
     const existingUsername = await prisma.users.findUnique({ where: { username } });
     if (existingUsername) {
+      console.log('❌ Username already exists:', username);
       return res.status(400).json({ 
         success: false, 
         message: 'Username already exists' 
       });
     }
+    console.log('✅ Username is available');
 
     // Hash password
+    console.log('🔐 Hashing password...');
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
+    console.log('✅ Password hashed successfully');
 
     // Create user
+    console.log('👤 Creating user in database...');
     const newUser = await prisma.users.create({
       data: {
         username,
@@ -119,41 +165,98 @@ exports.register = async (req, res) => {
         password: hashedPassword
       }
     });
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        id: newUser.id, 
-        email: newUser.email, 
-        username: newUser.username 
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
-    );
-
-    // Return success response (without password)
-    const userResponse = {
+    console.log('✅ User created successfully:', {
       id: newUser.id,
       username: newUser.username,
-      email: newUser.email,
-      bio: newUser.bio,
-      avatar_url: newUser.avatar_url,
-      createdAt: newUser.createdAt
-    };
+      email: newUser.email
+    });
 
+    // Generate JWT token
+    console.log('🔑 Generating JWT token...');
+    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+    console.log('🔑 JWT Secret available:', !!jwtSecret, 'Length:', jwtSecret?.length);
+    
+          const token = jwt.sign(
+        { 
+          id: Number(newUser.id), // Convert BigInt to Number
+          email: newUser.email, 
+          username: newUser.username 
+        },
+        jwtSecret,
+        { expiresIn: '24h' }
+      );
+    console.log('✅ JWT token generated successfully');
+
+          // Return success response (without password)
+      const userResponse = {
+        id: Number(newUser.id), // Convert BigInt to Number
+        username: newUser.username,
+        email: newUser.email,
+        bio: newUser.bio,
+        avatar_url: newUser.avatar_url,
+        createdAt: newUser.createdAt
+      };
+
+    console.log('📤 Sending success response...');
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
       token,
       user: userResponse
     });
+    console.log('✅ Registration completed successfully');
 
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error during registration' 
-    });
+    console.error('❌ Registration error:', error);
+    
+    // Nếu có response đã được gửi, không gửi thêm
+    if (res.headersSent) {
+      return;
+    }
+    
+    // Log chi tiết lỗi database
+    if (error.code === 'P2002') {
+      console.error('🔍 Duplicate constraint error - Field:', error.meta?.target);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email hoặc username đã tồn tại trong hệ thống' 
+      });
+    } else if (error.code === 'P2003') {
+      console.error('🔍 Foreign key constraint error');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Dữ liệu không hợp lệ - Lỗi ràng buộc database' 
+      });
+    } else if (error.code === 'P2014') {
+      console.error('🔍 Invalid ID error');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'ID không hợp lệ' 
+      });
+    } else if (error.code === 'P2025') {
+      console.error('🔍 Record not found error');
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Không tìm thấy dữ liệu cần thiết' 
+      });
+    } else if (error.message === 'Email already exists') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email already exists' 
+      });
+    } else if (error.message === 'Username already exists') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Username already exists' 
+      });
+    } else {
+      console.error('🔍 Unknown error:', error.message);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Lỗi server trong quá trình đăng ký. Vui lòng thử lại sau.',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
   }
 };
 
@@ -190,7 +293,7 @@ exports.login = async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { 
-        id: user.id, 
+        id: Number(user.id), // Convert BigInt to Number
         email: user.email, 
         username: user.username 
       },
@@ -200,7 +303,7 @@ exports.login = async (req, res) => {
 
     // Return success response (without password)
     const userResponse = {
-      id: user.id,
+      id: Number(user.id), // Convert BigInt to Number
       username: user.username,
       email: user.email,
       bio: user.bio,
@@ -216,11 +319,41 @@ exports.login = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error during login' 
-    });
+    console.error('❌ Login error:', error);
+    
+    // Log chi tiết lỗi
+    if (error.code === 'P2002') {
+      console.error('🔍 Duplicate constraint error - Field:', error.meta?.target);
+      res.status(400).json({ 
+        success: false, 
+        message: 'Dữ liệu không hợp lệ - Lỗi ràng buộc database' 
+      });
+    } else if (error.code === 'P2003') {
+      console.error('🔍 Foreign key constraint error');
+      res.status(400).json({ 
+        success: false, 
+        message: 'Dữ liệu không hợp lệ - Lỗi ràng buộc database' 
+      });
+    } else if (error.code === 'P2014') {
+      console.error('🔍 Invalid ID error');
+      res.status(400).json({ 
+        success: false, 
+        message: 'ID không hợp lệ' 
+      });
+    } else if (error.code === 'P2025') {
+      console.error('🔍 Record not found error');
+      res.status(404).json({ 
+        success: false, 
+        message: 'Không tìm thấy dữ liệu cần thiết' 
+      });
+    } else {
+      console.error('🔍 Unknown database error:', error.code, error.message);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Lỗi server trong quá trình đăng nhập. Vui lòng thử lại sau.',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
   }
 };
 
@@ -299,7 +432,7 @@ exports.getUserById = async (req, res) => {
         res.status(200).json({
             success: true,
             user: {
-                id: user.id,
+                id: Number(user.id), // Convert BigInt to Number
                 username: user.username,
                 avatar: user.avatar_url || '/img/user.png',
                 name: user.username
@@ -330,7 +463,10 @@ exports.updateUser = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'User updated successfully',
-      user: updatedUser
+      user: {
+        ...updatedUser,
+        id: Number(updatedUser.id) // Convert BigInt to Number
+      }
     });
   } catch (error) {
     console.error('Update user error:', error);
@@ -370,28 +506,45 @@ exports.deleteUser = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   console.log('RESET PASSWORD API CALLED', req.body);
   const { email, password, confirmPassword } = req.body;
+  
   if (!email || !password || !confirmPassword) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
+  
   if (password !== confirmPassword) {
     return res.status(400).json({ message: 'Passwords do not match' });
   }
+  
   if (!validatePassword(password)) {
     return res.status(400).json({ message: 'Password must be at least 8 characters long and contain both letters and numbers' });
   }
+  
   try {
     const user = await prisma.users.findUnique({ where: { email } });
     if (!user) {
       return res.status(404).json({ message: 'Email not found' });
     }
+    
     const hashedPassword = await bcrypt.hash(password, 12);
-    await prisma.users.update({
+    const updatedUser = await prisma.users.update({
       where: { email },
       data: { password: hashedPassword }
     });
-    res.json({ message: 'Password reset successful' });
+    
+    res.json({ 
+      message: 'Password reset successful',
+      user: {
+        id: Number(updatedUser.id), // Convert BigInt to Number
+        email: updatedUser.email,
+        username: updatedUser.username
+      }
+    });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message, stack: err.stack });
+    console.error('Reset password error:', err);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error' 
+    });
   }
 };
 

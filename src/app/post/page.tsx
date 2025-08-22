@@ -1,6 +1,6 @@
 "use client"
 
-import axios from "axios"
+import API from "../services/Api"
 import React, { useState, useRef, useEffect } from "react"
 import { UploadCloud, Crop, Shield } from "lucide-react"
 import Cropper, { Area } from "react-easy-crop"
@@ -86,7 +86,6 @@ export default function Post() {
 
     try {
       let imageUrl = ""
-      
       // Nếu có watermark, upload với watermark
       if (copyrightSettings.watermark_enabled) {
         const formData = new FormData()
@@ -130,7 +129,7 @@ export default function Post() {
 
       console.log('Creating post with data:', newPost);
 
-      await axios.post("http://localhost:5001/api/posts", newPost)
+      await API.post("/posts", newPost)
       alert("Post created successfully!")
       setTitle("")
       setDescription("")

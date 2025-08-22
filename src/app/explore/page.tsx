@@ -1,6 +1,6 @@
 "use client";
 
-import axios from "axios";
+import API from "../services/Api";
 import { useEffect, useState } from "react";
 import Masonry from "react-masonry-css";
 import { Frown } from "lucide-react";
@@ -17,8 +17,8 @@ const breakpointColumnsObj = { default: 6, 1024: 2, 640: 2 };
 
 export default function ExplorePage() {
   const searchParams = useSearchParams();
-  const searchKeyword = searchParams.get("search") || "";
-  const searchColor = searchParams.get("color") || "";
+  const searchKeyword = searchParams?.get("search") || "";
+  const searchColor = searchParams?.get("color") || "";
 
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
@@ -85,7 +85,7 @@ export default function ExplorePage() {
 
   const handleDeletePost = async (postId: number) => {
     try {
-      await axios.delete(`http://localhost:5001/api/posts/${postId}`);
+      await API.delete(`/posts/${postId}`);
       setPosts(prev => prev.filter(p => p.id !== postId));
     } catch (err) {
       console.error("Error deleting post", err);

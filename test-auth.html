@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Test</title>
+</head>
+<body>
+    <h1>Authentication Test</h1>
+    <button onclick="testAuth()">Test Authentication</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAuth() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                // Test 1: Check localStorage
+                const localToken = localStorage.getItem('token');
+                const localUser = localStorage.getItem('user');
+                
+                console.log('LocalStorage Token:', localToken);
+                console.log('LocalStorage User:', localUser);
+                
+                // Test 2: Test API call
+                if (localToken) {
+                    const response = await fetch('http://localhost:5001/api/comments', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localToken}`
+                        },
+                        body: JSON.stringify({
+                            post_id: 74,
+                            content: 'Test from HTML'
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        resultDiv.innerHTML = `<p style="color: green;">✅ Success! Comment created: ${data.content}</p>`;
+                    } else {
+                        const error = await response.text();
+                        resultDiv.innerHTML = `<p style="color: red;">❌ Error: ${response.status} - ${error}</p>`;
+                    }
+                } else {
+                    resultDiv.innerHTML = '<p style="color: orange;">⚠️ No token found in localStorage</p>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">❌ Exception: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html> 

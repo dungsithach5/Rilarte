@@ -5,7 +5,14 @@ const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const { testSendMail, resetPassword, login, register, searchUsers } = require('../controllers/user.controller');
+const { testSendMail, resetPassword, login, register, searchUsers, sendOtp, verifyOtp } = require('../controllers/user.controller');
+
+// Helper to serialize BigInt values safely to JSON (as strings)
+const serialize = (data) => {
+  return JSON.parse(
+    JSON.stringify(data, (_, value) => (typeof value === 'bigint' ? value.toString() : value))
+  );
+};
 
 // Search
 router.get('/search', searchUsers);
@@ -50,8 +57,9 @@ router.get('/public', async (req, res) => {
         image: true
       }
     });
-    res.status(200).json({ success: true, users });
+    res.status(200).json({ success: true, users: serialize(users) });
   } catch (error) {
+    console.error('Error getting public users:', error);
     res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách người dùng' });
   }
 });
@@ -74,14 +82,14 @@ router.get('/public/:id', async (req, res) => {
 
     res.status(200).json({ 
       success: true, 
-      user: {
+      user: serialize({
         id: user.id,
         username: user.username,
         email: user.email,
         bio: user.bio,
         avatar: user.avatar_url || user.image || '/img/user.png',
         name: user.username || `User ${user.id}`
-      }
+      })
     });
   } catch (error) {
     console.error('Error getting public user:', error);
@@ -362,7 +370,7 @@ router.post('/auth/google', async (req, res) => {
     res.status(200).json({
       success: true,
       user: {
-        id: user.id,
+        id: user.id.toString(), // Convert BigInt to string for JSON
         email: user.email,
         username: user.username,
         onboarded: user.onboarded
@@ -372,8 +380,8 @@ router.post('/auth/google', async (req, res) => {
   } catch (error) {
     console.error('Google auth error:', error);
     res.status(500).json({ 
-      success: false, 
-      message: 'Lỗi server trong quá trình xác thực Google' 
+      success: false,
+      message: 'Lỗi server trong quá trình xác thực Google'
     });
   }
 });
@@ -482,8 +490,8 @@ router.put('/update', async (req, res) => {
 });
 
 router.post('/test-send-mail', testSendMail);
-router.post('/send-otp', testSendMail.sendOtp || require('../controllers/user.controller').sendOtp);
-router.post('/verify-otp', testSendMail.verifyOtp || require('../controllers/user.controller').verifyOtp);
+router.post('/send-otp', sendOtp);
+router.post('/verify-otp', verifyOtp);
 router.post('/reset-password', resetPassword);
 
 module.exports = router;

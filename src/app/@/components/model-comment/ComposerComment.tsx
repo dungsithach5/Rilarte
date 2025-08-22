@@ -62,7 +62,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.likeCount || 0)
   const [bookmarked, setBookmarked] = useState(false)
-  const { session } = useAuth(true)
+  const { session } = useAuth(false)
   const reduxUser = useSelector((state: any) => state.user.user)
 
   const googleUser = session?.user
@@ -314,27 +314,27 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
   }, [searchParams, post?.slug, open]);
 
   const handleSelectRelatedPost = (newPost: any) => {
-    setOpen(false); 
-    isClosingRef.current = true;
+  setOpen(false); 
+  isClosingRef.current = true;
 
-    setTimeout(() => {
-      setCurrentPost(newPost);
-      setLikeCount(newPost.likeCount || 0);
-      setLiked(false);
-      setBookmarked(false);
-      setComments([]);
-      setLoading(false);
+  setTimeout(() => {
+    setCurrentPost(newPost);
+    setLikeCount(newPost.likeCount || 0);
+    setLiked(false);
+    setBookmarked(false);
+    setComments([]);
+    setLoading(false);
 
-      try {
-        const params = new URLSearchParams(searchParams?.toString());
-        if (newPost?.slug) {
-          params.set('post', String(newPost.slug));
-          const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
-          router.replace(nextUrl, { scroll: false });
-        }
-      } catch (err) {
-        console.log("Error :", err);
+    try {
+      const params = new URLSearchParams(searchParams?.toString());
+      if (newPost?.slug) {
+        params.set('post', String(newPost.slug));
+        const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
+        router.replace(nextUrl, { scroll: false });
       }
+    } catch (err) {
+      console.log("Error :", err);
+    }
       isClosingRef.current = false; 
     }, 150);
   };
@@ -344,7 +344,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
       open={open}
       onOpenChange={(nextOpen) => {
         try {
-          const params = new URLSearchParams(searchParams?.toString())
+          const params = new URLSearchParams(searchParams?.toString() || '')
           if (nextOpen) {
             isClosingRef.current = false
             if (currentPost?.slug) {

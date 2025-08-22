@@ -42,8 +42,8 @@ const getOrCreateChatRoom = async (req, res) => {
     if (!chatRoom) {
       chatRoom = await prisma.chat_rooms.create({
         data: {
-          user1_id: BigInt(user1_id),
-          user2_id: BigInt(user2_id)
+          user1_id: user1_id,
+          user2_id: user2_id
         },
         include: {
           user1: {
@@ -85,8 +85,8 @@ const sendMessage = async (req, res) => {
     let chatRoom = await prisma.chat_rooms.findFirst({
       where: {
         OR: [
-          { user1_id: BigInt(sender_id), user2_id: BigInt(receiver_id) },
-          { user1_id: BigInt(receiver_id), user2_id: BigInt(sender_id) }
+          { user1_id: sender_id, user2_id: receiver_id },
+          { user1_id: receiver_id, user2_id: sender_id }
         ]
       }
     });
@@ -94,8 +94,8 @@ const sendMessage = async (req, res) => {
     if (!chatRoom) {
       chatRoom = await prisma.chat_rooms.create({
         data: {
-          user1_id: BigInt(sender_id),
-          user2_id: BigInt(receiver_id)
+          user1_id: sender_id,
+          user2_id: receiver_id
         }
       });
     }
@@ -103,8 +103,8 @@ const sendMessage = async (req, res) => {
     // Create message
     const message = await prisma.messages.create({
       data: {
-        sender_id: BigInt(sender_id),
-        receiver_id: BigInt(receiver_id),
+        sender_id: sender_id,
+        receiver_id: receiver_id,
         content,
         message_type,
         file_url,
@@ -220,8 +220,8 @@ const getUserChatRooms = async (req, res) => {
     const chatRooms = await prisma.chat_rooms.findMany({
       where: {
         OR: [
-          { user1_id: BigInt(user_id) },
-          { user2_id: BigInt(user_id) }
+          { user1_id: user_id },
+          { user2_id: user_id }
         ]
       },
       include: {
@@ -352,7 +352,7 @@ const deleteMessage = async (req, res) => {
     const message = await prisma.messages.findFirst({
       where: {
         id: parseInt(message_id),
-        sender_id: BigInt(user_id)
+        sender_id: user_id
       }
     });
 

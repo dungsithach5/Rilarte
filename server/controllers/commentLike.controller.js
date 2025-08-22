@@ -1,22 +1,15 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Helper to serialize BigInt values safely to JSON (as strings)
-const serialize = (data) => {
-  return JSON.parse(
-    JSON.stringify(data, (_, value) => (typeof value === 'bigint' ? value.toString() : value))
-  );
-};
-
 // Like a comment
 const likeComment = async (req, res) => {
   try {
     const { comment_id } = req.params;
-    const user_id = BigInt(req.user.id);
+    const user_id = req.user.id;
 
     // Check if comment exists
     const comment = await prisma.comments.findUnique({
-      where: { id: BigInt(comment_id) }
+      where: { id: parseInt(comment_id) }
     });
 
     if (!comment) {
@@ -27,7 +20,7 @@ const likeComment = async (req, res) => {
     const existingLike = await prisma.comment_likes.findFirst({
       where: {
         user_id: user_id,
-        comment_id: BigInt(comment_id)
+        comment_id: parseInt(comment_id)
       }
     });
 
@@ -39,7 +32,7 @@ const likeComment = async (req, res) => {
     const like = await prisma.comment_likes.create({
       data: {
         user_id: user_id,
-        comment_id: BigInt(comment_id)
+        comment_id: parseInt(comment_id)
       },
       include: {
         users: {
@@ -66,10 +59,10 @@ const likeComment = async (req, res) => {
       });
     }
 
-    res.status(201).json(serialize({
+    res.status(201).json({
       message: 'Comment liked successfully',
       like
-    }));
+    });
 
   } catch (error) {
     console.error('Error liking comment:', error);
@@ -81,13 +74,13 @@ const likeComment = async (req, res) => {
 const unlikeComment = async (req, res) => {
   try {
     const { comment_id } = req.params;
-    const user_id = BigInt(req.user.id);
+    const user_id = req.user.id;
 
     // Check if like exists
     const existingLike = await prisma.comment_likes.findFirst({
       where: {
         user_id: user_id,
-        comment_id: BigInt(comment_id)
+        comment_id: parseInt(comment_id)
       }
     });
 
@@ -117,7 +110,7 @@ const getCommentLikes = async (req, res) => {
 
     const likes = await prisma.comment_likes.findMany({
       where: {
-        comment_id: BigInt(comment_id)
+        comment_id: parseInt(comment_id)
       },
       include: {
         users: {
@@ -133,10 +126,10 @@ const getCommentLikes = async (req, res) => {
       }
     });
 
-    res.json(serialize({
+    res.json({
       count: likes.length,
       likes
-    }));
+    });
 
   } catch (error) {
     console.error('Error getting comment likes:', error);
@@ -148,19 +141,19 @@ const getCommentLikes = async (req, res) => {
 const checkUserLikeComment = async (req, res) => {
   try {
     const { comment_id } = req.params;
-    const user_id = BigInt(req.user.id);
+    const user_id = req.user.id;
 
     const like = await prisma.comment_likes.findFirst({
       where: {
         user_id: user_id,
-        comment_id: BigInt(comment_id)
+        comment_id: parseInt(comment_id)
       }
     });
 
-    res.json(serialize({
+    res.json({
       isLiked: !!like,
       like
-    }));
+    });
 
   } catch (error) {
     console.error('Error checking user like:', error);

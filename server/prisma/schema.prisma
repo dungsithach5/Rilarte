@@ -9,8 +9,8 @@ datasource db {
 
 model comment_likes {
   id         Int      @id @default(autoincrement())
-  user_id    BigInt
-  comment_id BigInt
+  user_id    Int
+  comment_id Int
   createdAt  DateTime @default(now()) @db.DateTime(0)
   updatedAt  DateTime @default(now()) @db.DateTime(0)
   comments   comments @relation(fields: [comment_id], references: [id], onDelete: Cascade)
@@ -22,13 +22,13 @@ model comment_likes {
 }
 
 model comments {
-  id        BigInt          @id @default(autoincrement())
-  user_id   BigInt
-  post_id   BigInt
+  id        Int          @id @default(autoincrement())
+  user_id   Int
+  post_id   Int
   content   String          @db.Text
   createdAt DateTime        @default(now()) @db.DateTime(0)
   updatedAt DateTime        @default(now()) @db.DateTime(0)
-  parent_id BigInt?
+  parent_id Int?
   likes     comment_likes[]
   users     users           @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "comments_ibfk_1")
   posts     posts           @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "comments_ibfk_2")
@@ -41,9 +41,9 @@ model comments {
 }
 
 model follows {
-  id                                BigInt   @id @default(autoincrement())
-  follower_id                       BigInt
-  following_id                      BigInt
+  id                                Int   @id @default(autoincrement())
+  follower_id                       Int
+  following_id                      Int
   createdAt                         DateTime @db.DateTime(0)
   updatedAt                         DateTime @db.DateTime(0)
   users_follows_follower_idTousers  users    @relation("follows_follower_idTousers", fields: [follower_id], references: [id], onDelete: Cascade, map: "follows_ibfk_1")
@@ -54,9 +54,9 @@ model follows {
 }
 
 model likes {
-  id        BigInt   @id @default(autoincrement())
-  user_id   BigInt
-  post_id   BigInt
+  id        Int   @id @default(autoincrement())
+  user_id   Int
+  post_id   Int
   createdAt DateTime @default(now()) @db.DateTime(0)
   updatedAt DateTime @default(now()) @db.DateTime(0)
   users     users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "likes_ibfk_1")
@@ -67,9 +67,9 @@ model likes {
 }
 
 model messages {
-  id                                BigInt   @id @default(autoincrement())
-  sender_id                         BigInt
-  receiver_id                       BigInt
+  id                                Int   @id @default(autoincrement())
+  sender_id                         Int
+  receiver_id                       Int
   content                           String   @db.Text
   message_type                      String   @default("text") @db.VarChar(20) // text, image, file
   file_url                          String?  @db.VarChar(255)
@@ -96,9 +96,9 @@ model messages {
 
 model chat_rooms {
   id                String    @id @default(uuid()) @db.VarChar(100)
-  user1_id          BigInt
-  user2_id          BigInt
-  last_message_id   BigInt?
+  user1_id          Int
+  user2_id          Int
+  last_message_id   Int?
   last_message_at   DateTime?
   created_at        DateTime  @default(now()) @db.DateTime(0)
   updated_at        DateTime  @updatedAt @db.DateTime(0)
@@ -116,8 +116,8 @@ model chat_rooms {
 }
 
 model notifications {
-  id        BigInt   @id @default(autoincrement())
-  user_id   BigInt
+  id        Int   @id @default(autoincrement())
+  user_id   Int
   type      String   @db.VarChar(50)
   content   String   @db.Text
   is_read   Boolean  @default(false)
@@ -129,8 +129,8 @@ model notifications {
 }
 
 model posts {
-  id             BigInt          @id @default(autoincrement())
-  user_id        BigInt
+  id             Int          @id @default(autoincrement())
+  user_id        Int
   user_name      String          @db.VarChar(45)
   title          String          @db.Text
   content        String          @db.Text
@@ -150,9 +150,9 @@ model posts {
 }
 
 model related_posts {
-  id          BigInt   @id @default(autoincrement())
-  post_id     BigInt
-  related_id  BigInt
+  id          Int   @id @default(autoincrement())
+  post_id     Int
+  related_id  Int
   post        posts    @relation("PostToRelated", fields: [post_id], references: [id], onDelete: Cascade)
   relatedPost posts    @relation("RelatedToPost", fields: [related_id], references: [id], onDelete: Cascade)
 
@@ -170,8 +170,8 @@ model tags {
 }
 
 model post_tags {
-  id      BigInt   @id @default(autoincrement())
-  post_id BigInt
+  id      Int   @id @default(autoincrement())
+  post_id Int
   tag_id  Int
   post    posts    @relation(fields: [post_id], references: [id], onDelete: Cascade)
   tag     tags     @relation(fields: [tag_id], references: [id], onDelete: Cascade)
@@ -182,10 +182,10 @@ model post_tags {
 }
 
 model report_posts {
-  id          BigInt   @id @default(autoincrement())
-  post_id     BigInt
-  user_id     BigInt
-  reporter_id BigInt
+  id          Int   @id @default(autoincrement())
+  post_id     Int
+  user_id     Int
+  reporter_id Int
   reason      String   @db.Text
   createdAt   DateTime @default(now()) @db.DateTime(0)
   resolved    Boolean  @default(false)
@@ -203,7 +203,7 @@ model sequelizemeta {
 }
 
 model users {
-  id                                   BigInt          @id @default(autoincrement())
+  id                                   Int          @id @default(autoincrement())
   username                             String?         @unique(map: "username") @db.VarChar(50)
   email                                String          @unique(map: "email") @db.VarChar(100)
   password                             String?         @db.VarChar(255)
@@ -245,7 +245,7 @@ model topics {
 
 model user_topics {
   id       Int      @id @default(autoincrement())
-  user_id  BigInt
+  user_id  Int
   topic_id Int
 
   user  users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -257,7 +257,7 @@ model user_topics {
 }
 model Account {
   id                String  @id
-  userId            BigInt
+  userId            Int
   type              String
   provider          String
   providerAccountId String
@@ -277,7 +277,7 @@ model Account {
 model Session {
   id           String   @id
   sessionToken String   @unique
-  userId       BigInt
+  userId       Int
   expires      DateTime
   users        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -300,8 +300,8 @@ model banned_keywords {
 
 model saved_posts {
   id        Int      @id @default(autoincrement())
-  user_id   BigInt
-  post_id   BigInt
+  user_id   Int
+  post_id   Int
   createdAt DateTime @default(now()) @db.DateTime(0)
   user      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
   post      posts    @relation(fields: [post_id], references: [id], onDelete: Cascade)

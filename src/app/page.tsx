@@ -1,6 +1,6 @@
 "use client";
 
-import API from "./services/Api";
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -31,9 +31,8 @@ export default function FeedPage() {
   // Fetch personalized feed
   useEffect(() => {
     if (!reduxUser || !reduxUser.onboarded) return;
-    setIsLoading(true);
-    API
-      .get(`/users/${reduxUser.id}/feed`)
+    axios
+      .get(`http://localhost:5001/api/users/${reduxUser.id}/feed`)
       .then((res) => {
         const mapped = res.data.map((item: any) => ({
           ...item,
@@ -62,7 +61,7 @@ export default function FeedPage() {
 
   const handleDeletePost = async (postId: number) => {
     try {
-      await API.delete(`/posts/${postId}`);
+      await axios.delete(`http://localhost:5001/api/posts/${postId}`);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
     } catch (err) {
       console.error("Error deleting post", err);

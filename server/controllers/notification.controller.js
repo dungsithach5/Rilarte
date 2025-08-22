@@ -1,17 +1,10 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Helper to serialize BigInt values safely to JSON (as strings)
-const serialize = (data) => {
-  return JSON.parse(
-    JSON.stringify(data, (_, value) => (typeof value === 'bigint' ? value.toString() : value))
-  );
-};
-
 exports.getAllNotifications = async (req, res) => {
     try {
-        const notifications = await prisma.notifications.findMany();
-        res.status(200).json(serialize(notifications));
+        const notifications = await prisma.notification.findMany();
+        res.status(200).json(notifications);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching notifications', error });
     }
@@ -19,11 +12,11 @@ exports.getAllNotifications = async (req, res) => {
 
 exports.getNotificationById = async (req, res) => {
     try {
-        const notification = await prisma.notifications.findUnique({ where: { id: BigInt(req.params.id) } });
+        const notification = await prisma.notification.findUnique({ where: { id: Number(req.params.id) } });
         if (!notification) {
             return res.status(404).json({ message: 'Notification not found' });
         }
-        res.status(200).json(serialize(notification));
+        res.status(200).json(notification);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching notification', error });
     }
@@ -31,8 +24,8 @@ exports.getNotificationById = async (req, res) => {
 
 exports.createNotification = async (req, res) => {
     try {
-        const newNotification = await prisma.notifications.create({ data: req.body });
-        res.status(201).json(serialize(newNotification));
+        const newNotification = await prisma.notification.create({ data: req.body });
+        res.status(201).json(newNotification);
     } catch (error) {
         res.status(400).json({ message: 'Error creating notification', error });
     }
@@ -40,11 +33,11 @@ exports.createNotification = async (req, res) => {
 
 exports.updateNotification = async (req, res) => {
     try {
-        const updatedNotification = await prisma.notifications.update({
-            where: { id: BigInt(req.params.id) },
+        const updatedNotification = await prisma.notification.update({
+            where: { id: Number(req.params.id) },
             data: req.body
         });
-        res.status(200).json(serialize(updatedNotification));
+        res.status(200).json(updatedNotification);
     } catch (error) {
         res.status(400).json({ message: 'Error updating notification', error });
     }
@@ -52,7 +45,7 @@ exports.updateNotification = async (req, res) => {
 
 exports.deleteNotification = async (req, res) => {
     try {
-        await prisma.notifications.delete({ where: { id: BigInt(req.params.id) } });
+        await prisma.notification.delete({ where: { id: Number(req.params.id) } });
         res.status(200).json({ message: 'Notification deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error deleting notification', error });
@@ -61,12 +54,12 @@ exports.deleteNotification = async (req, res) => {
 
 exports.getNotificationsByUser = async (req, res) => {
     try {
-        const user_id = BigInt(req.params.user_id);
-        const notifications = await prisma.notifications.findMany({
+        const user_id = Number(req.params.user_id);
+        const notifications = await prisma.notification.findMany({
             where: { user_id },
             orderBy: { createdAt: 'desc' }
         });
-        res.status(200).json(serialize(notifications));
+        res.status(200).json(notifications);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching notifications', error });
     }

@@ -1,13 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-
-// Helper to serialize BigInt values safely to JSON (as strings)
-const serialize = (data) => {
-  return JSON.parse(
-    JSON.stringify(data, (_, value) => (typeof value === 'bigint' ? value.toString() : value))
-  );
-};
-
 exports.getAllComments = async (req, res) => {
     try {
         const { post_id } = req.query;
@@ -26,7 +18,7 @@ exports.getAllComments = async (req, res) => {
             });
         }
         
-        res.status(200).json(serialize(comments));
+        res.status(200).json(comments);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching comments', error });
     }
@@ -38,7 +30,7 @@ exports.getCommentById = async (req, res) => {
         if (!comment) {
             return res.status(404).json({ message: 'Comment not found' });
         }
-        res.status(200).json(serialize(comment));
+        res.status(200).json(comment);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching comment', error });
     }
@@ -82,7 +74,7 @@ exports.createComment = async (req, res) => {
             });
         }
 
-        res.status(201).json(serialize(newComment));
+        res.status(201).json(newComment);
     } catch (error) {
         console.error('Error creating comment:', error);
         res.status(400).json({ message: 'Error creating comment', error });
@@ -95,7 +87,7 @@ exports.updateComment = async (req, res) => {
             where: { id: Number(req.params.id) },
             data: req.body
         });
-        res.status(200).json(serialize(updatedComment));
+        res.status(200).json(updatedComment);
     } catch (error) {
         res.status(400).json({ message: 'Error updating comment', error });
     }

@@ -23,11 +23,10 @@ interface DropdownMenuEllipsisProps {
   fileName?: string;
   onOpenChange?: (open: boolean) => void;
   isOwner?: boolean;
-  onDelete?: (id: number) => void;
+  onDelete?: (id: number) => void;      
   postId?: number;
+  downloadProtected?: boolean; // NEW
 }
-
-
 
 export default function DropdownMenuEllipsis ({
   imageUrl,
@@ -36,12 +35,17 @@ export default function DropdownMenuEllipsis ({
   isOwner = false,
   onDelete,
   postId,
+  downloadProtected, // NEW
 }: DropdownMenuEllipsisProps) {
   const [openModal, setOpenModal] = useState(false);
-  const [openReportModal, setOpenReportModal] = useState(false); // modal report
+  const [openReportModal, setOpenReportModal] = useState(false);
   const [reportReason, setReportReason] = useState("");
 
   const handleDownload = async () => {
+    if (downloadProtected) {
+      toast.error("Không thể tải ảnh: Nội dung đã được bảo vệ bản quyền.");
+      return;
+    }
     const response = await fetch(imageUrl);
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
@@ -92,7 +96,6 @@ export default function DropdownMenuEllipsis ({
     });
   };
 
-
   return (
     <>
     <DropdownMenu onOpenChange={onOpenChange}>
@@ -106,7 +109,8 @@ export default function DropdownMenuEllipsis ({
       <DropdownMenuContent>
         <DropdownMenuItem 
           onClick={handleDownload} 
-          className="cursor-pointer"
+          className={`cursor-pointer ${downloadProtected ? "pointer-events-none opacity-50" : ""}`}
+          title={downloadProtected ? "Download đã bị vô hiệu hóa bởi quyền tác giả" : "Download"}
         >
           <Download size={18} color="black"/>
           Download
@@ -129,6 +133,7 @@ export default function DropdownMenuEllipsis ({
           )}
       </DropdownMenuContent>
     </DropdownMenu>
+
     {/* Modal Confirm Delete */}
     <Dialog open={openModal} onOpenChange={setOpenModal}>
       <DialogContent>
@@ -173,6 +178,8 @@ export default function DropdownMenuEllipsis ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Toaster position="top-center" />
     </>
   );
 }

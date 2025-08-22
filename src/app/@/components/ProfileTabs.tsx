@@ -66,6 +66,7 @@ export default function ProfileTabs({ targetUserId }: ProfileTabsProps) {
             content: item.content,
             image_url: item.image_url,
             likeCount: item.likeCount || 0,
+            download_protected: item.download_protected,
           }));
           setPosts(mapped);
         } else {
@@ -79,6 +80,7 @@ export default function ProfileTabs({ targetUserId }: ProfileTabsProps) {
             content: item.content,
             image_url: item.image_url,
             likeCount: item.likeCount || 0,
+            download_protected: item.download_protected,
           }));
           setPosts(mapped);
           console.log('Target user posts loaded:', mapped.length, 'posts');
@@ -109,6 +111,7 @@ export default function ProfileTabs({ targetUserId }: ProfileTabsProps) {
               content: item.content,
               image_url: item.image_url,
               likeCount: item.likeCount || 0,
+              download_protected: item.download_protected,
             }));
             setSavedPosts(mapped);
             console.log('Saved posts loaded:', mapped.length, 'posts');

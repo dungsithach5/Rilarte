@@ -8,10 +8,16 @@ import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { setKeyword } from "../../../context/searchSlice";
 
-export default function SearchInput() {
+interface SearchInputProps {
+  onSearch: (keyword: string) => void;
+  initialKeyword?: string;
+}
+
+
+export default function SearchInput({ onSearch, initialKeyword = "" }: SearchInputProps) {
   const router = useRouter();
   const dispatch = useDispatch();
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState(initialKeyword);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [colors, setColors] = useState<string[]>([]);
 
@@ -32,6 +38,7 @@ export default function SearchInput() {
     e.preventDefault();
     if (inputValue.trim() !== "") {
       dispatch(setKeyword(inputValue.trim()));
+      onSearch?.(inputValue.trim());
       setShowSuggestions(false);
       router.push(`/explore?search=${encodeURIComponent(inputValue.trim())}`);
     }

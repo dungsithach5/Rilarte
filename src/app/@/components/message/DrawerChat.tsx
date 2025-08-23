@@ -12,10 +12,10 @@ import { ChatHeader } from "./ChatHeader"
 import { ChatBubble } from "./ChatBubble"
 import { ChatInput } from "./ChatInput"
 import CallModal from "./CallModal"
-import { useChat } from "../../../../hooks/useChat"
-import { chatApi, chatUtils } from "../../../../services/Api/chat"
+import { useChat } from "../../../hooks/useChat"
+import { chatApi, chatUtils } from "../../../services/Api/chat"
 import { useAuth } from "../../../hooks/useAuth"
-import { useSocket } from "../../../../context/SocketContext"
+import { useSocket } from "../../../context/SocketContext"
 
 import {
   ChatBubbleOvalLeftIcon as ChatOutline,

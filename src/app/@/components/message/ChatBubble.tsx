@@ -20,7 +20,8 @@ export function ChatBubble({
   messageType = 'text',
   fileUrl,
   fileName,
-  isSenderOnline
+  isSenderOnline,
+  isSenderActive
 }: ChatBubbleProps) {
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);

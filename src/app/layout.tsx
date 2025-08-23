@@ -8,7 +8,7 @@ import ReduxProvider from "./context/ReduxProvider";
 import { SessionProvider } from "./context/SessionProvider";
 import { AppToaster } from "./@/components/ui-admin/toast";
 import { SearchProvider } from "./context/SearchContext"
-import { SocketProvider } from "../context/SocketContext";
+import { SocketProvider } from "./context/SocketContext";
 
 
 const geistSans = Geist({

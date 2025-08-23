@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Phone, PhoneOff, Mic, MicOff, VideoIcon, VideoOff } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { useSocket } from '../../../../context/SocketContext';
+import { useSocket } from '../../../context/SocketContext';
 
 const callModalStyles = `
   .call-modal-container * {

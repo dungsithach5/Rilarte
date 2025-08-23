@@ -1,4 +1,4 @@
-import API from '../../app/services/Api'
+import API from './index'
 
 // Chat room APIs
 export const chatApi = {

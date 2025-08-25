@@ -5,14 +5,13 @@ const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const { testSendMail, resetPassword, login, register, searchUsers, sendOtp, verifyOtp } = require('../controllers/user.controller');
+const { testSendMail, resetPassword, login, register, followUser, unfollowUser } = require('../controllers/user.controller');
 
-// Helper to serialize BigInt values safely to JSON (as strings)
-const serialize = (data) => {
-  return JSON.parse(
-    JSON.stringify(data, (_, value) => (typeof value === 'bigint' ? value.toString() : value))
-  );
-};
+// Follow user
+router.post('/follow/:id', authMiddleware, followUser);
+
+// Unfollow user
+router.delete('/unfollow/:id', authMiddleware, unfollowUser);
 
 // Search
 router.get('/search', searchUsers);

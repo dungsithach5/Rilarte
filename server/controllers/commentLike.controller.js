@@ -47,7 +47,7 @@ const likeComment = async (req, res) => {
 
     // Tạo notification cho chủ comment
     if (comment.user_id !== user_id) {
-      await prisma.notifications.create({
+      await prisma.notificationss.create({
         data: {
           user_id: comment.user_id,
           type: 'like',

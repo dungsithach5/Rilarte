@@ -41,17 +41,20 @@ model comments {
 }
 
 model follows {
-  id                                Int      @id @default(autoincrement())
-  follower_id                       Int
-  following_id                      Int
-  createdAt                         DateTime @db.DateTime(0)
-  updatedAt                         DateTime @db.DateTime(0)
-  users_follows_follower_idTousers  users    @relation("follows_follower_idTousers", fields: [follower_id], references: [id], onDelete: Cascade, map: "follows_ibfk_1")
-  users_follows_following_idTousers users    @relation("follows_following_idTousers", fields: [following_id], references: [id], onDelete: Cascade, map: "follows_ibfk_2")
+  id           Int    @id @default(autoincrement())
+  follower_id  Int
+  following_id Int
+  createdAt    DateTime @default(now())     // Tự set khi create
+  updatedAt    DateTime @updatedAt          // Tự update khi update
 
+  users_follows_follower_idTousers  users @relation("follows_follower_idTousers", fields: [follower_id], references: [id], onDelete: Cascade, map: "follows_ibfk_1")
+  users_follows_following_idTousers users @relation("follows_following_idTousers", fields: [following_id], references: [id], onDelete: Cascade, map: "follows_ibfk_2")
+
+  @@unique([follower_id, following_id])     // Tránh follow trùng
   @@index([follower_id], map: "follower_id")
   @@index([following_id], map: "following_id")
 }
+
 
 model likes {
   id        Int      @id @default(autoincrement())

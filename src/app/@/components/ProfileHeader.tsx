@@ -30,11 +30,13 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
   const [targetUser, setTargetUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [stats, setStats] = useState({ followers: 0, following: 0 });
 
-  // Xác định user hiện tại và user target
   const currentUserId = user?.id || session?.user?.id;
   const isOwnProfile = !targetUserId || currentUserId?.toString() === targetUserId;
 
+  // Lấy thông tin user target
   useEffect(() => {
     const fetchTargetUser = async () => {
       if (!targetUserId) return;
@@ -55,22 +57,52 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
     fetchTargetUser();
   }, [targetUserId]);
 
+  // Lấy số followers/following
+  const fetchStats = async () => {
+    if (!targetUserId) return;
+    try {
+      const res = await axios.get(`http://localhost:5001/api/follows/stats/${targetUserId}`);
+      if (res.data.success) {
+        setStats({
+          followers: res.data.followers,
+          following: res.data.following
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching follow stats:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, [targetUserId]);
+
   const handleFollow = async () => {
     if (!currentUserId || !targetUserId) return;
-    
+    setFollowLoading(true);
+
     try {
       if (isFollowing) {
-        await axios.delete(`http://localhost:5001/api/follows/${currentUserId}/${targetUserId}`);
+        // UNFOLLOW
+        await axios.post(`http://localhost:5001/api/follows/unfollow`, {
+          follower_id: currentUserId,
+          following_id: targetUserId
+        });
         setIsFollowing(false);
       } else {
+        // FOLLOW
         await axios.post(`http://localhost:5001/api/follows`, {
           follower_id: currentUserId,
           following_id: targetUserId
         });
         setIsFollowing(true);
       }
+      // cập nhật lại số lượng sau khi follow/unfollow
+      fetchStats();
     } catch (error) {
       console.error('Error following/unfollowing:', error);
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -82,7 +114,6 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
     return null
   }
 
-  // Sử dụng thông tin user target nếu có, không thì dùng session
   const displayUser = targetUser || session?.user;
   const displayName = targetUser?.name || targetUser?.username || (session?.user as SessionUser)?.name || (session?.user as SessionUser)?.username;
   const displayAvatar = targetUser?.avatar || (session?.user as SessionUser)?.image;
@@ -97,8 +128,8 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
       <div className="mt-4 text-center">
         <h2 className="text-xl font-semibold">{displayName}</h2>
         <div className="flex justify-center gap-4 mt-2 text-gray-500">
-          <h2>0 followers</h2>
-          <h2>0 following</h2>
+          <h2>{stats.followers} followers</h2>
+          <h2>{stats.following} following</h2>
         </div>
         {targetUser?.bio && <p className="text-gray-300 mt-2">{targetUser.bio}</p>}
       </div>
@@ -107,13 +138,14 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
         <div className="flex justify-center gap-4 mt-4 text-center">
           <button 
             onClick={handleFollow}
-            className={`border px-4 py-2 rounded-full cursor-pointer hover:text-white transition-colors ${
+            disabled={followLoading}
+            className={`border px-4 py-2 rounded-full cursor-pointer transition-colors ${
               isFollowing 
-                ? 'bg-gray-600 text-white' 
-                : 'hover:bg-black'
-            }`}
+                ? 'bg-gray-600 text-white hover:bg-gray-700' 
+                : 'hover:bg-black hover:text-white'
+            } disabled:opacity-50`}
           >
-            {isFollowing ? 'Following' : 'Follow'}
+            {followLoading ? "..." : isFollowing ? 'Following' : 'Follow'}
           </button>
           <button className="border px-4 py-2 rounded-full cursor-pointer hover:text-white hover:bg-black">
             Message
@@ -123,4 +155,3 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
     </section>
   );
 }
-  

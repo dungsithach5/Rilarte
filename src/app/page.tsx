@@ -14,7 +14,7 @@ const breakpointColumnsObj = { default: 6, 1024: 2, 640: 2 };
 
 export default function FeedPage() {
   const router = useRouter();
-  const reduxUser = useSelector((state: any) => state.user.user); // Lấy user từ Redux
+  const reduxUser = useSelector((state: any) => state.user.user);
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
   const [popularTags, setPopularTags] = useState<string[]>([]);
@@ -38,7 +38,10 @@ export default function FeedPage() {
           ...item,
           slug: createPostSlug(item.title, item.id),
         }));
-        setPosts(mapped);
+        // Shuffle posts
+        const shuffledPosts = mapped.sort(() => Math.random() - 0.5);
+
+        setPosts(shuffledPosts);
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
@@ -55,8 +58,13 @@ export default function FeedPage() {
     });
     const sortedTags = Object.entries(tagCount)
       .sort((a, b) => b[1] - a[1])
-      .map(([tag]) => tag);
-    setPopularTags(sortedTags);
+      .map(([tag]) => tag)
+      .slice(0, 16);
+
+    // Shuffle tags
+    const shuffledTags = sortedTags.sort(() => Math.random() - 0.5);
+
+    setPopularTags(shuffledTags);
   }, [posts]);
 
   const handleDeletePost = async (postId: number) => {
@@ -76,8 +84,8 @@ export default function FeedPage() {
     <section className="mt-20">
       {/* Banner */}
       <section className="w-full overflow-hidden">
-        <div className="flex h-full flex-col px-6">
-          <h1 className="font-bold leading-tight text-[clamp(2.5rem,10vw,8rem)] flex flex-wrap items-center gap-2">
+        <div className="flex h-full flex-col px-6 justify-center items-center">
+          <h1 className="font-bold leading-tight text-4xl flex flex-wrap items-center gap-2">
             Unleash your{" "}
             <RotatingText
               texts={["creative", "vivid", "pure", "real", "fluid", "cool", "artsy"]}
@@ -93,7 +101,7 @@ export default function FeedPage() {
             />
             energy
           </h1>
-          <p className="text-lg md:text-xl text-gray-800">
+          <p className="text-sm md:text-xl text-gray-800 text-center">
             Step into a world where visuals speak and creativity knows no limits 
             <br />
             a space to express, inspire, and connect through art.
@@ -102,7 +110,7 @@ export default function FeedPage() {
       </section>
 
       {/* Filter & Tags */}
-      <section className="w-full px-6 mt-12 flex flex-col gap-4">
+      <section className="w-full px-14 mt-12 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div className="flex gap-2 w-auto">
             {popularTags.map((tag) => (
@@ -122,7 +130,7 @@ export default function FeedPage() {
       </section>
 
       {/* Posts */}
-      <section className="px-6 mt-6 pb-20">
+      <section className="px-14 mt-6 pb-20">
         {isLoading ? (
           <Masonry
             breakpointCols={breakpointColumnsObj}

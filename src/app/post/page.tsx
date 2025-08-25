@@ -1,7 +1,8 @@
 "use client"
 
-import API from "../services/Api"
+import axios from "axios"
 import React, { useState, useRef, useEffect } from "react"
+import toast, { Toaster } from 'react-hot-toast'
 import { UploadCloud, Crop, Shield } from "lucide-react"
 import Cropper, { Area } from "react-easy-crop"
 import { useAuth } from "../hooks/useAuth"
@@ -36,11 +37,6 @@ export default function Post() {
 
   useEffect(() => {
     setIsMounted(true)
-    // Debug log để kiểm tra user data
-    console.log('=== POST COMPONENT DEBUG ===');
-    console.log('User from useAuth:', user);
-    console.log('Session from useAuth:', session);
-    console.log('IsAuthenticated:', isAuthenticated);
   }, [user, session, isAuthenticated])
 
   const handleImageChange = (file: File | null) => {
@@ -129,8 +125,8 @@ export default function Post() {
 
       console.log('Creating post with data:', newPost);
 
-      await API.post("/posts", newPost)
-      alert("Post created successfully!")
+      await axios.post("http://localhost:5001/api/posts", newPost)
+      toast.success("Post created successfully!")
       setTitle("")
       setDescription("")
       setImage(null)
@@ -148,9 +144,9 @@ export default function Post() {
     } catch (err: any) {
       console.error("Error creating post:", err)
       if (err.response?.data?.message) {
-        alert("Lỗi: " + err.response.data.message)
+        toast.error("Lỗi: " + err.response.data.message)
       } else {
-        alert("Có lỗi xảy ra khi tạo post")
+        toast.error("Faild to create post. Please try again.")
       }
     }
   }
@@ -197,8 +193,7 @@ export default function Post() {
 
   return (
     <section className="w-full">
-      <div className="px-90">
-        <h2 className="text-xl font-bold mb-4 text-left">New post</h2>
+      <div className="px-90 mt-28">
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
           {/* Image Upload */}
           <div

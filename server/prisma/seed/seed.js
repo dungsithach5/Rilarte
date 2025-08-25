@@ -19,43 +19,26 @@ function rgbToHex(r, g, b) {
 
 async function getDominantColor(imageUrl) {
   try {
-    if (!imageUrl || typeof imageUrl !== 'string') {
-      return null;
-    }
+    if (!imageUrl || typeof imageUrl !== 'string') return null;
 
     const response = await fetch(imageUrl, {
       timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
+      headers: { 'User-Agent': 'Mozilla/5.0' }
     });
-
-    if (!response.ok) {
-      return null;
-    }
+    if (!response.ok) return null;
 
     const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.startsWith('image/')) {
-      return null;
-    }
+    if (!contentType || !contentType.startsWith('image/')) return null;
 
     const buffer = await response.arrayBuffer();
-    if (!buffer || buffer.byteLength === 0) {
-      return null;
-    }
+    if (!buffer || buffer.byteLength === 0) return null;
 
     const colorResult = await ColorThief.getColor(Buffer.from(buffer));
-    if (!colorResult || !Array.isArray(colorResult) || colorResult.length !== 3) {
-      return null;
-    }
+    if (!colorResult || !Array.isArray(colorResult) || colorResult.length !== 3) return null;
 
     const [r, g, b] = colorResult;
-    if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
-      return null;
-    }
-
     return rgbToHex(r, g, b);
-  } catch (err) {
+  } catch {
     return null;
   }
 }
@@ -71,19 +54,52 @@ async function main() {
   await prisma.posts.deleteMany();
   await prisma.users.deleteMany();
 
-  // Tạo danh sách tags mặc định
-  const defaultTags = ["art", "nature", "photography", "design", "travel", "abstract", "modern", "life", "street", "portrait"];
+  // Tags chia theo topic
+  const topicTags = {
+    Art: [
+      "painting","illustration","digital-art","abstract","portrait","sketch","modern","surrealism",
+      "oil-painting","watercolor","sculpture","graffiti","street-art","concept-art","line-art","calligraphy",
+      "comic","manga","anime-art","pop-art"
+    ],
+    Fashion: [
+      "streetwear","vintage","luxury","runway","casual","style","accessories","makeup",
+      "hairstyle","formal","shoes","bags","hats","jewelry","denim","minimalist-fashion",
+      "boho","urban-style","couture","sustainable-fashion"
+    ],
+    Food: [
+      "dessert","cuisine","vegan","street-food","coffee","drinks","seafood","fruit",
+      "cake","pizza","burger","pasta","sushi","ramen","salad","grill","steak","bbq","ice-cream","tea"
+    ],
+    Relaxing: [
+      "chill","calm","nature","meditation","sunset","ocean","mountain","forest",
+      "cozy","sleep","yoga-music","peaceful","spa","relax-vibes","books","slow-life",
+      "camping","stargazing","minimalism","selfcare"
+    ],
+    Sport: [
+      "football","basketball","yoga","running","gym","swimming","cycling","tennis",
+      "volleyball","surfing","boxing","martial-arts","climbing","golf","skateboarding","skiing",
+      "snowboarding","hiking","esports","dance"
+    ],
+    Travel: [
+      "beach","mountains","adventure","cityscape","culture","backpacking","roadtrip","island",
+      "temple","museum","local-food","festival","hiking-trails","desert","countryside","historic-sites",
+      "wildlife","cruise","nightlife","landscape"
+    ]
+  };
 
-  for (const name of defaultTags) {
-    await prisma.tags.upsert({
-      where: { name },
-      update: {},
-      create: {
-        name,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    });
+  // Seed tags
+  for (const [topic, tags] of Object.entries(topicTags)) {
+    for (const name of tags) {
+      await prisma.tags.upsert({
+        where: { name },
+        update: {},
+        create: {
+          name,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+    }
   }
 
   // Lấy lại danh sách tags sau khi tạo
@@ -115,16 +131,15 @@ async function main() {
     users.push(user);
   }
 
-  // Fake 100 posts
+  // Fake 50 posts
   for (let i = 0; i < 50; i++) {
     const randomUser = users[Math.floor(Math.random() * users.length)];
     const randomHeight = getRandomHeight();
     const imageUrl = `https://picsum.photos/seed/${faker.string.uuid()}/400/${randomHeight}`;
 
-    // Lấy dominant color từ ảnh (có thể mất thời gian)
+    // Lấy dominant color
     const dominantColor = await getDominantColor(imageUrl);
 
-    // Tạo post
     const post = await prisma.posts.create({
       data: {
         user_id: randomUser.id,
@@ -138,6 +153,7 @@ async function main() {
       },
     });
 
+    // Gán tags random
     const randomTagIds = getRandomTagIds();
     for (const tagId of randomTagIds) {
       await prisma.post_tags.create({
@@ -149,7 +165,7 @@ async function main() {
     }
   }
 
-  console.log('✅ Đã seed xong 10 users, 100 posts và gán tags!');
+  console.log('✅ Đã seed xong 10 users, 50 posts và nhiều tags theo topics!');
 }
 
 main()

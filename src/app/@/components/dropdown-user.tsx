@@ -9,8 +9,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui-admin/dropdown-menu";
-import { Button } from "./ui-admin/button";
+} from "./ui/dropdown-menu";
+import { Button } from "./ui/button-user";
 
 interface Props {
   avatar: React.ReactNode;

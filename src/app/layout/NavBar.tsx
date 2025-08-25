@@ -40,10 +40,16 @@ export function NavBar() {
   };
 
   return (
-    <nav className="fixed z-50 bg-white w-full mx-auto flex items-center justify-between px-6 py-2">
-      <Link href="/" className="text-xl font-bold text-black">
-        Elarte
-      </Link>
+    <nav className="fixed z-50 bg-white w-full mx-auto flex items-center justify-between px-14 py-2">
+      <div className="flex items-center gap-6">
+        <Link href="/" className="text-xl font-bold text-black">
+          Elarte
+        </Link>
+
+        <Link href="/explore" className="text-sm text-black">
+          Explore
+        </Link>
+      </div>
 
       <SearchInput onSearch={handleSearch} />
 
@@ -60,7 +66,7 @@ export function NavBar() {
               <img
                 src={avatar || session?.user?.image || "/img/user.png"}
                 alt="avatar"
-                className="w-10 h-10 rounded-full object-cover"
+                className="w-8 h-8 rounded-full object-cover"
               />
             }
             userId={currentUserId}

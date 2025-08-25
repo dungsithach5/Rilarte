@@ -13,7 +13,7 @@ import { createPostSlug } from "../../lib/utils";
 import { ComposerComment } from "../@/components/model-comment/ComposerComment";
 import SkeletonPost from "../@/components/skeleton-post";
 import { useAuth } from "../hooks/useAuth";
-import Tagcarousel from "../@/components/carousel-tag/tag-carousel";
+import TagCarousel from "../@/components/carousel-tag/tag-carousel";
 
 const breakpointColumnsObj = { default: 6, 1024: 2, 640: 2 };
 
@@ -27,7 +27,7 @@ export default function ExplorePage() {
   const [bannedKeywords, setBannedKeywords] = useState<string[]>([]);
   const [violation, setViolation] = useState(false);
   const { user, session } = useAuth(true);
-  const [popularTags, setPopularTags] = useState<string[]>([]);
+  const [popularTags, setPopularTags] = useState<{ name: string; image: string }[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   // Load banned keywords
@@ -77,15 +77,24 @@ export default function ExplorePage() {
   // Popular tags
   useEffect(() => {
     if (!posts.length) return;
-    const tagCount: Record<string, number> = {};
+    const tagMap: Record<string, { count: number; images: string[] }> = {};
+
     posts.forEach((post) => {
       (post.tags || []).forEach((tag: string) => {
-        if (tag.length > 3) tagCount[tag] = (tagCount[tag] || 0) + 1;
+        if (tag.length > 3) {
+          if (!tagMap[tag]) tagMap[tag] = { count: 0, images: [] };
+          tagMap[tag].count += 1;
+          if (post.image_url) tagMap[tag].images.push(post.image_url);
+        }
       });
     });
-    const sortedTags = Object.entries(tagCount)
-      .sort((a, b) => b[1] - a[1])
-      .map(([tag]) => tag)
+
+    const sortedTags = Object.entries(tagMap)
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([name, data]) => ({
+        name,
+        image: data.images[Math.floor(Math.random() * data.images.length)] || "/default.png",
+      }))
       .slice(0, 15);
 
     // Shuffle tags
@@ -112,7 +121,7 @@ export default function ExplorePage() {
       {/* Hero Section */}
       <section className="w-full overflow-hidden">
         <div className="flex h-full flex-col px-14">
-          <h1 className="font-bold leading-tight text-2xl flex flex-wrap items-center gap-2">
+          <h1 className="font-bold leading-tight text-3xl flex flex-wrap items-center gap-2">
             Explore your{" "}
             <RotatingText
               texts={["creative", "vivid", "pure", "real", "fluid", "cool", "artsy"]}
@@ -128,7 +137,7 @@ export default function ExplorePage() {
             />
             energy
           </h1>
-          <p className="text-lg md:text-xl text-gray-800">
+          <p className="text-sm md:text-lg text-gray-800">
             Discover new visuals, trending topics, and inspirations across the platform.
           </p>
         </div>
@@ -136,12 +145,11 @@ export default function ExplorePage() {
 
       {/* Filter & Tags */}
       <section className="w-full px-14 mt-12 flex flex-col gap-4">
-
-          <TagCarousel
-            tags={popularTags}
-            selectedTag={selectedTag}
-            onSelect={setSelectedTag}
-          />
+        <TagCarousel
+          tags={popularTags}
+          selectedTag={selectedTag}
+          onSelect={setSelectedTag}
+        />
       </section>
 
       {/* Posts */}

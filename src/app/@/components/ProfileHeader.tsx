@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { MessageButton } from "./ui/MessageButton"; // Correct relative path
 import API from "../../services/Api";
+import axios from "axios";
 
 interface ProfileHeaderProps {
   targetUserId?: string;
@@ -167,11 +168,6 @@ export default function ProfileHeader({ targetUserId, onMessageClick }: ProfileH
           />
         </div>
       )}
-      
-      {/* Test button để debug */}
-
-      
-
     </section>
   );
 }

@@ -19,7 +19,7 @@ CREATE TABLE `comments` (
     `post_id` INTEGER NOT NULL,
     `content` TEXT NOT NULL,
     `createdAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
-    `updatedAt` DATETIME(0) NOT NULL,
+    `updatedAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
     `parent_id` INTEGER NULL,
 
     INDEX `post_id`(`post_id`),
@@ -50,22 +50,48 @@ CREATE TABLE `likes` (
     `updatedAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
 
     INDEX `post_id`(`post_id`),
-    INDEX `user_id`(`user_id`),
+    INDEX `likes_ibfk_1`(`user_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE `messages` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `sender_id` INTEGER NULL,
-    `receiver_id` INTEGER NULL,
-    `content` TEXT NULL,
-    `is_read` BOOLEAN NULL DEFAULT false,
-    `createdAt` DATETIME(0) NOT NULL,
+    `sender_id` INTEGER NOT NULL,
+    `receiver_id` INTEGER NOT NULL,
+    `content` TEXT NOT NULL,
+    `message_type` VARCHAR(20) NOT NULL DEFAULT 'text',
+    `file_url` VARCHAR(255) NULL,
+    `file_name` VARCHAR(255) NULL,
+    `file_size` INTEGER NULL,
+    `is_read` BOOLEAN NOT NULL DEFAULT false,
+    `read_at` DATETIME(3) NULL,
+    `room_id` VARCHAR(100) NOT NULL,
+    `createdAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
     `updatedAt` DATETIME(0) NOT NULL,
 
-    INDEX `receiver_id`(`receiver_id`),
-    INDEX `sender_id`(`sender_id`),
+    INDEX `messages_sender_id_idx`(`sender_id`),
+    INDEX `messages_receiver_id_idx`(`receiver_id`),
+    INDEX `messages_room_id_idx`(`room_id`),
+    INDEX `messages_createdAt_idx`(`createdAt`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `chat_rooms` (
+    `id` VARCHAR(100) NOT NULL,
+    `user1_id` INTEGER NOT NULL,
+    `user2_id` INTEGER NOT NULL,
+    `last_message_id` INTEGER NULL,
+    `last_message_at` DATETIME(3) NULL,
+    `created_at` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updated_at` DATETIME(0) NOT NULL,
+
+    INDEX `chat_rooms_user1_id_idx`(`user1_id`),
+    INDEX `chat_rooms_user2_id_idx`(`user2_id`),
+    INDEX `chat_rooms_last_message_at_idx`(`last_message_at`),
+    UNIQUE INDEX `chat_rooms_user1_id_user2_id_key`(`user1_id`, `user2_id`),
+    UNIQUE INDEX `chat_rooms_last_message_id_key`(`last_message_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -92,6 +118,15 @@ CREATE TABLE `posts` (
     `content` TEXT NOT NULL,
     `image_url` VARCHAR(255) NOT NULL,
     `dominant_color` VARCHAR(7) NULL,
+    `license_type` VARCHAR(50) NULL,
+    `license_description` TEXT NULL,
+    `watermark_enabled` BOOLEAN NOT NULL DEFAULT false,
+    `watermark_text` VARCHAR(100) NULL,
+    `watermark_position` VARCHAR(20) NULL,
+    `download_protected` BOOLEAN NOT NULL DEFAULT false,
+    `allow_download` BOOLEAN NOT NULL DEFAULT true,
+    `copyright_owner_id` INTEGER NULL,
+    `copyright_year` INTEGER NULL,
     `createdAt` DATETIME(0) NOT NULL,
     `updatedAt` DATETIME(0) NOT NULL,
 
@@ -169,12 +204,35 @@ CREATE TABLE `users` (
     `updatedAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
     `onboarded` BOOLEAN NOT NULL DEFAULT false,
     `gender` VARCHAR(50) NULL,
-    `topics` TEXT NULL,
     `emailVerified` DATETIME(3) NULL,
     `image` VARCHAR(255) NULL,
 
     UNIQUE INDEX `username`(`username`),
     UNIQUE INDEX `email`(`email`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `topics` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(50) NOT NULL,
+    `image_url` VARCHAR(255) NULL,
+    `createdAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+
+    UNIQUE INDEX `topics_name_key`(`name`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `user_topics` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `user_id` INTEGER NOT NULL,
+    `topic_id` INTEGER NOT NULL,
+
+    INDEX `user_topics_user_id_idx`(`user_id`),
+    INDEX `user_topics_topic_id_idx`(`topic_id`),
+    UNIQUE INDEX `user_topics_user_id_topic_id_key`(`user_id`, `topic_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -243,6 +301,23 @@ CREATE TABLE `saved_posts` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `copyrightViolation` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `post_id` INTEGER NOT NULL,
+    `reporter_id` INTEGER NOT NULL,
+    `violation_type` VARCHAR(50) NOT NULL,
+    `description` TEXT NOT NULL,
+    `status` VARCHAR(20) NOT NULL,
+    `createdAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
+
+    INDEX `copyrightViolation_post_id_idx`(`post_id`),
+    INDEX `copyrightViolation_reporter_id_idx`(`reporter_id`),
+    INDEX `copyrightViolation_status_idx`(`status`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `comment_likes` ADD CONSTRAINT `comment_likes_comment_id_fkey` FOREIGN KEY (`comment_id`) REFERENCES `comments`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -271,10 +346,22 @@ ALTER TABLE `likes` ADD CONSTRAINT `likes_ibfk_1` FOREIGN KEY (`user_id`) REFERE
 ALTER TABLE `likes` ADD CONSTRAINT `likes_ibfk_2` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `messages` ADD CONSTRAINT `messages_ibfk_1` FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `messages` ADD CONSTRAINT `messages_sender_id_fkey` FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `messages` ADD CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`receiver_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `messages` ADD CONSTRAINT `messages_receiver_id_fkey` FOREIGN KEY (`receiver_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `messages` ADD CONSTRAINT `messages_room_id_fkey` FOREIGN KEY (`room_id`) REFERENCES `chat_rooms`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `chat_rooms` ADD CONSTRAINT `chat_rooms_user1_id_fkey` FOREIGN KEY (`user1_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `chat_rooms` ADD CONSTRAINT `chat_rooms_user2_id_fkey` FOREIGN KEY (`user2_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `chat_rooms` ADD CONSTRAINT `chat_rooms_last_message_id_fkey` FOREIGN KEY (`last_message_id`) REFERENCES `messages`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `notifications` ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -301,6 +388,12 @@ ALTER TABLE `report_posts` ADD CONSTRAINT `report_posts_post_id_fkey` FOREIGN KE
 ALTER TABLE `report_posts` ADD CONSTRAINT `report_posts_reporter_id_fkey` FOREIGN KEY (`reporter_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `user_topics` ADD CONSTRAINT `user_topics_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `user_topics` ADD CONSTRAINT `user_topics_topic_id_fkey` FOREIGN KEY (`topic_id`) REFERENCES `topics`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `Account` ADD CONSTRAINT `Account_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -311,3 +404,9 @@ ALTER TABLE `saved_posts` ADD CONSTRAINT `saved_posts_user_id_fkey` FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE `saved_posts` ADD CONSTRAINT `saved_posts_post_id_fkey` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `copyrightViolation` ADD CONSTRAINT `copyrightViolation_post_id_fkey` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `copyrightViolation` ADD CONSTRAINT `copyrightViolation_reporter_id_fkey` FOREIGN KEY (`reporter_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

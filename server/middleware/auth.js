@@ -22,7 +22,34 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    // Verify token
+    // Check if it's a NextAuth token
+    if (token.startsWith('nextauth_jwt_')) {
+      const userId = token.replace('nextauth_jwt_', '');
+      
+      // Check if user exists
+      const user = await prisma.users.findUnique({
+        where: { id: BigInt(userId) },
+        select: { id: true, email: true, username: true }
+      });
+      
+      if (!user) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Token is valid but user no longer exists' 
+        });
+      }
+
+      // Add user info to request
+      req.user = {
+        id: user.id,
+        email: user.email,
+        username: user.username
+      };
+      
+      return next();
+    }
+
+    // Verify JWT token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     
     // Check if user still exists

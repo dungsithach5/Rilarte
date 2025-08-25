@@ -8,6 +8,7 @@ import ReduxProvider from "./context/ReduxProvider";
 import { SessionProvider } from "./context/SessionProvider";
 import { AppToaster } from "./@/components/ui-admin/toast";
 import { SearchProvider } from "./context/SearchContext"
+import { SocketProvider } from "./context/SocketContext";
 
 
 const geistSans = Geist({
@@ -38,12 +39,14 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <SessionProvider>
           <ReduxProvider>
             <SearchProvider>
-              <div className="flex min-h-screen">
-                <div className="flex flex-col flex-1">
-                  <ClientLayout>{children}</ClientLayout>
-                  <AppToaster />
+              <SocketProvider>
+                <div className="flex min-h-screen">
+                  <div className="flex flex-col flex-1">
+                    <ClientLayout>{children}</ClientLayout>
+                    <AppToaster />
+                  </div>
                 </div>
-              </div>
+              </SocketProvider>
             </SearchProvider>
           </ReduxProvider>
         </SessionProvider>

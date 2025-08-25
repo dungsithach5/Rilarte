@@ -22,12 +22,12 @@ model comment_likes {
 }
 
 model comments {
-  id        Int             @id @default(autoincrement())
+  id        Int          @id @default(autoincrement())
   user_id   Int
   post_id   Int
   content   String          @db.Text
   createdAt DateTime        @default(now()) @db.DateTime(0)
-  updatedAt DateTime        @db.DateTime(0)
+  updatedAt DateTime        @default(now()) @db.DateTime(0)
   parent_id Int?
   likes     comment_likes[]
   users     users           @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "comments_ibfk_1")
@@ -46,7 +46,6 @@ model follows {
   following_id Int
   createdAt    DateTime @default(now())     // Tự set khi create
   updatedAt    DateTime @updatedAt          // Tự update khi update
-
   users_follows_follower_idTousers  users @relation("follows_follower_idTousers", fields: [follower_id], references: [id], onDelete: Cascade, map: "follows_ibfk_1")
   users_follows_following_idTousers users @relation("follows_following_idTousers", fields: [following_id], references: [id], onDelete: Cascade, map: "follows_ibfk_2")
 
@@ -57,7 +56,7 @@ model follows {
 
 
 model likes {
-  id        Int      @id @default(autoincrement())
+  id        Int   @id @default(autoincrement())
   user_id   Int
   post_id   Int
   createdAt DateTime @default(now()) @db.DateTime(0)
@@ -66,26 +65,60 @@ model likes {
   posts     posts    @relation(fields: [post_id], references: [id], onDelete: Cascade, map: "likes_ibfk_2")
 
   @@index([post_id], map: "post_id")
-  @@index([user_id], map: "user_id")
+  @@index([user_id], map: "likes_ibfk_1")
 }
 
 model messages {
-  id                                Int      @id @default(autoincrement())
-  sender_id                         Int?
-  receiver_id                       Int?
-  content                           String?  @db.Text
-  is_read                           Boolean? @default(false)
-  createdAt                         DateTime @db.DateTime(0)
-  updatedAt                         DateTime @db.DateTime(0)
-  users_messages_sender_idTousers   users?   @relation("messages_sender_idTousers", fields: [sender_id], references: [id], onDelete: Cascade, map: "messages_ibfk_1")
-  users_messages_receiver_idTousers users?   @relation("messages_receiver_idTousers", fields: [receiver_id], references: [id], onDelete: Cascade, map: "messages_ibfk_2")
+  id                                Int   @id @default(autoincrement())
+  sender_id                         Int
+  receiver_id                       Int
+  content                           String   @db.Text
+  message_type                      String   @default("text") @db.VarChar(20) // text, image, file
+  file_url                          String?  @db.VarChar(255)
+  file_name                         String?  @db.VarChar(255)
+  file_size                         Int?
+  is_read                           Boolean  @default(false)
+  read_at                           DateTime?
+  room_id                           String   @db.VarChar(100) // Unique room for 2 users
+  createdAt                         DateTime @default(now()) @db.DateTime(0)
+  updatedAt                         DateTime @updatedAt @db.DateTime(0)
+  
+  sender                            users    @relation("messages_sender_idTousers", fields: [sender_id], references: [id], onDelete: Cascade)
+  receiver                          users    @relation("messages_receiver_idTousers", fields: [receiver_id], references: [id], onDelete: Cascade)
+  
+  // Relations for chat rooms
+  chat_room_last_message            chat_rooms? @relation("chat_rooms_last_message")
+  chat_room_messages                chat_rooms? @relation("chat_rooms_messages", fields: [room_id], references: [id])
 
-  @@index([receiver_id], map: "receiver_id")
-  @@index([sender_id], map: "sender_id")
+  @@index([sender_id])
+  @@index([receiver_id])
+  @@index([room_id])
+  @@index([createdAt])
+}
+
+model chat_rooms {
+  id                String    @id @default(uuid()) @db.VarChar(100)
+  user1_id          Int
+  user2_id          Int
+  last_message_id   Int?
+  last_message_at   DateTime?
+  created_at        DateTime  @default(now()) @db.DateTime(0)
+  updated_at        DateTime  @updatedAt @db.DateTime(0)
+  
+  user1             users     @relation("chat_rooms_user1", fields: [user1_id], references: [id], onDelete: Cascade)
+  user2             users     @relation("chat_rooms_user2", fields: [user2_id], references: [id], onDelete: Cascade)
+  last_message      messages? @relation("chat_rooms_last_message", fields: [last_message_id], references: [id])
+  messages          messages[] @relation("chat_rooms_messages")
+  
+  @@unique([user1_id, user2_id])
+  @@unique([last_message_id])
+  @@index([user1_id])
+  @@index([user2_id])
+  @@index([last_message_at])
 }
 
 model notifications {
-  id        Int      @id @default(autoincrement())
+  id        Int   @id @default(autoincrement())
   user_id   Int
   type      String   @db.VarChar(50)
   content   String   @db.Text
@@ -98,15 +131,29 @@ model notifications {
 }
 
 model posts {
-  id             Int             @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   user_id        Int
   user_name      String          @db.VarChar(45)
   title          String          @db.Text
   content        String          @db.Text
   image_url      String          @db.VarChar(255)
   dominant_color String?         @db.VarChar(7)
+  
+  // Copyright protection fields
+  license_type        String?   @db.VarChar(50)
+  license_description String?   @db.Text
+  watermark_enabled   Boolean   @default(false)
+  watermark_text      String?   @db.VarChar(100)
+  watermark_position  String?   @db.VarChar(20)
+  download_protected  Boolean   @default(false)
+  allow_download      Boolean   @default(true)
+  copyright_owner_id  Int?
+  copyright_year      Int?
+  
   createdAt      DateTime        @db.DateTime(0)
   updatedAt      DateTime        @db.DateTime(0)
+  
+  // Relationships
   comments       comments[]
   likes          likes[]
   relatedPosts   related_posts[] @relation("PostToRelated")
@@ -114,6 +161,7 @@ model posts {
   postTags       post_tags[]
   reportPosts    report_posts[]
   savedPosts     saved_posts[]
+  copyrightViolations copyrightViolation[]
 
   users users @relation(fields: [user_id], references: [id])
 }
@@ -122,8 +170,8 @@ model related_posts {
   id          Int   @id @default(autoincrement())
   post_id     Int
   related_id  Int
-  post        posts @relation("PostToRelated", fields: [post_id], references: [id], onDelete: Cascade)
-  relatedPost posts @relation("RelatedToPost", fields: [related_id], references: [id], onDelete: Cascade)
+  post        posts    @relation("PostToRelated", fields: [post_id], references: [id], onDelete: Cascade)
+  relatedPost posts    @relation("RelatedToPost", fields: [related_id], references: [id], onDelete: Cascade)
 
   @@unique([post_id, related_id])
   @@index([post_id])
@@ -142,8 +190,8 @@ model post_tags {
   id      Int   @id @default(autoincrement())
   post_id Int
   tag_id  Int
-  post    posts @relation(fields: [post_id], references: [id], onDelete: Cascade)
-  tag     tags  @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+  post    posts    @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  tag     tags     @relation(fields: [tag_id], references: [id], onDelete: Cascade)
 
   @@unique([post_id, tag_id])
   @@index([post_id])
@@ -151,13 +199,13 @@ model post_tags {
 }
 
 model report_posts {
-  id          Int       @id @default(autoincrement())
+  id          Int   @id @default(autoincrement())
   post_id     Int
   user_id     Int
   reporter_id Int
-  reason      String    @db.Text
-  createdAt   DateTime  @default(now()) @db.DateTime(0)
-  resolved    Boolean   @default(false)
+  reason      String   @db.Text
+  createdAt   DateTime @default(now()) @db.DateTime(0)
+  resolved    Boolean  @default(false)
   resolvedAt  DateTime? @db.DateTime(0)
 
   posts posts @relation(fields: [post_id], references: [id], onDelete: Cascade)
@@ -172,7 +220,7 @@ model sequelizemeta {
 }
 
 model users {
-  id                                   Int             @id @default(autoincrement())
+  id                                   Int          @id @default(autoincrement())
   username                             String?         @unique(map: "username") @db.VarChar(50)
   email                                String          @unique(map: "email") @db.VarChar(100)
   password                             String?         @db.VarChar(255)
@@ -182,7 +230,6 @@ model users {
   updatedAt                            DateTime        @default(now()) @db.DateTime(0)
   onboarded                            Boolean         @default(false)
   gender                               String?         @db.VarChar(50)
-  topics                               String?         @db.Text
   emailVerified                        DateTime?
   image                                String?         @db.VarChar(255)
   Account                              Account[]
@@ -194,13 +241,38 @@ model users {
   likes                                likes[]
   messages_messages_sender_idTousers   messages[]      @relation("messages_sender_idTousers")
   messages_messages_receiver_idTousers messages[]      @relation("messages_receiver_idTousers")
+  chat_rooms_user1                    chat_rooms[]    @relation("chat_rooms_user1")
+  chat_rooms_user2                    chat_rooms[]    @relation("chat_rooms_user2")
   notifications                        notifications[]
   report_posts                         report_posts[]
   saved_posts                          saved_posts[]
+  copyrightViolations copyrightViolation[]
 
+  userTopics user_topics[]
   posts posts[]
 }
 
+model topics {
+  id        Int           @id @default(autoincrement())
+  name      String        @unique @db.VarChar(50)
+  image_url String?       @db.VarChar(255)
+  createdAt DateTime      @default(now()) @db.DateTime(0)
+  updatedAt DateTime      @default(now()) @db.DateTime(0)
+  users     user_topics[]
+}
+
+model user_topics {
+  id       Int      @id @default(autoincrement())
+  user_id  Int
+  topic_id Int
+
+  user  users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  topic topics @relation(fields: [topic_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, topic_id])
+  @@index([user_id])
+  @@index([topic_id])
+}
 model Account {
   id                String  @id
   userId            Int
@@ -255,4 +327,22 @@ model saved_posts {
   @@unique([user_id, post_id])
   @@index([user_id])
   @@index([post_id])
+}
+
+model copyrightViolation {
+  id              Int      @id @default(autoincrement())
+  post_id         Int
+  reporter_id     Int
+  violation_type  String   @db.VarChar(50)
+  description     String   @db.Text
+  status          String   @db.VarChar(20)
+  createdAt       DateTime @default(now()) @db.DateTime(0)
+  updatedAt       DateTime @db.DateTime(0)
+  
+  post            posts    @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  reporter        users    @relation(fields: [reporter_id], references: [id], onDelete: Cascade)
+  
+  @@index([post_id])
+  @@index([reporter_id])
+  @@index([status])
 }

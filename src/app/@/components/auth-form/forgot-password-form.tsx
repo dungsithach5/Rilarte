@@ -27,10 +27,13 @@ export function ForgotPasswordForm({
     setOtpLoading(true);
     setOtpError('');
     try {
-      await sendOtp(email);
+      console.log('Frontend: Đang gửi OTP đến:', email);
+      const result = await sendOtp(email);
+      console.log('Frontend: OTP gửi thành công:', result);
       setOtpSent(true);
     } catch (err) {
-      setOtpError('Gửi mã OTP thất bại.');
+      console.error('Frontend: Lỗi gửi OTP:', err);
+      setOtpError(`Gửi mã OTP thất bại: ${err instanceof Error ? err.message : 'Lỗi không xác định'}`);
     } finally {
       setOtpLoading(false);
     }

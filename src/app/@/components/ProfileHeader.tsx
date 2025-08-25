@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import axios from "axios";
+import { MessageButton } from "./ui/MessageButton"; // Correct relative path
+import API from "../../services/Api";
 
 interface ProfileHeaderProps {
   targetUserId?: string;
+  onMessageClick?: (userId: bigint, username: string) => void; // Updated to bigint
 }
 
 interface UserProfile {
@@ -25,7 +27,7 @@ interface SessionUser {
   username?: string;
 }
 
-export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
+export default function ProfileHeader({ targetUserId, onMessageClick }: ProfileHeaderProps) {
   const { session, status, user } = useAuth(true);
   const [targetUser, setTargetUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +37,8 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
 
   const currentUserId = user?.id || session?.user?.id;
   const isOwnProfile = !targetUserId || currentUserId?.toString() === targetUserId;
+  
+
 
   // Lấy thông tin user target
   useEffect(() => {
@@ -43,7 +47,7 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
       
       setIsLoading(true);
       try {
-        const response = await axios.get(`http://localhost:5001/api/users/public/${targetUserId}`);
+        const response = await API.get(`/users/public/${targetUserId}`);
         if (response.data.success) {
           setTargetUser(response.data.user);
         }
@@ -106,6 +110,12 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
     }
   };
 
+  const handleMessageClick = (userId: bigint, username: string) => {
+    if (onMessageClick) {
+      onMessageClick(userId, username);
+    }
+  };
+
   if (status === "loading" || isLoading) {
     return <div>Loading...</div>
   }
@@ -134,7 +144,7 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
         {targetUser?.bio && <p className="text-gray-300 mt-2">{targetUser.bio}</p>}
       </div>
 
-      {!isOwnProfile && (
+      {!isOwnProfile && targetUser && (
         <div className="flex justify-center gap-4 mt-4 text-center">
           <button 
             onClick={handleFollow}
@@ -147,11 +157,21 @@ export default function ProfileHeader({ targetUserId }: ProfileHeaderProps) {
           >
             {followLoading ? "..." : isFollowing ? 'Following' : 'Follow'}
           </button>
-          <button className="border px-4 py-2 rounded-full cursor-pointer hover:text-white hover:bg-black">
-            Message
-          </button>
+          
+          <MessageButton
+            userId={BigInt(targetUser.id)}
+            username={targetUser.username || targetUser.name}
+            onMessageClick={handleMessageClick}
+            variant="outline"
+            size="md"
+          />
         </div>
       )}
+      
+      {/* Test button để debug */}
+
+      
+
     </section>
   );
 }

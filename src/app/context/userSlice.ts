@@ -4,7 +4,12 @@ interface UserState {
   isAuthenticated: boolean;
   avatar: string | null;
   token: string | null;
-  user: any | null;
+  user: {
+    id: number;
+    email?: string;
+    onboarded?: boolean;
+    [key: string]: any;
+  } | null;
 }
 
 const initialState: UserState = {
@@ -18,12 +23,16 @@ const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
-    loginSuccess: (state, action: PayloadAction<{ avatar?: string; token: string; user?: any }>) => {
+    loginSuccess: (
+      state,
+      action: PayloadAction<{ avatar?: string; token: string; user?: any }>
+    ) => {
       state.isAuthenticated = true;
-      state.avatar = action.payload.avatar ?? "/img/user.png";
+      state.avatar = action.payload.avatar ?? '/img/user.png';
       state.token = action.payload.token;
       state.user = action.payload.user || null;
     },
+
     logout: (state) => {
       state.isAuthenticated = false;
       state.avatar = null;
@@ -31,8 +40,14 @@ const userSlice = createSlice({
       state.user = null;
       localStorage.clear();
     },
+
+    updateUser: (state, action: PayloadAction<Partial<UserState['user']>>) => {
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload };
+      }
+    },
   },
 });
 
-export const { loginSuccess, logout } = userSlice.actions;
+export const { loginSuccess, logout, updateUser } = userSlice.actions;
 export default userSlice.reducer;

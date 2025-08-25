@@ -6,11 +6,15 @@ const authMiddleware = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { testSendMail, resetPassword, login, register, followUser, unfollowUser } = require('../controllers/user.controller');
+
 // Follow user
 router.post('/follow/:id', authMiddleware, followUser);
 
 // Unfollow user
 router.delete('/unfollow/:id', authMiddleware, unfollowUser);
+
+// Search
+router.get('/search', searchUsers);
 
 // Validation helper
 const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
@@ -52,8 +56,9 @@ router.get('/public', async (req, res) => {
         image: true
       }
     });
-    res.status(200).json({ success: true, users });
+    res.status(200).json({ success: true, users: serialize(users) });
   } catch (error) {
+    console.error('Error getting public users:', error);
     res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách người dùng' });
   }
 });
@@ -76,14 +81,14 @@ router.get('/public/:id', async (req, res) => {
 
     res.status(200).json({ 
       success: true, 
-      user: {
+      user: serialize({
         id: user.id,
         username: user.username,
         email: user.email,
         bio: user.bio,
         avatar: user.avatar_url || user.image || '/img/user.png',
         name: user.username || `User ${user.id}`
-      }
+      })
     });
   } catch (error) {
     console.error('Error getting public user:', error);
@@ -161,10 +166,10 @@ router.post('/onboarding', async (req, res) => {
     const { email, gender, topics } = req.body;
 
     // Input validation
-    if (!email || !gender || !topics) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email, gender và topics là bắt buộc' 
+    if (!email || !gender || !topics || !Array.isArray(topics)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, gender và topics là bắt buộc'
       });
     }
 
@@ -192,20 +197,22 @@ router.post('/onboarding', async (req, res) => {
       data: {
         onboarded: true,
         gender: gender,
-        topics: topics
+        userTopics: {
+          deleteMany: {},
+          create: topics.map(topicId => ({
+            topic: { connect: { id: topicId } }
+          }))
+        }
+      },
+      include: { 
+        userTopics: { include: { topic: true } } 
       }
     });
 
     res.status(200).json({
       success: true,
       message: 'Onboarding completed successfully',
-      user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        gender: updatedUser.gender,
-        topics: updatedUser.topics,
-        onboarded: updatedUser.onboarded
-      }
+      user: updatedUser
     });
     
     console.log('Onboarding completed for user:', updatedUser.email, 'onboarded:', updatedUser.onboarded);
@@ -265,6 +272,59 @@ router.post('/reset-onboarding', async (req, res) => {
   }
 });
 
+router.get("/:id/feed", async (req, res) => {
+  const userId = Number(req.params.id);
+  if (!userId) return res.status(400).json({ message: "Invalid user ID" });
+
+  try {
+    // Lấy các topic của user
+    const userTopics = await prisma.user_topics.findMany({
+      where: { user_id: userId },
+      select: { topic_id: true },
+    });
+    const topicIds = userTopics.map(ut => ut.topic_id);
+
+    // Lấy posts theo topic
+    const posts = await prisma.posts.findMany({
+      where: {
+        postTags: {
+          some: {
+            tag_id: { in: topicIds },
+          },
+        },
+      },
+      include: {
+        postTags: {
+          include: {
+            tag: true,
+          },
+        },
+        users: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
+    const postsWithTags = posts.map(post => ({
+      id: post.id,
+      user_id: post.user_id,
+      user_name: post.user_name,
+      title: post.title,
+      content: post.content,
+      image_url: post.image_url,
+      dominant_color: post.dominant_color,
+      createdAt: post.createdAt,
+      tags: post.postTags.map(pt => pt.tag.name),
+    }));
+
+    res.json(postsWithTags);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching feed" });
+  }
+});
+
+
 // Google OAuth route
 router.post('/auth/google', async (req, res) => {
   try {
@@ -309,7 +369,7 @@ router.post('/auth/google', async (req, res) => {
     res.status(200).json({
       success: true,
       user: {
-        id: user.id,
+        id: user.id.toString(), // Convert BigInt to string for JSON
         email: user.email,
         username: user.username,
         onboarded: user.onboarded
@@ -319,8 +379,8 @@ router.post('/auth/google', async (req, res) => {
   } catch (error) {
     console.error('Google auth error:', error);
     res.status(500).json({ 
-      success: false, 
-      message: 'Lỗi server trong quá trình xác thực Google' 
+      success: false,
+      message: 'Lỗi server trong quá trình xác thực Google'
     });
   }
 });
@@ -338,7 +398,11 @@ router.get('/email/:email', async (req, res) => {
         username: true,
         onboarded: true,
         gender: true,
-        topics: true
+        userTopics: {
+          select: {
+            topic: true
+          }
+        }
       }
     });
 
@@ -425,8 +489,8 @@ router.put('/update', async (req, res) => {
 });
 
 router.post('/test-send-mail', testSendMail);
-router.post('/send-otp', testSendMail.sendOtp || require('../controllers/user.controller').sendOtp);
-router.post('/verify-otp', testSendMail.verifyOtp || require('../controllers/user.controller').verifyOtp);
+router.post('/send-otp', sendOtp);
+router.post('/verify-otp', verifyOtp);
 router.post('/reset-password', resetPassword);
 
 module.exports = router;

@@ -2,19 +2,22 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 const handler = NextAuth({
-  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
+  secret: process.env.NEXTAUTH_SECRET,
+  jwt: {
+    secret: process.env.NEXTAUTH_SECRET,
+  },
   callbacks: {
     async session({ session, token }) {
       try {
         console.log('Session callback - token:', token);
-        if (session?.user && token?.sub) {
-          session.user.id = token.sub;
+        if (session?.user && (token as any).id) {
+          session.user.id = (token as any).id;
           (session.user as any).onboarded = (token as any).onboarded || false;
           (session.user as any).gender = (token as any).gender || "";
           console.log('Session updated:', session.user);
@@ -48,9 +51,16 @@ const handler = NextAuth({
         if (response.ok) {
           const userData = await response.json();
           console.log('User created/updated:', userData);
+          
+          // Cập nhật user.id với ID từ server
+          if (userData.success && userData.user?.id) {
+            user.id = userData.user.id;
+          }
+          
           return true;
         } else {
-          console.error('Failed to create/update user');
+          const errorData = await response.text();
+          console.error('Failed to create/update user:', response.status, errorData);
           return false;
         }
       } catch (error) {

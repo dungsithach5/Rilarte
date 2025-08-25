@@ -62,7 +62,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.likeCount || 0)
   const [bookmarked, setBookmarked] = useState(false)
-  const { session } = useAuth(true)
+  const { session } = useAuth(false)
   const reduxUser = useSelector((state: any) => state.user.user)
 
   const googleUser = session?.user
@@ -108,15 +108,6 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
     if (!userId) {
       userId = reduxUser?.id || session?.user?.id;
     }
-    
-    // Debug logging
-    console.log('=== BOOKMARK DEBUG ===');
-    console.log('currentUserId prop:', currentUserId);
-    console.log('reduxUser:', reduxUser);
-    console.log('reduxUser.id:', reduxUser?.id);
-    console.log('session?.user:', session?.user);
-    console.log('session?.user?.id:', session?.user?.id);
-    console.log('Final userId:', userId);
     
     // Check if user is authenticated
     if (!session?.user && !reduxUser) {
@@ -314,75 +305,79 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
 
   // Auto-open modal if URL contains this post's slug
   useEffect(() => {
-    const urlSlug = searchParams?.get('post')
-    if (!open && urlSlug && String(urlSlug) === String(post?.slug)) {
-      if (!isClosingRef.current) setOpen(true)
-    } else if (!urlSlug && isClosingRef.current) {
-      // URL cleared; allow future auto-opens
-      isClosingRef.current = false
+    const urlSlug = searchParams?.get('post');
+    if (!open && urlSlug && String(urlSlug) === String(post?.slug) && !isClosingRef.current) {
+      setOpen(true);
+    } else if (!urlSlug) {
+      isClosingRef.current = false;
     }
-  }, [searchParams, post?.slug, open])
+  }, [searchParams, post?.slug, open]);
 
   const handleSelectRelatedPost = (newPost: any) => {
-    setLoading(true)
-    setTimeout(() => {
-      setCurrentPost(newPost)
-      setLikeCount(newPost.likeCount || 0)
-      setLiked(false)
-      setBookmarked(false)
-      setComments([])
-      setLoading(false)
-    }, 1000)
+  setOpen(false); 
+  isClosingRef.current = true;
 
-    // Update slug in URL while staying on the same page
+  setTimeout(() => {
+    setCurrentPost(newPost);
+    setLikeCount(newPost.likeCount || 0);
+    setLiked(false);
+    setBookmarked(false);
+    setComments([]);
+    setLoading(false);
+
     try {
-      const params = new URLSearchParams(searchParams?.toString())
+      const params = new URLSearchParams(searchParams?.toString());
       if (newPost?.slug) {
-        params.set('post', String(newPost.slug))
-        const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname
-        router.replace(nextUrl, { scroll: false })
+        params.set('post', String(newPost.slug));
+        const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
+        router.replace(nextUrl, { scroll: false });
       }
     } catch (err) {
-      // noop
+      console.log("Error :", err);
     }
-  }
+      isClosingRef.current = false; 
+    }, 150);
+  };
 
   return (
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
         try {
-          const params = new URLSearchParams(searchParams?.toString())
+          const params = new URLSearchParams(searchParams?.toString() || '')
           if (nextOpen) {
             isClosingRef.current = false
             if (currentPost?.slug) {
-              params.set('post', String(currentPost.slug))
+              params.set("post", String(currentPost.slug))
               const nextUrl = `${pathname}?${params.toString()}`
               router.replace(nextUrl, { scroll: false })
             }
-            setOpen(true)
           } else {
             isClosingRef.current = true
-            if (params.get('post') === String(currentPost?.slug)) {
-              params.delete('post')
+            if (params.get("post") === String(currentPost?.slug)) {
+              params.delete("post")
             }
-            const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname
+            const nextUrl =
+              params.size > 0 ? `${pathname}?${params.toString()}` : pathname
             router.replace(nextUrl, { scroll: false })
-            setOpen(false)
           }
+
+          setOpen(nextOpen)
         } catch (err) {
-          console.log('Error', err)
+          console.log("Error", err)
         }
       }}
     >
       <DialogTrigger asChild>
         <div key={currentPost.id} className="mb-4 break-inside-avoid cursor-pointer">
           <div className="mx-auto">
-            <div className="relative group cursor-pointer">
+          <div className="relative group cursor-pointer">
               <img
                 src={currentPost.image_url}
                 alt="Post"
                 className="w-full rounded-sm object-cover"
+                onContextMenu={(e) => currentPost.download_protected && e.preventDefault()}
+                onDragStart={(e) => currentPost.download_protected && e.preventDefault()}
               />
               <div
                 className={`absolute inset-0 bg-black/30 rounded-lg transition-opacity duration-300 flex items-end p-4
@@ -396,6 +391,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                     isOwner={isOwner}
                     onDelete={onDelete}
                     postId={currentPost.id}
+                    downloadProtected={currentPost.download_protected} // NEW
                   />
                 </div>
 
@@ -472,6 +468,8 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                     src={currentPost.image_url}
                     alt="Post"
                     className="object-contain h-full"
+                    onContextMenu={(e) => currentPost.download_protected && e.preventDefault()}
+                    onDragStart={(e) => currentPost.download_protected && e.preventDefault()}
                   />
                 </div>
               </DialogHeader>

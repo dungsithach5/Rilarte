@@ -42,8 +42,8 @@ export function NavBar() {
   return (
     <nav className="fixed z-50 bg-white w-full mx-auto flex items-center justify-between px-14 py-2">
       <div className="flex items-center gap-6">
-        <Link href="/" className="text-xl font-bold text-black">
-          Elarte
+        <Link href="/" className="text-3xl text-black font-[Alkaline]">
+          Rilarte
         </Link>
 
         <Link href="/explore" className="text-sm text-black">

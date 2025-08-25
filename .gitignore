@@ -54,7 +54,7 @@ dist
 dist-ssr
 *.local
 
-*.png
+/server/public/uploads
 *.jpg
 *.jpeg
 *.gif

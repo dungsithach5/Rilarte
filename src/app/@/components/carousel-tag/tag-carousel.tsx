@@ -22,7 +22,7 @@ export default function TagCarousel({ tags, selectedTag, onSelect }: TagCarousel
           <CarouselItem key={tag.name} className="basis-auto pl-2">
             <div
               onClick={() => onSelect(tag.name === selectedTag ? null : tag.name)}
-              className={`px-3 py-2 flex justify-center items-center gap-2 rounded-full border text-sm font-medium shadow-sm cursor-pointer transition-colors
+              className={`px-3 py-2 my-1 flex justify-center items-center gap-2 rounded-full border text-sm font-medium shadow-sm cursor-pointer transition-colors
                 ${
                   tag.name === selectedTag
                     ? "bg-black text-white border-black"

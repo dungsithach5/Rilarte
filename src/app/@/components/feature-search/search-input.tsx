@@ -189,7 +189,7 @@ export default function SearchInput({ onSearch, initialKeyword = "" }: SearchInp
                         title={colorCode}
                       ></span>
                       <span
-                        className="bg-gray-200 px-2 py-1 rounded text-xs cursor-pointer hover:bg-gray-700 transition-colors duration-200 pointer-events-auto"
+                        className="bg-gray-200 px-2 py-1 rounded text-xs cursor-pointer hover:bg-gray-300 transition-colors duration-200 pointer-events-auto"
                         onMouseDown={(e) => handleColorClick(e, colorCode)}
                       >
                         {colorCode}

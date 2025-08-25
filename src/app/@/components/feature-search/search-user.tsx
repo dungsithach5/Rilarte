@@ -34,13 +34,13 @@ export default function UserSearchResults({ keyword, onSelect }: Props) {
   if (!keyword) return null;
 
   return (
-    <div className="absolute top-12 w-full max-w-md z-20 bg-white border rounded-lg shadow-lg p-3">
+    <div className="absolute top-14 w-full max-w-md z-20">
       {users.length > 0 && (
-        <ul>
+        <ul className="bg-white max-w-md border rounded-lg shadow-lg p-3">
           {users.map((user) => (
             <li
               key={user.id}
-              className="flex items-center gap-3 p-2 rounded-md hover:bg-[#2a2a2a] cursor-pointer"
+              className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-100 cursor-pointer"
               onMouseDown={(e) => {
                 e.preventDefault();
                 onSelect?.(user);

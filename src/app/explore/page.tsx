@@ -7,11 +7,13 @@ import { Frown } from "lucide-react";
 import RotatingText from '../@/components/RotatingText/RotatingText';
 import { useSearchParams } from "next/navigation";
 import { fetchPosts, fetchPostsByColor } from "../services/Api/posts";
+import HeroSection from "../@/components/background/hero-section";
 import { fetchBannedKeywords } from "../services/Api/bannedKeywords";
 import { createPostSlug } from "../../lib/utils";
 import { ComposerComment } from "../@/components/model-comment/ComposerComment";
 import SkeletonPost from "../@/components/skeleton-post";
 import { useAuth } from "../hooks/useAuth";
+import TagCarousel from "../@/components/carousel-tag/tag-carousel";
 
 const breakpointColumnsObj = { default: 6, 1024: 2, 640: 2 };
 
@@ -25,7 +27,7 @@ export default function ExplorePage() {
   const [bannedKeywords, setBannedKeywords] = useState<string[]>([]);
   const [violation, setViolation] = useState(false);
   const { user, session } = useAuth(true);
-  const [popularTags, setPopularTags] = useState<string[]>([]);
+  const [popularTags, setPopularTags] = useState<{ name: string; image: string }[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   // Load banned keywords
@@ -59,9 +61,13 @@ export default function ExplorePage() {
       .then((data) => {
         const mapped = data.map((item: any) => ({
           ...item,
-          slug: `/post/${createPostSlug(item.title, item.id)}`, // slug cố định
+          slug: `/post/${createPostSlug(item.title, item.id)}`,
         }));
-        setPosts(mapped);
+
+        // Shuffle posts
+        const shuffledPosts = mapped.sort(() => Math.random() - 0.5);
+
+        setPosts(shuffledPosts);
         setViolation(false);
       })
       .catch(console.error)
@@ -71,16 +77,30 @@ export default function ExplorePage() {
   // Popular tags
   useEffect(() => {
     if (!posts.length) return;
-    const tagCount: Record<string, number> = {};
+    const tagMap: Record<string, { count: number; images: string[] }> = {};
+
     posts.forEach((post) => {
       (post.tags || []).forEach((tag: string) => {
-        if (tag.length > 3) tagCount[tag] = (tagCount[tag] || 0) + 1;
+        if (tag.length > 3) {
+          if (!tagMap[tag]) tagMap[tag] = { count: 0, images: [] };
+          tagMap[tag].count += 1;
+          if (post.image_url) tagMap[tag].images.push(post.image_url);
+        }
       });
     });
-    const sortedTags = Object.entries(tagCount)
-      .sort((a, b) => b[1] - a[1])
-      .map(([tag]) => tag);
-    setPopularTags(sortedTags);
+
+    const sortedTags = Object.entries(tagMap)
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([name, data]) => ({
+        name,
+        image: data.images[Math.floor(Math.random() * data.images.length)] || "/default.png",
+      }))
+      .slice(0, 15);
+
+    // Shuffle tags
+    const shuffledTags = sortedTags.sort(() => Math.random() - 0.5);
+
+    setPopularTags(shuffledTags);
   }, [posts]);
 
   const handleDeletePost = async (postId: number) => {
@@ -98,10 +118,10 @@ export default function ExplorePage() {
 
   return (
     <section className="mt-20">
-      {/* Banner */}
+      {/* Hero Section */}
       <section className="w-full overflow-hidden">
-        <div className="flex h-full flex-col px-6">
-          <h1 className="font-bold leading-tight text-[clamp(2.5rem,10vw,8rem)] flex flex-wrap items-center gap-2">
+        <div className="flex h-full flex-col px-14">
+          <h1 className="font-bold leading-tight text-3xl flex flex-wrap items-center gap-2">
             Explore your{" "}
             <RotatingText
               texts={["creative", "vivid", "pure", "real", "fluid", "cool", "artsy"]}
@@ -117,40 +137,23 @@ export default function ExplorePage() {
             />
             energy
           </h1>
-          <p className="text-lg md:text-xl text-gray-800">
+          <p className="text-sm md:text-lg text-gray-800">
             Discover new visuals, trending topics, and inspirations across the platform.
           </p>
         </div>
       </section>
 
       {/* Filter & Tags */}
-      <section className="w-full px-6 mt-12 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2 w-auto">
-            {popularTags.map((tag) => (
-              <button
-                key={tag}
-                onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
-                className={`px-4 py-2 rounded-full border text-sm font-medium shadow-sm transition-colors
-                  ${tag === selectedTag
-                    ? "bg-black text-white border-black"
-                    : "bg-white text-black hover:bg-black hover:text-white border-gray-300"}`}
-              >
-                #{tag}
-              </button>
-            ))}
-          </div>
-          {/* <div className="w-auto">
-            <select className="p-2 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2C343A]">
-              <option value="popular">Popular</option>
-              <option value="following">Following</option>
-            </select>
-          </div> */}
-        </div>
+      <section className="w-full px-14 mt-12 flex flex-col gap-4">
+        <TagCarousel
+          tags={popularTags}
+          selectedTag={selectedTag}
+          onSelect={setSelectedTag}
+        />
       </section>
 
       {/* Posts */}
-      <section className="px-6 mt-6 pb-20">
+      <section className="px-14 mt-6 pb-20">
         {violation ? (
           <div className="mt-12 text-center w-full flex justify-center items-center">
             <div className="flex flex-col justify-center items-center space-y-6">

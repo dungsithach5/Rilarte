@@ -28,6 +28,13 @@ html {
   -webkit-column-break-inside: avoid;
 }
 
+@font-face {
+  font-family: "Alkaline";
+  src: url("/fonts/Alkaline-Demi.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

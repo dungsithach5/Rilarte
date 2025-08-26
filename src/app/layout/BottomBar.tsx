@@ -35,7 +35,7 @@ export default function BottomBar() {
 
   return (
     <>
-      <aside className="bg-white fixed bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-[#2C343A] px-4 py-2 flex flex-row items-center gap-4 shadow-md z-50">
+      <aside className="bg-white fixed bottom-4 left-1/2 -translate-x-1/2 rounded-full px-4 py-2 flex flex-row items-center gap-4 shadow-md z-50">
         <NavIcon
           onClick={() => setActiveIcon("home")}
           icon={
@@ -80,7 +80,7 @@ export default function BottomBar() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-5 left-[59%] bg-white border border-[#2C343A] p-4 rounded-full hover:bg-gray-100 z-50 cursor-pointer"
+            className="fixed bottom-5 left-[59%] bg-white p-4 rounded-full hover:bg-gray-100 shadow-md z-50 cursor-pointer"
             aria-label="Scroll to top"
           >
             <ArrowUp className="w-5 h-5" />

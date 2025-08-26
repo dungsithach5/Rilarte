@@ -109,18 +109,6 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
       userId = reduxUser?.id || session?.user?.id;
     }
     
-    // Check if user is authenticated
-    if (!session?.user && !reduxUser) {
-      alert('Please login to save posts');
-      return;
-    }
-
-    if (!userId) {
-      alert('User ID not found. Please try logging in again.');
-      console.error('No user ID available from any source');
-      return;
-    }
-
     try {
       const userIdNumber = Number(userId);
       console.log('Using user ID:', userIdNumber, 'for post ID:', post.id);
@@ -391,7 +379,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                     isOwner={isOwner}
                     onDelete={onDelete}
                     postId={currentPost.id}
-                    downloadProtected={currentPost.download_protected} // NEW
+                    downloadProtected={currentPost.download_protected}
                   />
                 </div>
 

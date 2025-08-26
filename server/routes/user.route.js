@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const { testSendMail, resetPassword, login, register, followUser, unfollowUser, searchUsers, sendOtp, verifyOtp } = require('../controllers/user.controller');
+const { testSendMail, resetPassword, login, register, followUser, unfollowUser, searchUsers, sendOtp, verifyOtp, getUserByEmail, googleAuth } = require('../controllers/user.controller');
 
 // Follow user
 router.post('/follow/:id', authMiddleware, followUser);
@@ -24,6 +24,12 @@ router.post('/register', register);
 
 // Login
 router.post('/login', login);
+
+// Get user by email (for NextAuth)
+router.get('/email/:email', getUserByEmail);
+
+// Google OAuth authentication
+router.post('/auth/google', googleAuth);
 
 // Get all users
 router.get('/', authMiddleware, async (req, res) => {
@@ -56,7 +62,7 @@ router.get('/public', async (req, res) => {
         image: true
       }
     });
-    res.status(200).json({ success: true, users: serialize(users) });
+    res.status(200).json({ success: true, users });
   } catch (error) {
     console.error('Error getting public users:', error);
     res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách người dùng' });

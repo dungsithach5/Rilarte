@@ -28,7 +28,7 @@ const authMiddleware = async (req, res, next) => {
       
       // Check if user exists
       const user = await prisma.users.findUnique({
-        where: { id: BigInt(userId) },
+        where: { id: parseInt(userId) },
         select: { id: true, email: true, username: true }
       });
       
@@ -54,7 +54,7 @@ const authMiddleware = async (req, res, next) => {
     
     // Check if user still exists
     const user = await prisma.users.findUnique({
-      where: { id: decoded.id },
+      where: { id: parseInt(decoded.id) },
       select: { id: true, email: true, username: true }
     });
     

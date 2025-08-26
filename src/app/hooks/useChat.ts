@@ -275,55 +275,74 @@ export const useChat = (roomId: string, currentUserId: number) => {
 
   // Send new message
   const sendNewMessage = useCallback(async (content: string, receiverId: number) => {
-    if (!isConnected || !content.trim() || !roomId) return;
+    if (!isConnected || !content.trim() || !roomId) {
+      console.warn('Cannot send message:', { isConnected, content: content.trim(), roomId });
+      return;
+    }
+
+    if (!currentUserId || currentUserId <= 0) {
+      console.warn('Cannot send message: invalid current user ID:', currentUserId);
+      return;
+    }
+
+    console.log('📤 Sending message via useChat:', { content, receiverId, roomId, currentUserId });
 
     try {
-      // Send via API first
-      const response = await chatApi.sendMessage({
-        sender_id: currentUserId,
-        receiver_id: receiverId,
+      // Add message to local state immediately (optimistic update)
+      const tempId = -(Date.now()); // Negative ID for optimistic updates
+      const newMessage: Message = {
+        id: tempId,
         content: content.trim(),
-        message_type: 'text'
+        senderId: currentUserId,
+        senderName: 'You',
+        senderAvatar: '',
+        timestamp: new Date().toISOString(),
+        isRead: true,
+        messageType: 'text'
+      };
+      
+      console.log('✅ Adding optimistic message with temp ID:', tempId);
+      setMessages(prev => [...prev, newMessage]);
+      
+      // Auto-scroll to bottom
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+
+      // Send via Socket.IO for real-time
+      sendMessage({
+        roomId,
+        message: content.trim(),
+        senderId: currentUserId.toString(),
+        senderName: 'You',
+        senderAvatar: '',
+        receiverId: receiverId.toString()
       });
 
-      if (response.success) {
-        // Add message to local state immediately (optimistic update)
-        // Use a temporary negative ID to avoid conflicts with real message IDs
-        const tempId = -(Date.now()); // Negative ID for optimistic updates
-        const newMessage: Message = {
-          id: tempId,
+      // Send via API for persistence
+      try {
+        const response = await chatApi.sendMessage({
+          sender_id: currentUserId,
+          receiver_id: receiverId,
           content: content.trim(),
-          senderId: currentUserId,
-          senderName: 'You',
-          senderAvatar: '',
-          timestamp: new Date().toISOString(),
-          isRead: true,
-          messageType: 'text'
-        };
-        
-        console.log('✅ Adding optimistic message with temp ID:', tempId);
-        setMessages(prev => [...prev, newMessage]);
-        
-        // Auto-scroll to bottom
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-
-        // Send via Socket.IO for real-time (but don't add to state again)
-        sendMessage({
-          roomId,
-          message: content.trim(),
-          senderId: currentUserId.toString(),
-          senderName: 'You',
-          senderAvatar: '',
-          receiverId: receiverId.toString()
+          message_type: 'text'
         });
 
-        // Mark room as read for sender
-        await chatApi.markRoomAsRead(roomId, currentUserId);
+        if (response.success) {
+          console.log('✅ Message sent via API successfully');
+          // Mark room as read for sender
+          await chatApi.markRoomAsRead(roomId, currentUserId);
+        } else {
+          console.warn('⚠️ API response indicates failure:', response);
+        }
+      } catch (apiError) {
+        console.error('❌ Error sending message via API:', apiError);
+        // Don't throw error here, just log it
+        // The message is already in local state and sent via socket
       }
+
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error in sendNewMessage:', error);
       throw error;
     }
   }, [roomId, currentUserId, isConnected, sendMessage]);

@@ -574,3 +574,145 @@ exports.getUserFeed = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch feed" });
   }
 };
+
+// Get user by email
+exports.getUserByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    const user = await prisma.users.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        bio: true,
+        avatar_url: true,
+        gender: true,
+        onboarded: true,
+        createdAt: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    console.error('Error getting user by email:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error getting user information' 
+    });
+  }
+};
+
+// Google OAuth authentication
+exports.googleAuth = async (req, res) => {
+  try {
+    const { email, name, image, provider, providerAccountId } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email is required' 
+      });
+    }
+
+    // Check if user exists
+    let user = await prisma.users.findUnique({
+      where: { email }
+    });
+
+    if (!user) {
+      // Create new user if doesn't exist
+      user = await prisma.users.create({
+        data: {
+          email,
+          username: name || email.split('@')[0],
+          avatar_url: image
+        }
+      });
+
+      // Create Account record for OAuth
+      if (provider && providerAccountId) {
+        await prisma.account.create({
+          data: {
+            id: `${provider}_${providerAccountId}`,
+            userId: user.id,
+            type: 'oauth',
+            provider: provider,
+            providerAccountId: providerAccountId
+          }
+        });
+      }
+    } else {
+      // Update existing user
+      user = await prisma.users.update({
+        where: { email },
+        data: {
+          username: name || user.username,
+          avatar_url: image || user.avatar_url
+        }
+      });
+
+      // Update or create Account record
+      if (provider && providerAccountId) {
+        const existingAccount = await prisma.account.findFirst({
+          where: {
+            userId: user.id,
+            provider: provider
+          }
+        });
+
+        if (existingAccount) {
+          await prisma.account.update({
+            where: { id: existingAccount.id },
+            data: {
+              providerAccountId: providerAccountId
+            }
+          });
+        } else {
+          await prisma.account.create({
+            data: {
+              id: `${provider}_${providerAccountId}`,
+              userId: user.id,
+              type: 'oauth',
+              provider: provider,
+              providerAccountId: providerAccountId
+            }
+          });
+        }
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User authenticated successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        avatar_url: user.avatar_url,
+        bio: user.bio,
+        gender: user.gender,
+        onboarded: user.onboarded,
+        createdAt: user.createdAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error during Google authentication' 
+    });
+  }
+};

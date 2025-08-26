@@ -134,10 +134,10 @@ export const chatUtils = {
         : null;
 
     const otherUser = otherUserRaw ? {
-      id: BigInt(otherUserRaw.id),
+      id: Number(otherUserRaw.id),
       username: otherUserRaw.username,
       avatarUrl: otherUserRaw.avatar_url
-    } : { id: BigInt(0), username: 'Unknown', avatarUrl: '' };
+    } : { id: 0, username: 'Unknown', avatarUrl: '' };
 
     const lastMsgRaw = room.last_message || room.lastMessage || null;
 
@@ -147,7 +147,7 @@ export const chatUtils = {
       lastMessage: lastMsgRaw ? {
         content: lastMsgRaw.content,
         timestamp: lastMsgRaw.createdAt || lastMsgRaw.timestamp,
-        senderId: BigInt(lastMsgRaw.sender_id || lastMsgRaw.senderId)
+        senderId: Number(lastMsgRaw.sender_id || lastMsgRaw.senderId)
       } : null,
       lastMessageAt: room.last_message_at || room.lastMessageAt,
       createdAt: room.created_at || room.createdAt

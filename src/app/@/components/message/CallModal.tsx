@@ -98,19 +98,14 @@ const CallModal: React.FC<CallModalProps> = ({
   isIncoming,
   targetUserId
 }) => {
-  // Socket.IO context for WebRTC signaling
-  const socketContext = useSocket();
-  const socket = socketContext.socket;
-  
-  // Early return if modal is not open
-  if (!isOpen) {
+  // Early guard to keep Hooks order stable
+  if (!isOpen || !otherUser || !otherUser.name) {
     return null;
   }
 
-  // Validate required props
-  if (!otherUser || !otherUser.name) {
-    return null;
-  }
+  // Socket.IO context for WebRTC signaling
+  const socketContext = useSocket();
+  const socket = socketContext.socket;
   
   const [isCallActive, setIsCallActive] = useState(false);
   const [isMuted, setIsMuted] = useState(false);

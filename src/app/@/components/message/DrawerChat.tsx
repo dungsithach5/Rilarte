@@ -27,14 +27,14 @@ import {
 interface ChatRoom {
   id: string;
   otherUser: {
-    id: bigint;
+    id: number;
     username: string;
     avatarUrl: string;
   };
   lastMessage?: {
     content: string;
     timestamp: string;
-    senderId: bigint;
+    senderId: number;
   } | null;
   lastMessageAt?: string;
   createdAt: string;
@@ -43,7 +43,7 @@ interface ChatRoom {
 interface DrawerChatProps {
   isOpen?: boolean;
   onClose?: () => void;
-  selectedUserId?: bigint;
+  selectedUserId?: number;
   selectedUsername?: string;
 }
 
@@ -74,9 +74,26 @@ export default function DrawerChat({
   // Get current user from auth
   const { user, isAuthenticated } = useAuth(false)
   const currentUser = React.useMemo(() => {
-    // Fallback to previous mock if user is not ready yet
+    // Ensure we have a valid user ID
+    const userId = user?.id ? Number(user.id) : null;
+    
+    console.log('🔍 DrawerChat - User data:', { 
+      user, 
+      userId, 
+      userType: typeof user?.id,
+      isGoogleOAuth: user?.id && user.id > 100000000000000000000
+    });
+    
+    if (!userId) {
+      console.warn('No valid user ID found, chat functionality may not work');
+    }
+    
+    if (userId && userId > 100000000000000000000) {
+      console.error('❌ INVALID USER ID - This looks like Google OAuth ID, not database ID:', userId);
+    }
+    
     return {
-      id: user?.id ? Number(user.id) : 1,
+      id: userId || 0,
       name: user?.name || user?.username || "You",
       avatar: user?.image || user?.avatar_url || "https://randomuser.me/api/portraits/men/1.jpg"
     }
@@ -94,7 +111,7 @@ export default function DrawerChat({
 
   // Emit user connected event for server routing
   React.useEffect(() => {
-    if (socket && currentUser.id) {
+    if (socket && currentUser.id && currentUser.id > 0) {
       socket.emit('user_connected', String(currentUser.id));
     }
   }, [socket, currentUser.id]);
@@ -225,7 +242,7 @@ export default function DrawerChat({
   // Emit user offline when component unmounts
   React.useEffect(() => {
     return () => {
-      if (socket && currentUser.id) {
+      if (socket && currentUser.id && currentUser.id > 0) {
         socket.emit('user_offline', {
           userId: String(currentUser.id),
           timestamp: new Date().toISOString()
@@ -236,7 +253,7 @@ export default function DrawerChat({
 
   // Emit user activity periodically to keep status fresh
   React.useEffect(() => {
-    if (!socket || !currentUser.id) return;
+    if (!socket || !currentUser.id || currentUser.id <= 0) return;
 
     const interval = setInterval(() => {
       socket.emit('user_activity', {
@@ -268,7 +285,7 @@ export default function DrawerChat({
     hasMore,
     loadMoreMessages,
     messagesEndRef
-  } = useChat(roomId, currentUser.id);
+  } = useChat(roomId, currentUser.id || 0);
 
 
 
@@ -290,7 +307,7 @@ export default function DrawerChat({
 
   // Load chat rooms when component mounts
   React.useEffect(() => {
-    if (open && currentUser.id) {
+    if (open && currentUser.id && currentUser.id > 0) {
       loadChatRooms();
     }
   }, [open, currentUser.id]);
@@ -298,31 +315,41 @@ export default function DrawerChat({
   // Load chat rooms from API
   const loadChatRooms = async () => {
     try {
+      if (!currentUser.id || currentUser.id <= 0) {
+        console.warn('Cannot load chat rooms: invalid user ID');
+        setChatRooms([]);
+        return;
+      }
+
       setIsLoadingRooms(true);
-      const response = await chatApi.getUserChatRooms(currentUser.id);
+      console.log('🔄 Loading chat rooms for user:', currentUser.id);
       
-      if (response.success) {
+      const response = await chatApi.getUserChatRooms(currentUser.id);
+      console.log('📡 Chat rooms API response:', response);
+      
+      if (response && response.success && response.data) {
         const formattedRooms = response.data.map((room: any) => 
           chatUtils.formatChatRoom(room, currentUser.id)
         );
+        console.log('✅ Formatted chat rooms:', formattedRooms);
         setChatRooms(formattedRooms);
         
         // Nếu có direct message request, ưu tiên chọn đúng room theo otherUser.id
         if (selectedUserId) {
-          const idx = formattedRooms.findIndex((r: ChatRoom) => r.otherUser.id === selectedUserId);
+          const idx = formattedRooms.findIndex((r: ChatRoom) => r.otherUser.id === Number(selectedUserId));
           if (idx >= 0) {
             setSelected(idx);
           } else {
             // Nếu không tìm thấy room, tạo mới
-            handleDirectMessage(selectedUserId, selectedUsername || '');
+            handleDirectMessage(Number(selectedUserId), selectedUsername || '');
           }
         }
       } else {
-        // Nếu API fail, set empty array thay vì mock data
+        console.warn('API response indicates failure or no data:', response);
         setChatRooms([]);
       }
     } catch (error) {
-      console.error('Error loading chat rooms:', error);
+      console.error('❌ Error loading chat rooms:', error);
       // Không dùng mock data nữa, chỉ set empty array
       setChatRooms([]);
     } finally {
@@ -331,8 +358,15 @@ export default function DrawerChat({
   };
 
   // Handle direct message from profile
-  const handleDirectMessage = async (userId: bigint, username: string) => {
+  const handleDirectMessage = async (userId: number, username: string) => {
     try {
+      if (!currentUser.id || currentUser.id <= 0) {
+        console.warn('Cannot create direct message: invalid current user ID');
+        return;
+      }
+
+      console.log('🔄 Creating direct message:', { userId: Number(userId), username, currentUserId: currentUser.id });
+      
       // Check if chat room already exists by otherUser.id
       let existingRoom = chatRooms.find(room => 
         room.otherUser.id === userId
@@ -340,10 +374,13 @@ export default function DrawerChat({
 
       if (!existingRoom) {
         // Create new chat room
+        console.log('📝 Creating new chat room...');
         const response = await chatApi.getOrCreateChatRoom(Number(currentUser.id), Number(userId));
+        console.log('📡 Create room API response:', response);
         
-        if (response.success) {
+        if (response && response.success && response.data) {
           const newRoom = chatUtils.formatChatRoom(response.data, currentUser.id);
+          console.log('✅ New room created:', newRoom);
           
           setChatRooms((prev: ChatRoom[]) => {
             const updated = [newRoom, ...prev.filter((r: ChatRoom) => r.id !== newRoom.id)];
@@ -353,34 +390,43 @@ export default function DrawerChat({
           // Select the newly created room
           setSelected(0);
         } else {
-          console.error('Failed to create chat room:', response);
+          console.error('❌ Failed to create chat room:', response);
         }
       } else {
+        console.log('✅ Found existing room:', existingRoom);
         // Select index of existing room by id
         const roomIndex = chatRooms.findIndex(room => room.id === existingRoom!.id);
         setSelected(roomIndex >= 0 ? roomIndex : 0);
       }
     } catch (error) {
-      console.error('Error creating direct message:', error);
+      console.error('❌ Error creating direct message:', error);
     }
   };
 
   // Handle send message
   const handleSendMessage = (message: string) => {
     if (selected === null || !chatRooms[selected]) {
+      console.warn('Cannot send message: no chat room selected');
       return;
     }
     
     if (!roomId) {
+      console.warn('Cannot send message: no room ID');
+      return;
+    }
+    
+    if (!currentUser.id || currentUser.id <= 0) {
+      console.warn('Cannot send message: invalid current user ID');
       return;
     }
     
     const receiverId = Number(chatRooms[selected].otherUser.id);
+    console.log('📤 Sending message:', { message, receiverId, roomId, currentUserId: currentUser.id });
     
     try {
       sendNewMessage(message, receiverId);
     } catch (error) {
-      console.error('Error in sendNewMessage:', error);
+      console.error('❌ Error in sendNewMessage:', error);
     }
   };
 
@@ -538,9 +584,21 @@ export default function DrawerChat({
                 {isLoadingRooms ? (
                   <div className="p-4 text-center text-gray-500">Loading chats...</div>
                 ) : chatRooms.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">No chats yet</div>
+                  <div className="p-4 text-center text-gray-500">
+                    <div>No chats yet</div>
+                    {currentUser.id <= 0 && (
+                      <div className="mt-2 text-xs text-red-500">
+                        Debug: User ID is {currentUser.id}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <>
+                    {/* Debug info */}
+                    <div className="px-3 py-2 bg-blue-50 border-b border-blue-200 text-xs text-blue-700">
+                      <div>Debug: User ID: {currentUser.id}, Rooms: {chatRooms.length}</div>
+                    </div>
+                    
                     {/* Online users count */}
                     {onlineUsers.size > 0 && (
                       <div className="px-3 py-2 bg-green-50 border-b border-green-200">
@@ -563,9 +621,9 @@ export default function DrawerChat({
                           time={room.lastMessageAt || new Date().toISOString()}
                           avatar={room.otherUser.avatarUrl}
                           unreadCount={0} // TODO: Calculate from messages
-                                                  isOnline={onlineUsers.has(String(room.otherUser.id))}
-                        isActive={activeUsers.has(String(room.otherUser.id))}
-                        lastSeen={userLastSeen.get(String(room.otherUser.id)) || room.lastMessageAt}
+                          isOnline={onlineUsers.has(String(room.otherUser.id))}
+                          isActive={activeUsers.has(String(room.otherUser.id))}
+                          lastSeen={userLastSeen.get(String(room.otherUser.id)) || room.lastMessageAt}
                           isTyping={typingUsers.includes(room.otherUser.username) && room.otherUser.username !== currentUser.name}
                         />
                       </div>

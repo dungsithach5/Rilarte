@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '../hooks/useAuth';
 
 interface User {
-  id: string; // Changed to string to match BigInt from database
+  id: number;
   username: string;
   avatar_url?: string;
   image?: string;
@@ -21,9 +21,15 @@ export default function UsersPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
+        console.log('Fetching users...');
         const response = await API.get('/users/public');
-        if (response.data.success) {
+        console.log('Users response:', response.data);
+        
+        if (response.data.success && response.data.users) {
           setUsers(response.data.users);
+          console.log('Users set:', response.data.users);
+        } else {
+          console.error('Invalid response format:', response.data);
         }
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -43,6 +49,10 @@ export default function UsersPage() {
     );
   }
 
+  console.log('Current users state:', users);
+  console.log('Current user:', user);
+  console.log('Current session:', session);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-center mb-8">Discover Users</h1>
@@ -51,7 +61,7 @@ export default function UsersPage() {
         {users.map((userItem) => {
           // Bỏ qua user hiện tại
           const currentUserId = user?.id || session?.user?.id;
-          if (userItem.id.toString() === currentUserId?.toString()) {
+          if (userItem.id === currentUserId) {
             return null;
           }
 

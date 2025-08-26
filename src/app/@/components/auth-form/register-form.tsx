@@ -104,7 +104,7 @@ export function RegisterForm({
         setOtp('');
         
       } catch (err) {
-        setOtpError('Mã OTP không đúng hoặc đã hết hạn.');
+        setOtpError('The OTP is incorrect or has exprired. pleaser try again');
         setOtpVerified(false); // Reset verification status
     } finally {
       setOtpLoading(false);
@@ -116,7 +116,7 @@ export function RegisterForm({
     
     // Kiểm tra OTP verification
     if (!otpVerified) {
-      setError('Bạn cần xác thực email bằng OTP trước khi đăng ký!');
+      setError('You need to verify your email with OTP first!');
       return;
     }
     
@@ -168,6 +168,11 @@ export function RegisterForm({
   return (
     <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit} {...props}>
       <div className="flex flex-col items-center gap-2 text-center">
+        <div className="flex justify-center">
+          <h1 className="font-[Alkaline] text-5xl">
+            Rilarte
+          </h1>
+        </div>
         <h1 className="text-2xl font-bold">Create an account</h1>
         <p className="text-muted-foreground text-sm text-balance">
           Enter your details below to create a new account
@@ -205,20 +210,20 @@ export function RegisterForm({
               disabled={otpSent}
             />
             <Button type="button" onClick={handleSendOtp} disabled={otpLoading || !formData.email || otpSent} className="min-w-max">
-              {otpLoading ? 'Đang gửi...' : otpSent ? 'Đã gửi' : 'Gửi mã'}
+              {otpLoading ? 'Sending' : otpSent ? 'Send' : 'Send OTP'}
             </Button>
           </div>
           {otpError && <div className="text-red-500 text-xs mt-1">{otpError}</div>}
         </div>
         {otpSent && !otpVerified && (
           <div className="grid gap-3">
-            <Label htmlFor="otp">Nhập mã OTP</Label>
+            <Label htmlFor="otp">Verify OTP</Label>
             <div className="flex gap-2 items-center">
               <div className="relative w-full">
                 <Input
                   id="otp"
                   type="text"
-                  placeholder="Nhập mã OTP"
+                  placeholder="Input OTP"
                   value={otp}
                   onChange={e => setOtp(e.target.value)}
                   maxLength={4}
@@ -231,19 +236,19 @@ export function RegisterForm({
                   className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-3 text-xs"
                   variant="secondary"
                 >
-                  {otpLoading ? '...' : <span>Xác thực</span>}
+                  {otpLoading ? '...' : <span>Verify</span>}
                 </Button>
               </div>
               {/* Nút xác thực bên ngoài cho desktop/mobile */}
               <Button type="button" onClick={handleVerifyOtp} disabled={otpLoading || otp.length !== 4} className="min-w-max hidden sm:inline-flex">
-                {otpLoading ? 'Đang xác thực...' : <CheckCircle2 size={16} className="mr-1" />} Xác thực
+                {otpLoading ? 'Đang xác thực...' : <CheckCircle2 size={16} className="mr-1" />} Verify
               </Button>
             </div>
             {otpError && <div className="text-red-500 text-xs mt-1">{otpError}</div>}
           </div>
         )}
         {otpVerified && (
-          <div className="text-green-600 text-xs mb-2">Email đã xác thực thành công!</div>
+          <div className="text-green-600 text-xs mb-2">Email has successfully verified!</div>
         )}
         
 
@@ -311,4 +316,4 @@ export function RegisterForm({
       </div>
     </form>
   )
-} 
+}

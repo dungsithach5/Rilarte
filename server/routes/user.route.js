@@ -5,14 +5,13 @@ const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const { testSendMail, resetPassword, login, register, searchUsers, sendOtp, verifyOtp } = require('../controllers/user.controller');
+const { testSendMail, resetPassword, login, register, followUser, unfollowUser, searchUsers, sendOtp, verifyOtp } = require('../controllers/user.controller');
 
-// Helper to serialize BigInt values safely to JSON (as strings)
-const serialize = (data) => {
-  return JSON.parse(
-    JSON.stringify(data, (_, value) => (typeof value === 'bigint' ? value.toString() : value))
-  );
-};
+// Follow user
+router.post('/follow/:id', authMiddleware, followUser);
+
+// Unfollow user
+router.delete('/unfollow/:id', authMiddleware, unfollowUser);
 
 // Search
 router.get('/search', searchUsers);
@@ -82,14 +81,14 @@ router.get('/public/:id', async (req, res) => {
 
     res.status(200).json({ 
       success: true, 
-      user: serialize({
+      user: {
         id: user.id,
         username: user.username,
         email: user.email,
         bio: user.bio,
         avatar: user.avatar_url || user.image || '/img/user.png',
         name: user.username || `User ${user.id}`
-      })
+      }
     });
   } catch (error) {
     console.error('Error getting public user:', error);

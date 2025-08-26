@@ -62,7 +62,7 @@ exports.createComment = async (req, res) => {
             targetUserId = post?.user_id;
         }
         if (targetUserId && targetUserId !== user_id) {
-            await prisma.notifications.create({
+            await prisma.notificationss.create({
                 data: {
                     user_id: targetUserId,
                     type: 'comment',
@@ -128,7 +128,7 @@ exports.getCommentsByPostId = async (req, res) => {
 
 exports.getAllNotifications = async (req, res) => {
     try {
-        const notifications = await prisma.notification.findMany();
+        const notifications = await prisma.notifications.findMany();
         res.status(200).json(notifications);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching notifications', error });
@@ -138,7 +138,7 @@ exports.getAllNotifications = async (req, res) => {
 exports.getNotificationsByUser = async (req, res) => {
     try {
         const user_id = Number(req.params.user_id);
-        const notifications = await prisma.notification.findMany({
+        const notifications = await prisma.notifications.findMany({
             where: { user_id },
             orderBy: { createdAt: 'desc' }
         });

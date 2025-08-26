@@ -70,7 +70,7 @@ exports.createLike = async (req, res) => {
             });
             
             if (post && post.user_id && post.user_id !== user_id) {
-                await prisma.notifications.create({
+                await prisma.notificationss.create({
                     data: {
                         user_id: post.user_id,
                         type: 'like',

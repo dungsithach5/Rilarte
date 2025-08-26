@@ -479,6 +479,68 @@ exports.testSendMail = async(req, res) => {
     res.status(500).json({ error: err.message });
   }
 }
+
+// Follow user
+module.exports.followUser = async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Bạn chưa đăng nhập' });
+  }
+
+  const followerId = req.user.id;
+  const followingId = parseInt(req.params.id);
+
+  if (followerId === followingId) {
+    return res.status(400).json({ success: false, message: 'Không thể follow chính mình.' });
+  }
+
+  try {
+    await prisma.followss.create({
+      data: { follower_id: followerId, following_id: followingId }
+    });
+
+    const followerCount = await prisma.followss.count({
+      where: { following_id: followingId }
+    });
+
+    res.status(200).json({ success: true, message: 'Follow thành công!', followerCount });
+  } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(400).json({ success: false, message: 'Đã follow user này.' });
+    }
+    res.status(500).json({ success: false, message: 'Lỗi khi follow user', error: error.message });
+  }
+};
+
+// Unfollow user
+module.exports.unfollowUser = async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Bạn chưa đăng nhập' });
+  }
+
+  const followerId = req.user.id;
+  const followingId = parseInt(req.params.id);
+
+  try {
+    const existing = await prisma.followss.findFirst({
+      where: { follower_id: followerId, following_id: followingId }
+    });
+
+    if (!existing) {
+      return res.status(400).json({ success: false, message: 'Bạn chưa follow user này.' });
+    }
+
+    await prisma.followss.delete({ where: { id: existing.id } });
+
+    const followerCount = await prisma.followss.count({
+      where: { following_id: followingId }
+    });
+
+    res.status(200).json({ success: true, message: 'Unfollow thành công!', followerCount });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi khi unfollow user', error: error.message });
+  }
+};
+
 exports.getUserFeed = async (req, res) => {
   try {
     const userId = parseInt(req.params.id);

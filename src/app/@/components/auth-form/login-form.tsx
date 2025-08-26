@@ -140,7 +140,12 @@ export function LoginForm({
   return (
     <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit} {...props}>
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">Login to your account</h1>
+        <div className="flex justify-center">
+          <h1 className="font-[Alkaline] text-5xl">
+            Rilarte
+          </h1>
+        </div>
+        <h1 className="text-2xl font-bold">Welcome</h1>
         <p className="text-muted-foreground text-sm text-balance">
           Enter your email below to login to your account
         </p>

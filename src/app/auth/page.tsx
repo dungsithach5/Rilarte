@@ -17,7 +17,7 @@ const images = [
 export default function LoginPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const mode = searchParams.get("mode") || "login"
+  const mode = searchParams?.get("mode") || "login"
   const [index, setIndex] = useState(0)
 
   const isLogin = mode === "login"
@@ -86,8 +86,8 @@ export default function LoginPage() {
             alt={`Slide ${index}`}
             className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 4 }}
-            exit={{ opacity: 3 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 1 }}
           />
         </AnimatePresence>

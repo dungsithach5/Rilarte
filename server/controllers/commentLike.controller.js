@@ -47,16 +47,37 @@ const likeComment = async (req, res) => {
 
     // Tạo notification cho chủ comment
     if (comment.user_id !== user_id) {
-      await prisma.notificationss.create({
+      // Lấy username của user like
+      const likeUser = await prisma.users.findUnique({
+        where: { id: user_id },
+        select: { username: true, avatar_url: true }
+      });
+      
+      const notification = await prisma.notifications.create({
         data: {
           user_id: comment.user_id,
-          type: 'like',
-          content: `User ${user_id} đã thích bình luận của bạn.`,
+          type: 'comment_like',
+          content: `đã thích bình luận của bạn`,
+          related_user_id: user_id,
+          related_comment_id: parseInt(comment_id),
           is_read: false,
           createdAt: new Date(),
           updatedAt: new Date(),
         }
       });
+
+      // Emit notification via WebSocket
+      if (global.emitNotification) {
+        global.emitNotification(comment.user_id, {
+          id: notification.id,
+          type: notification.type,
+          content: notification.content,
+          is_read: notification.is_read,
+          createdAt: notification.createdAt,
+          related_user_id: notification.related_user_id,
+          related_comment_id: notification.related_comment_id
+        });
+      }
     }
 
     res.status(201).json({

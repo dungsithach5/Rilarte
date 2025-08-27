@@ -47,18 +47,23 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     // Connection events
     newSocket.on('connect', () => {
-      console.log('Connected to Socket.IO server');
+      console.log('🔌 Connected to Socket.IO server, Socket ID:', newSocket.id);
       setIsConnected(true);
     });
 
     newSocket.on('disconnect', () => {
-      console.log('Disconnected from Socket.IO server');
+      console.log('🔌 Disconnected from Socket.IO server');
       setIsConnected(false);
     });
 
     newSocket.on('connect_error', (error) => {
-      console.error('Socket.IO connection error:', error);
+      console.error('🔌 Socket.IO connection error:', error);
       setIsConnected(false);
+    });
+
+    // Test events
+    newSocket.on('test_response', (data) => {
+      console.log('🧪 Test response received in SocketContext:', data);
     });
 
     setSocket(newSocket);

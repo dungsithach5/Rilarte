@@ -66,16 +66,35 @@ exports.createFollow = async (req, res) => {
     });
 
     // Tạo notification cho người được follow
-    await prisma.notifications.create({
-    data: {
+    // Lấy username của user follow
+    const followerUser = await prisma.users.findUnique({
+      where: { id: follower_id },
+      select: { username: true, avatar_url: true }
+    });
+    
+    const notification = await prisma.notifications.create({
+      data: {
         user_id: following_id, // người được follow
         type: "follow",
-        content: `User ${follower_id} đã theo dõi bạn.`,
+        content: `đã theo dõi bạn`,
+        related_user_id: follower_id,
         is_read: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-    }
+      }
     });
+
+    // Emit notification via WebSocket
+    if (global.emitNotification) {
+      global.emitNotification(following_id, {
+        id: notification.id,
+        type: notification.type,
+        content: notification.content,
+        is_read: notification.is_read,
+        createdAt: notification.createdAt,
+        related_user_id: notification.related_user_id
+      });
+    }
 
     res.status(201).json(newFollow);
   } catch (error) {

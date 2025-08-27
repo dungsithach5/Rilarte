@@ -7,6 +7,31 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const messageController = require('./controllers/message.controller');
 
+// Function to emit notifications via WebSocket
+const emitNotification = (userId, notification) => {
+  console.log('📡 Emitting notification to user:', userId, 'Room:', `notifications_${userId}`)
+  console.log('📡 Notification data:', notification)
+  
+  // Check if user is in the room
+  const room = io.sockets.adapter.rooms.get(`notifications_${userId}`)
+  console.log('📡 Users in room:', room ? room.size : 0)
+  
+  if (room && room.size > 0) {
+    // Log all sockets in the room
+    room.forEach(socketId => {
+      console.log(`  - Socket in room: ${socketId}`)
+    })
+    
+    io.to(`notifications_${userId}`).emit('new_notification', notification)
+    console.log('📡 Notification emitted successfully to room')
+  } else {
+    console.log('❌ No users in notifications room, notification not delivered')
+  }
+};
+
+// Make it available globally
+global.emitNotification = emitNotification;
+
 dotenv.config();
 
 const app = express();
@@ -98,8 +123,52 @@ io.on('connection', (socket) => {
 
   // Handle stop typing
   socket.on('stop_typing', (data) => {
-    const { roomId, userId } = data;
-    socket.to(roomId).emit('user_stop_typing', { userId });
+    const { roomId, userId, userName } = data;
+    socket.to(roomId).emit('user_stop_typing', { userId, userName });
+  });
+
+  // Test WebSocket connection
+  socket.on('test_connection', (data) => {
+    console.log('🧪 Test connection received:', data);
+    socket.emit('test_response', { 
+      message: 'WebSocket connection working!',
+      socketId: socket.id,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // Handle notifications
+  socket.on('join_notifications', (userId) => {
+    console.log(`📡 join_notifications event received for user: ${userId}, socket: ${socket.id}`);
+    
+    socket.join(`notifications_${userId}`);
+    console.log(`📡 User ${userId} joined notifications room: notifications_${userId}`);
+    console.log(`📊 Socket ${socket.id} rooms:`, Array.from(socket.rooms));
+    
+    // Log all users in this notifications room
+    const room = io.sockets.adapter.rooms.get(`notifications_${userId}`);
+    if (room) {
+      console.log(`📊 Users in notifications_${userId}:`, room.size);
+      room.forEach(socketId => {
+        console.log(`  - Socket: ${socketId}`);
+      });
+    } else {
+      console.log(`❌ Room notifications_${userId} not found`);
+    }
+    
+    // Test emit to this specific user
+    setTimeout(() => {
+      console.log(`🧪 Testing emit to user ${userId} in room notifications_${userId}`);
+      io.to(`notifications_${userId}`).emit('test_room_join', {
+        message: `You are now in notifications room for user ${userId}`,
+        room: `notifications_${userId}`,
+        timestamp: new Date().toISOString()
+      });
+    }, 500);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
   });
 
   // Handle read receipts
@@ -197,6 +266,7 @@ io.on('connection', (socket) => {
   // Handle disconnect
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
+    console.log('📊 Total connected users:', io.engine.clientsCount);
   });
 });
 

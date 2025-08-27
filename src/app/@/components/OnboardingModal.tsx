@@ -109,75 +109,72 @@ export default function OnboardingModal() {
   const [confetti, setConfetti] = useState<Array<{id: number, x: number, y: number, color: string, delay: number}>>([]);
 
   useEffect(() => {
-    console.log('=== ONBOARDING MODAL DEBUG ===');
-    console.log('Session in OnboardingModal:', session);
-    console.log('User data:', session?.user);
-    console.log('Auth status:', status);
-    console.log('Redux user:', reduxUser);
-    console.log('ShowModal state:', showModal);
-    console.log('Session keys:', session ? Object.keys(session) : 'No session');
-    console.log('User keys:', session?.user ? Object.keys(session.user) : 'No user');
-    
     // Check localStorage trực tiếp
     const localStorageUser = localStorage.getItem('user');
-    console.log('LocalStorage user:', localStorageUser ? JSON.parse(localStorageUser) : 'No localStorage user');
     
     // Clear localStorage nếu user khác hoặc onboarded undefined
     if (localStorageUser) {
       const user = JSON.parse(localStorageUser);
       if (user.onboarded === undefined || user.onboarded === null) {
-        console.log('Clearing localStorage with invalid onboarded status');
         localStorage.removeItem('user');
       }
     }
     
     // Không hiện modal khi đang loading
     if (status === 'loading') {
-      console.log('Auth still loading, hiding modal');
       setShowModal(false);
       return;
     }
     
-    // Check onboarded status từ NextAuth, Redux, hoặc localStorage
+    // Check onboarded status - ưu tiên Redux (database data)
     let onboarded = null;
     let userEmail = null;
     
-    if (status === 'authenticated' && session?.user) {
-      // NextAuth session
-      onboarded = (session.user as any).onboarded;
-      userEmail = session.user.email;
-      console.log('Using NextAuth session data');
-    } else if (reduxUser) {
-      // Redux store (login thường)
+    if (reduxUser) {
+      // Redux store (database data) - ưu tiên cao nhất
       onboarded = reduxUser.onboarded;
       userEmail = reduxUser.email;
-      console.log('Using Redux store data');
+    } else if (status === 'authenticated' && session?.user) {
+      // NextAuth session (fallback)
+      onboarded = (session.user as any).onboarded;
+      userEmail = session.user.email;
     } else if (localStorageUser) {
-      // LocalStorage (fallback)
+      // LocalStorage (fallback cuối cùng)
       const user = JSON.parse(localStorageUser);
       onboarded = user.onboarded;
       userEmail = user.email;
-      console.log('Using localStorage data');
     }
     
-    console.log('Onboarded status:', onboarded);
-    console.log('Onboarded type:', typeof onboarded);
-    console.log('User email:', userEmail);
-    
     // Chỉ hiển thị modal khi đã đăng nhập và chưa onboarded
-    if ((status === 'authenticated' && session?.user) || reduxUser || localStorageUser) {
+    if (reduxUser || (status === 'authenticated' && session?.user) || localStorageUser) {
+      // Ưu tiên session onboarded status
+      if (session?.user?.onboarded === true) {
+        setShowModal(false);
+        return;
+      }
+      
+      // Kiểm tra Redux onboarded status
+      if (reduxUser?.onboarded === true) {
+        setShowModal(false);
+        return;
+      }
+      
+      // Kiểm tra localStorage onboarded status
+      if (onboarded === true) {
+        setShowModal(false);
+        return;
+      }
+      
+      // Chỉ hiển thị modal khi thực sự chưa onboarded
       if (onboarded === false || onboarded === null || onboarded === undefined) {
-        console.log('Showing onboarding modal');
         setShowModal(true);
       } else {
-        console.log('User already onboarded, hiding modal');
         setShowModal(false);
       }
     } else {
-      console.log('Not authenticated yet, hiding modal. Status:', status);
       setShowModal(false);
     }
-  }, [session?.user?.onboarded, session?.user?.email, status, reduxUser?.onboarded, reduxUser?.email]);
+  }, [status, reduxUser?.onboarded, reduxUser?.email]);
 
   const handleTopicToggle = (topicId: string) => {
     const isSelected = selectedTopics.includes(topicId);
@@ -241,6 +238,27 @@ export default function OnboardingModal() {
   };
 
   const handleSubmit = async () => {
+    // Xác thực user trước khi submit
+    const currentUserEmail = session?.user?.email || reduxUser?.email;
+    const currentUserId = session?.user?.id || reduxUser?.id;
+    
+    if (!currentUserEmail || !currentUserId) {
+      playSound('error');
+      alert('User authentication required! Please login again.');
+      return;
+    }
+    
+    // Kiểm tra xem có phải user hiện tại không
+    const localStorageUser = localStorage.getItem('user');
+    if (localStorageUser) {
+      const user = JSON.parse(localStorageUser);
+      if (user.email !== currentUserEmail || user.id !== currentUserId) {
+        playSound('error');
+        alert('User mismatch detected! Please login again.');
+        return;
+      }
+    }
+    
     if (!gender.trim()) {
       playSound('error');
       alert('Please select your gender!');
@@ -263,27 +281,32 @@ export default function OnboardingModal() {
     try {
       // Debug log
       const requestData = {
-        email: session?.user?.email || reduxUser?.email,
+        email: currentUserEmail,
         gender: gender.trim(),
-        topics: selectedTopics.join(','),
+        topics: selectedTopics, // Gửi array thay vì string
       };
       console.log('Onboarding request data:', requestData);
       
       // Gọi trực tiếp đến backend server
       await submitOnboarding(requestData);
       
-      // Cập nhật localStorage để tránh modal hiện lại khi refresh
+      // Cập nhật localStorage chỉ cho user hiện tại
       const currentUser = localStorage.getItem('user');
       if (currentUser) {
         const user = JSON.parse(currentUser);
-        const updatedUser = {
-          ...user,
-          onboarded: true,
-          gender: gender.trim(),
-          topics: selectedTopics.join(',')
-        };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        console.log('Updated localStorage user:', updatedUser);
+        // Chỉ update nếu là user hiện tại
+        if (user.email === currentUserEmail && user.id === currentUserId) {
+          const updatedUser = {
+            ...user,
+            onboarded: true,
+            gender: gender.trim(),
+            topics: selectedTopics
+          };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          console.log('Updated localStorage user:', updatedUser);
+        } else {
+          console.log('User mismatch, skipping localStorage update');
+        }
       }
       
       playSound('success');
@@ -295,10 +318,9 @@ export default function OnboardingModal() {
       // Wait for animation to complete then close modal
       setTimeout(async () => {
         try {
-          const userEmail = session?.user?.email || reduxUser?.email;
-          console.log('Refreshing user data for email:', userEmail);
+          console.log('Refreshing user data for email:', currentUserEmail);
           
-          if (!userEmail) {
+          if (!currentUserEmail) {
             console.log('No email found, closing modal');
             setShowModal(false);
             setShowSuccess(false);
@@ -310,7 +332,7 @@ export default function OnboardingModal() {
           const refreshResponse = await fetch('/api/auth/refresh', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: userEmail })
+            body: JSON.stringify({ email: currentUserEmail })
           });
           
           if (refreshResponse.ok) {

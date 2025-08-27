@@ -1,9 +1,11 @@
 "use client";
 
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { updateUser } from "./context/userSlice";
+import { useSession } from "next-auth/react";
 import Masonry from "react-masonry-css";
 import RotatingText from './@/components/RotatingText/RotatingText';
 import { ComposerComment } from "./@/components/model-comment/ComposerComment";
@@ -16,36 +18,136 @@ const breakpointColumnsObj = { default: 6, 1024: 2, 640: 2 };
 
 export default function FeedPage() {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const { data: session, status } = useSession();
   const reduxUser = useSelector((state: any) => state.user.user);
+  const reduxPersist = useSelector((state: any) => state._persist);
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
   const [popularTags, setPopularTags] = useState<{ name: string; image: string }[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  
+
 
   // Redirect user chưa onboard
   useEffect(() => {
-    if (!reduxUser) {
-      console.log('❌ No redux user found');
-      return;
-    }
-    if (reduxUser.onboarded === false) {
-      router.replace("/onboarding");
-    }
-  }, [reduxUser, router]);
-
-  // Fetch personalized feed
-  useEffect(() => {
-    if (!reduxUser || !reduxUser.onboarded) {
-      console.log('Cannot fetch feed:', { 
-        hasUser: !!reduxUser, 
-        onboarded: reduxUser?.onboarded 
-      });
+    // Đợi Redux Persist rehydrate xong
+    if (reduxPersist && !reduxPersist.rehydrated) {
       return;
     }
     
-    axios
-      .get(`http://localhost:5001/api/users/${reduxUser.id}/feed`)
-      .then((res) => {
+    // Đợi session load xong
+    if (status === "loading") {
+      return;
+    }
+    
+    // Kiểm tra xem có đang ở onboarding page không
+    if (window.location.pathname === '/onboarding') {
+      return;
+    }
+    
+    // Ưu tiên session onboarded status
+    if (session?.user?.onboarded === true) {
+      return;
+    }
+    
+    // Kiểm tra xem user có thực sự cần onboarding không
+    if (session?.user?.email && reduxUser?.email) {
+      const sameUser = session.user.email === reduxUser.email;
+      if (sameUser && reduxUser.onboarded === true) {
+        return;
+      }
+    }
+    
+    // Kiểm tra localStorage onboarded status
+    const savedOnboarded = localStorage.getItem('user_onboarded');
+    if (savedOnboarded) {
+      try {
+        const { email, onboarded } = JSON.parse(savedOnboarded);
+        if (email === session?.user?.email && onboarded === true) {
+          return;
+        }
+      } catch (error) {
+        console.error('Error parsing saved onboarded status:', error);
+      }
+    }
+    
+    // Nếu session không có onboarded, kiểm tra Redux
+    if (!reduxUser) {
+      return;
+    }
+    
+    if (reduxUser.onboarded === false) {
+      router.replace("/onboarding");
+    }
+  }, [reduxUser?.onboarded, reduxPersist?.rehydrated, session?.user?.onboarded, status, router]);
+
+    // Fetch personalized feed
+  useEffect(() => {
+    const fetchFeed = async () => {
+      // Đợi Redux Persist rehydrate xong
+      if (reduxPersist && !reduxPersist.rehydrated) {
+        return;
+      }
+      
+      // Đợi session load xong
+      if (status === "loading") {
+        return;
+      }
+      
+      // Ưu tiên session onboarded status
+      if (session?.user?.onboarded === true) {
+        // Nếu session onboarded nhưng không có Redux user, cần fetch user data
+        if (!reduxUser) {
+          // Fetch user data từ backend để có user ID
+          try {
+            const response = await fetch(`http://localhost:5001/api/users/email/${session.user.email}`);
+            if (response.ok) {
+              const userData = await response.json();
+              
+              // Dispatch user data vào Redux
+              dispatch(updateUser(userData.user));
+              
+              // Tiếp tục với user ID mới
+              const userId = userData.user.id;
+              
+              // Fetch feed với user ID từ backend
+              const feedResponse = await axios.get(`http://localhost:5001/api/feed/${userId}`);
+              
+              const mapped = feedResponse.data.map((item: any) => ({
+                ...item,
+                slug: createPostSlug(item.title, item.id),
+              }));
+              
+              const shuffledPosts = mapped.sort(() => Math.random() - 0.5);
+              setPosts(shuffledPosts);
+            } else {
+              setPosts([]);
+            }
+          } catch (error) {
+            console.error('Error fetching user data:', error);
+            setPosts([]);
+          } finally {
+            setIsLoading(false);
+          }
+          return;
+        }
+      } else if (!reduxUser) {
+        setIsLoading(false);
+        return;
+      } else if (reduxUser.onboarded !== true) {
+        setIsLoading(false);
+        return;
+      }
+      
+      // Kiểm tra user ID có hợp lệ không
+      if (!reduxUser?.id || typeof reduxUser.id !== 'number' || reduxUser.id <= 0) {
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        const res = await axios.get(`http://localhost:5001/api/feed/${reduxUser.id}`);
         const mapped = res.data.map((item: any) => ({
           ...item,
           slug: createPostSlug(item.title, item.id),
@@ -54,12 +156,16 @@ export default function FeedPage() {
         const shuffledPosts = mapped.sort(() => Math.random() - 0.5);
 
         setPosts(shuffledPosts);
-      })
-      .catch((error) => {
-        console.error('❌ Error fetching feed:', error);
-      })
-      .finally(() => setIsLoading(false));
-  }, [reduxUser]);
+      } catch (error) {
+        console.error('Error fetching feed:', error);
+        setPosts([]); // Set empty array on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchFeed();
+  }, [reduxUser?.id, reduxUser?.onboarded, reduxPersist?.rehydrated, session?.user?.onboarded, status, dispatch]);
 
   // Compute popular tags
   useEffect(() => {

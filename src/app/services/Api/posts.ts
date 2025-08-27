@@ -1,10 +1,19 @@
 import API from './index';
 
 export const fetchPosts = async (search: string) => {
-  const res = await API.get('/posts', {
-    params: search ? { search } : {},
-  });
-  return res.data;
+  try {
+    const res = await API.get('/posts', {
+      params: search ? { search } : {},
+    });
+    return res.data || [];
+  } catch (error: any) {
+    console.error('Error fetching posts:', {
+      message: error?.message || 'Unknown error',
+      status: error?.response?.status,
+      data: error?.response?.data
+    });
+    return [];
+  }
 };
 
 export const fetchPostsByUserId = async (userId: number) => {
@@ -24,8 +33,17 @@ export const fetchColors = async (): Promise<string[]> => {
 };
 
 export const fetchPostsByColor = async (color: string) => {
-  const res = await API.get('/posts/by-color', {
-    params: { color }
-  });
-  return res.data;
+  try {
+    const res = await API.get('/posts/by-color', {
+      params: { color }
+    });
+    return res.data || [];
+  } catch (error: any) {
+    console.error('Error fetching posts by color:', {
+      message: error?.message || 'Unknown error',
+      status: error?.response?.status,
+      data: error?.response?.data
+    });
+    return [];
+  }
 };

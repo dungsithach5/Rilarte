@@ -1,0 +1,28 @@
+
+services:
+  # backend:
+  #   build: ./server
+  #   container_name: social_media_backend
+  #   ports:
+  #     - "5000:5000"
+  #   depends_on:
+  #     - redis
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #   volumes:
+  #     - ./server:/usr/src/app
+  #   command: npm start
+  #   restart: always
+
+  redis:
+    image: redis:latest
+    container_name: social_media_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+
+volumes:
+  redis_data:

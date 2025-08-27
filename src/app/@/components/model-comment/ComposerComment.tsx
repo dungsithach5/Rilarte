@@ -66,10 +66,10 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
   const reduxUser = useSelector((state: any) => state.user.user)
 
   const googleUser = session?.user
-  // Ưu tiên Redux user (login thường), fallback về NextAuth session (Google)
-  const userName = reduxUser?.username || reduxUser?.name || googleUser?.name || 'Unknown User'
-  const userEmail = reduxUser?.email || googleUser?.email || ''
-  const userAvatar = reduxUser?.avatar || googleUser?.image || '/img/user.png'
+  // User info cho user hiện tại đang xem
+  const currentUserName = reduxUser?.username || reduxUser?.name || googleUser?.name || 'Unknown User'
+  const currentUserEmail = reduxUser?.email || googleUser?.email || ''
+  const currentUserAvatar = reduxUser?.avatar || googleUser?.image || '/img/user.png'
 
   const addEmoji = (emojiData: any) => {
     setComment((prev) => prev + emojiData.emoji)
@@ -386,8 +386,8 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                 <div className="w-full flex items-center justify-between gap-2 z-0">
                   <UserInfo
                     userId={currentPost.user_id}
-                    username={userName}
-                    avatar={userAvatar}
+                    username={currentUserName}
+                    avatar={currentUserAvatar}
                     size="lg"
                     className="flex items-center gap-2"
                   />
@@ -440,8 +440,8 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                 <DialogTitle className="flex items-center gap-3">
                   <UserInfo
                     userId={currentPost.user_id}
-                    username={userName}
-                    avatar={userAvatar}
+                    username={currentUserName}
+                    avatar={currentUserAvatar}
                     size="md"
                     showName={true}
                     onClick={(e) => e.stopPropagation()}
@@ -550,8 +550,8 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
             relatedPosts={relatedPosts}
             currentUserId={currentUserId}
             onDelete={onDelete}
-            userAvatar={userAvatar}
-            userName={userName}
+            userAvatar={currentUserAvatar}
+            userName={currentUserName}
             liked={liked}
             likeCount={likeCount}
             handleLikeToggle={handleLikeToggle}

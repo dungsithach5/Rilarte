@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { useState, useEffect } from 'react';
 
 interface UserInfoProps {
   userId?: number;
@@ -22,6 +23,31 @@ export default function UserInfo({
   className = '',
   onClick
 }: UserInfoProps) {
+  const [userInfo, setUserInfo] = useState<{username: string, avatar: string} | null>(null);
+  const [loading, setLoading] = useState(false);
+  // Fetch user info from userId
+  useEffect(() => {
+    if (userId && !userInfo) {
+      setLoading(true);
+      fetch(`http://localhost:5001/api/users/public/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.user) {
+            setUserInfo({
+              username: data.user.name || data.user.username || `User ${userId}`,
+              avatar: data.user.avatar || '/img/user.png'
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching user info:', error);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [userId, userInfo]);
+
   const sizeClasses = {
     sm: 'w-6 h-6',
     md: 'w-8 h-8',
@@ -35,8 +61,10 @@ export default function UserInfo({
   };
 
   const profileLink = userId ? `/profile/${userId}` : '/profile';
-  const displayName = username || 'Unknown User';
-  const displayAvatar = avatar || '/img/user.png';
+  
+  // Ưu tiên userInfo từ API, fallback về props
+  const displayName = userInfo?.username || username || 'Unknown User';
+  const displayAvatar = userInfo?.avatar || avatar || '/img/user.png';
 
   const handleClick = (e: React.MouseEvent) => {
     if (onClick) {

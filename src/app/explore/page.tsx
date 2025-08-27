@@ -29,16 +29,59 @@ export default function ExplorePage() {
   const { user, session } = useAuth(true);
   const [popularTags, setPopularTags] = useState<{ name: string; image: string }[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   // Load banned keywords
   useEffect(() => {
     fetchBannedKeywords()
       .then(setBannedKeywords)
-      .catch(console.error);
+      .catch((error) => {
+        console.error('Error fetching banned keywords:', error);
+        setBannedKeywords([]);
+      });
   }, []);
+
+  // Fetch initial posts when component mounts
+  useEffect(() => {
+    if (!hasInitialized) {
+      setIsLoading(true);
+      fetchPosts('')
+        .then((data) => {
+          if (!Array.isArray(data)) {
+            setPosts([]);
+            return;
+          }
+          
+          const mapped = data.map((item: any) => ({
+            ...item,
+            slug: `/post/${createPostSlug(item.title, item.id)}`,
+          }));
+
+          // Chỉ shuffle một lần khi fetch data mới
+          const shuffledPosts = mapped.sort(() => Math.random() - 0.5);
+
+          setPosts(shuffledPosts);
+          setHasInitialized(true);
+        })
+        .catch((error: any) => {
+          console.error('Error fetching initial posts:', {
+            message: error?.message || 'Unknown error',
+            status: error?.response?.status,
+            data: error?.response?.data
+          });
+          setPosts([]);
+        })
+        .finally(() => setIsLoading(false));
+    }
+  }, []); // Bỏ hasInitialized dependency để tránh loop
 
   // Fetch posts by keyword or color
   useEffect(() => {
+    // Chỉ fetch khi có search params
+    if (!searchKeyword && !searchColor) {
+      return;
+    }
+
     const keyword = searchKeyword;
     const color = searchColor;
 
@@ -59,20 +102,33 @@ export default function ExplorePage() {
 
     fetcher(param)
       .then((data) => {
+        if (!Array.isArray(data)) {
+          console.error('Invalid data format:', data);
+          setPosts([]);
+          return;
+        }
+        
         const mapped = data.map((item: any) => ({
           ...item,
           slug: `/post/${createPostSlug(item.title, item.id)}`,
         }));
 
-        // Shuffle posts
+        // Chỉ shuffle một lần khi fetch data mới
         const shuffledPosts = mapped.sort(() => Math.random() - 0.5);
 
         setPosts(shuffledPosts);
         setViolation(false);
       })
-      .catch(console.error)
+      .catch((error: any) => {
+        console.error('Error fetching posts:', {
+          message: error?.message || 'Unknown error',
+          status: error?.response?.status,
+          data: error?.response?.data
+        });
+        setPosts([]);
+      })
       .finally(() => setIsLoading(false));
-  }, [searchKeyword, searchColor, bannedKeywords, user]);
+  }, [searchKeyword, searchColor, bannedKeywords]); // Bỏ hasInitialized dependency
 
   // Popular tags
   useEffect(() => {
@@ -80,24 +136,31 @@ export default function ExplorePage() {
     const tagMap: Record<string, { count: number; images: string[] }> = {};
 
     posts.forEach((post) => {
-      (post.tags || []).forEach((tag: string) => {
-        if (tag.length > 3) {
-          if (!tagMap[tag]) tagMap[tag] = { count: 0, images: [] };
-          tagMap[tag].count += 1;
-          if (post.image_url) tagMap[tag].images.push(post.image_url);
-        }
-      });
+      const tags = post.tags || [];
+      if (Array.isArray(tags)) {
+        tags.forEach((tag: string) => {
+          if (tag && typeof tag === 'string' && tag.length > 3) {
+            if (!tagMap[tag]) tagMap[tag] = { count: 0, images: [] };
+            tagMap[tag].count += 1;
+            if (post.image_url && typeof post.image_url === 'string') {
+              tagMap[tag].images.push(post.image_url);
+            }
+          }
+        });
+      }
     });
 
     const sortedTags = Object.entries(tagMap)
       .sort((a, b) => b[1].count - a[1].count)
       .map(([name, data]) => ({
         name,
-        image: data.images[Math.floor(Math.random() * data.images.length)] || "/default.png",
+        image: data.images.length > 0 
+          ? data.images[Math.floor(Math.random() * data.images.length)] 
+          : "/default.png",
       }))
       .slice(0, 15);
 
-    // Shuffle tags
+    // Chỉ shuffle tags một lần khi posts thay đổi
     const shuffledTags = sortedTags.sort(() => Math.random() - 0.5);
 
     setPopularTags(shuffledTags);
@@ -113,7 +176,7 @@ export default function ExplorePage() {
   };
 
   const filteredPosts = selectedTag
-    ? posts.filter((post) => post.tags?.includes(selectedTag))
+    ? posts.filter((post) => post.tags && Array.isArray(post.tags) && post.tags.includes(selectedTag))
     : posts;
 
   return (
@@ -184,7 +247,7 @@ export default function ExplorePage() {
               <ComposerComment
                 key={post.id}
                 post={post}
-                currentUserId={session?.user?.id ? Number(session.user.id) : undefined}
+                currentUserId={user?.id ? Number(user.id) : undefined}
                 onDelete={handleDeletePost}
                 relatedPosts={filteredPosts.filter((p) => p.id !== post.id)}
               />

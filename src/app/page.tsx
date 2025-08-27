@@ -22,16 +22,6 @@ export default function FeedPage() {
   const [popularTags, setPopularTags] = useState<{ name: string; image: string }[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 FeedPage Debug:', {
-      reduxUser,
-      hasUser: !!reduxUser,
-      onboarded: reduxUser?.onboarded,
-      userId: reduxUser?.id
-    });
-  }, [reduxUser]);
-
   // Redirect user chưa onboard
   useEffect(() => {
     if (!reduxUser) {
@@ -39,15 +29,12 @@ export default function FeedPage() {
       return;
     }
     if (reduxUser.onboarded === false) {
-      console.log('🔄 Redirecting to onboarding');
       router.replace("/onboarding");
     }
   }, [reduxUser, router]);
 
   // Fetch personalized feed
   useEffect(() => {
-    console.log('🔄 Fetching feed for user:', reduxUser?.id);
-    
     if (!reduxUser || !reduxUser.onboarded) {
       console.log('Cannot fetch feed:', { 
         hasUser: !!reduxUser, 
@@ -59,7 +46,6 @@ export default function FeedPage() {
     axios
       .get(`http://localhost:5001/api/users/${reduxUser.id}/feed`)
       .then((res) => {
-        console.log('✅ Feed fetched successfully:', res.data.length, 'posts');
         const mapped = res.data.map((item: any) => ({
           ...item,
           slug: createPostSlug(item.title, item.id),
@@ -117,21 +103,11 @@ export default function FeedPage() {
     ? posts.filter((post) => post.tags?.includes(selectedTag))
     : posts;
 
-  // Debug posts state
-  useEffect(() => {
-    console.log('🔍 Posts state:', {
-      totalPosts: posts.length,
-      filteredPosts: filteredPosts.length,
-      selectedTag,
-      isLoading
-    });
-  }, [posts, filteredPosts, selectedTag, isLoading]);
-
   return (
-    <section className="mt-20">
+    <section className="mt-20 px-12">
       {/* Banner */}
       <section className="w-full overflow-hidden">
-        <div className="flex h-full flex-col px-14">
+        <div className="flex h-full flex-col">
           <h1 className="font-bold leading-tight text-3xl flex flex-wrap items-center gap-2">
             Unleash your{" "}
             <RotatingText
@@ -157,7 +133,7 @@ export default function FeedPage() {
       </section>
 
       {/* Filter & Tags */}
-      <section className="w-full px-14 mt-12 flex flex-col gap-4">
+      <section className="w-full mt-12 flex flex-col gap-4">
         <TagCarousel
           tags={popularTags}
           selectedTag={selectedTag}
@@ -166,7 +142,7 @@ export default function FeedPage() {
       </section>
 
       {/* Posts */}
-      <section className="px-14 mt-6 pb-20">
+      <section className="mt-6 pb-20">
         {isLoading ? (
           <Masonry
             breakpointCols={breakpointColumnsObj}

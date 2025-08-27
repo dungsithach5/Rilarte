@@ -9,8 +9,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const isAuthPage = pathname === '/auth';
   const isAdminPage = pathname.startsWith('/admin');
+  const isOnboardingPage = pathname === '/onboarding';
 
-  const shouldHideBars = isAuthPage || isAdminPage;
+  const shouldHideBars = isAuthPage || isAdminPage || isOnboardingPage;
 
   return (
     <>

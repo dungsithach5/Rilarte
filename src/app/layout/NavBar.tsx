@@ -40,7 +40,7 @@ export function NavBar() {
   };
 
   return (
-    <nav className="fixed z-50 bg-white w-full mx-auto flex items-center justify-between px-14 py-2">
+    <nav className="fixed z-50 bg-white w-full mx-auto flex items-center justify-between px-12 py-2">
       <div className="flex items-center gap-6">
         <Link href="/" className="text-3xl text-black font-[Alkaline]">
           Rilarte

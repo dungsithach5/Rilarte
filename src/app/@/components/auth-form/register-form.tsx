@@ -37,13 +37,12 @@ export function RegisterForm({
     })
     setError('') 
     
-    // Reset OTP state khi email thay đổi
+    // Reset OTP state when email changes
     if (e.target.id === 'email') {
       resetOtpState();
     }
   }
 
-  // Reset OTP state khi email thay đổi
   const resetOtpState = () => {
     setOtpSent(false);
     setOtpVerified(false);
@@ -75,16 +74,14 @@ export function RegisterForm({
     setOtpLoading(true);
     setOtpError('');
     
-          try {
-        const result = await sendOtp(formData.email);
-        
-        setOtpSent(true);
-        setOtpVerified(false); // Reset verification status khi gửi OTP mới
-        setOtp(''); // Reset OTP input
-        
-      } catch (err) {
-        setOtpError(`Gửi mã OTP thất bại: ${err instanceof Error ? err.message : 'Lỗi không xác định'}`);
-        setOtpSent(false); // Reset sent status nếu thất bại
+    try {
+      const result = await sendOtp(formData.email);
+      setOtpSent(true);
+      setOtpVerified(false);
+      setOtp('');
+    } catch (err) {
+      setOtpError(`Failed to send OTP: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setOtpSent(false);
     } finally {
       setOtpLoading(false);
     }
@@ -94,18 +91,14 @@ export function RegisterForm({
     setOtpLoading(true);
     setOtpError('');
     
-          try {
-        const result = await verifyOtp(formData.email, otp);
-        
-        setOtpVerified(true);
-        setOtpError('');
-        
-        // Reset OTP input sau khi xác thực thành công
-        setOtp('');
-        
-      } catch (err) {
-        setOtpError('Mã OTP không đúng hoặc đã hết hạn.');
-        setOtpVerified(false); // Reset verification status
+    try {
+      const result = await verifyOtp(formData.email, otp);
+      setOtpVerified(true);
+      setOtpError('');
+      setOtp('');
+    } catch (err) {
+      setOtpError('OTP is incorrect or has expired.');
+      setOtpVerified(false);
     } finally {
       setOtpLoading(false);
     }
@@ -114,34 +107,28 @@ export function RegisterForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Kiểm tra OTP verification
     if (!otpVerified) {
-      setError('Bạn cần xác thực email bằng OTP trước khi đăng ký!');
+      setError('You need to verify your email with OTP before registering!');
       return;
     }
     
-    // Kiểm tra OTP đã được gửi
     if (!otpSent) {
-      setError('Bạn cần gửi mã OTP trước!');
+      setError('You need to send the OTP first!');
       return;
     }
     
-    // Kiểm tra form validation
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
     
     setLoading(true);
     setError('');
     
-          try {
-        const data = await registerUser(formData);
-        
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        router.push("/auth");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Registration failed');
+    try {
+      const data = await registerUser(formData);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      router.push("/auth");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -149,15 +136,9 @@ export function RegisterForm({
 
   const handleGoogleLogin = async () => {
     setLoading(true)
-    
     try {
-      const result = await signIn('google', { 
-        callbackUrl: '/' 
-      })
-      
-      if (result?.error) {
-        setError('Google login failed: ' + result.error)
-      }
+      const result = await signIn('google', { callbackUrl: '/' })
+      if (result?.error) setError('Google login failed: ' + result.error)
     } catch (err) {
       setError('Google login failed: ' + (err as Error).message)
     } finally {
@@ -168,6 +149,9 @@ export function RegisterForm({
   return (
     <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit} {...props}>
       <div className="flex flex-col items-center gap-2 text-center">
+        <div className="flex justify-center">
+          <h1 className="font-[Alkaline] text-5xl">Rilarte</h1>
+        </div>
         <h1 className="text-2xl font-bold">Create an account</h1>
         <p className="text-muted-foreground text-sm text-balance">
           Enter your details below to create a new account
@@ -205,20 +189,20 @@ export function RegisterForm({
               disabled={otpSent}
             />
             <Button type="button" onClick={handleSendOtp} disabled={otpLoading || !formData.email || otpSent} className="min-w-max">
-              {otpLoading ? 'Đang gửi...' : otpSent ? 'Đã gửi' : 'Gửi mã'}
+              {otpLoading ? 'Sending...' : otpSent ? 'Sent' : 'Send OTP'}
             </Button>
           </div>
           {otpError && <div className="text-red-500 text-xs mt-1">{otpError}</div>}
         </div>
         {otpSent && !otpVerified && (
           <div className="grid gap-3">
-            <Label htmlFor="otp">Nhập mã OTP</Label>
+            <Label htmlFor="otp">Enter OTP</Label>
             <div className="flex gap-2 items-center">
               <div className="relative w-full">
                 <Input
                   id="otp"
                   type="text"
-                  placeholder="Nhập mã OTP"
+                  placeholder="Enter OTP"
                   value={otp}
                   onChange={e => setOtp(e.target.value)}
                   maxLength={4}
@@ -231,21 +215,19 @@ export function RegisterForm({
                   className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-3 text-xs"
                   variant="secondary"
                 >
-                  {otpLoading ? '...' : <span>Xác thực</span>}
+                  {otpLoading ? '...' : <span>Verify</span>}
                 </Button>
               </div>
-              {/* Nút xác thực bên ngoài cho desktop/mobile */}
               <Button type="button" onClick={handleVerifyOtp} disabled={otpLoading || otp.length !== 4} className="min-w-max hidden sm:inline-flex">
-                {otpLoading ? 'Đang xác thực...' : <CheckCircle2 size={16} className="mr-1" />} Xác thực
+                {otpLoading ? 'Verifying...' : <CheckCircle2 size={16} className="mr-1" />} Verify
               </Button>
             </div>
             {otpError && <div className="text-red-500 text-xs mt-1">{otpError}</div>}
           </div>
         )}
         {otpVerified && (
-          <div className="text-green-600 text-xs mb-2">Email đã xác thực thành công!</div>
+          <div className="text-green-600 text-xs mb-2">Email verified successfully!</div>
         )}
-        
 
         <div className="grid gap-3">
           <Label htmlFor="password">Password</Label>
@@ -311,4 +293,4 @@ export function RegisterForm({
       </div>
     </form>
   )
-} 
+}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
+import { Check } from 'lucide-react';
 import { submitOnboarding } from "../services/Api/onboarding";
 import { updateUser } from "../context/userSlice";
 
@@ -15,11 +16,10 @@ interface Topic {
 }
 
 export default function OnboardingModal() {
-  const { data: session, status, update } = useSession();
+  const { data: session, update } = useSession();
   const reduxUser = useSelector((state: any) => state.user.user);
   const dispatch = useDispatch();
   const router = useRouter();
-
   const [currentStep, setCurrentStep] = useState(1);
   const [gender, setGender] = useState<string>("");
   const [topics, setTopics] = useState<Topic[]>([]);
@@ -48,10 +48,8 @@ export default function OnboardingModal() {
   const toggleTopic = (id: string) => {
     if (selectedTopics.includes(id)) {
       setSelectedTopics(prev => prev.filter(t => t !== id));
-    } else if (selectedTopics.length < 3) {
-      setSelectedTopics(prev => [...prev, id]);
     } else {
-      alert("Bạn chỉ có thể chọn tối đa 3 topics!");
+      setSelectedTopics(prev => [...prev, id]);
     }
   };
 
@@ -60,15 +58,12 @@ export default function OnboardingModal() {
   };
   const handleBack = () => setCurrentStep(1);
 
-  // Submit onboarding
   const handleSubmit = async () => {
-    if (!gender) return alert("Vui lòng chọn giới tính!");
     if (selectedTopics.length === 0) return alert("Chọn ít nhất 1 topic!");
-
-    setLoading(true);
     const email = session?.user?.email || reduxUser?.email;
     if (!email) return alert("Không tìm thấy email user");
 
+    setLoading(true);
     try {
       const res = await submitOnboarding({
         email,
@@ -78,87 +73,131 @@ export default function OnboardingModal() {
 
       if (res.success) {
         dispatch(updateUser({ onboarded: true }));
+        localStorage.setItem("user", JSON.stringify({ ...reduxUser, onboarded: true }));
 
-        localStorage.setItem(
-          "user",
-          JSON.stringify({ ...reduxUser, onboarded: true })
-        );
+        setCurrentStep(3);
 
-        await update();
-        router.push("/");
+        setTimeout(async () => {
+          await update();
+          router.push("/");
+        }, 3000);
       } else {
         alert(res.message || "Onboarding chưa thành công");
       }
     } catch (err: any) {
       console.error("Onboarding failed:", err);
-      alert(err.response?.data?.message || err.message || "Có lỗi xảy ra!");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-white flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden p-6">
-        <h2 className="text-2xl font-bold mb-4 text-center">Welcome!</h2>
+    <div className="fixed inset-0 bg-white flex items-center justify-center">
+      <div className="w-full flex overflow-hidden">
+        <div className="w-full px-16 flex flex-col justify-center">
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold mb-4 text-center">Welcome!</h2>
+              <p className="text-center text-lg font-medium">Select your gender</p>
+              <div className="flex gap-6 justify-center">
+                {["male", "female"].map(g => {
+                  const isSelected = gender === g;
+                  const baseStyle = "px-8 py-4 rounded-2xl border text-lg font-semibold transition-all";
+                  const selectedStyle = g === "male" ? "border-blue-500 bg-blue-100 text-blue-700" : "border-pink-500 bg-pink-100 text-pink-700";
+                  const unselectedStyle = g === "male" ? "border-gray-300 hover:border-blue-300" : "border-gray-300 hover:border-pink-300";
+                  return (
+                    <button
+                      key={g}
+                      onClick={() => setGender(g)}
+                      className={`${baseStyle} ${isSelected ? selectedStyle + " scale-105 shadow-md" : unselectedStyle}`}
+                    >
+                      {g === "male" ? "👨 Male" : "👩 Female"}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={handleNext}
+                  disabled={!gender}
+                  className="px-6 py-2 bg-gray-800 text-white text-lg rounded-2xl shadow-md hover:bg-gray-700 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
 
-        {currentStep === 1 ? (
-          <div className="space-y-4">
-            <p className="text-center">Select your gender</p>
-            <div className="flex gap-4 justify-center">
-              {["male", "female"].map(g => (
+          {currentStep === 2 && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold mb-4 text-center">Welcome!</h2>
+              <h2 className="text-lg mb-4 text-center">Select your topics</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {topics.map(topic => (
+                  <button
+                    key={topic.id}
+                    onClick={() => toggleTopic(topic.id)}
+                    className={`relative w-full h-40 rounded-2xl overflow-hidden border-2 transition-all ${selectedTopics.includes(topic.id) ? "border-black" : "border-gray-300 hover:border-gray-400"}`}
+                  >
+                    {topic.image_url && <img src={topic.image_url} alt={topic.name} className="w-full h-full object-cover" />}
+                    <div className="absolute inset-0 bg-black/20 flex flex-col justify-center items-center p-2">
+                      {topic.icon && <div className="text-3xl mb-2">{topic.icon}</div>}
+                      <div className="text-white text-lg font-semibold text-center">{topic.name}</div>
+                    </div>
+                    {selectedTopics.includes(topic.id) && (
+                      <div className="absolute top-2 right-2 bg-black rounded-full w-6 h-6 flex items-center justify-center shadow">
+                        <Check className="text-white w-4 h-4"/>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <div className="flex justify-between mt-4">
+                <button onClick={handleBack} className="px-6 py-2 border rounded-xl hover:bg-gray-100">Back</button>
                 <button
-                  key={g}
-                  onClick={() => setGender(g)}
-                  className={`p-4 rounded-2xl border ${
-                    gender === g ? "border-blue-500 bg-blue-100" : "border-gray-300"
-                  }`}
+                  onClick={handleSubmit}
+                  disabled={loading || selectedTopics.length === 0}
+                  className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-xl disabled:opacity-50"
                 >
-                  {g === "male" ? "👨 Male" : "👩 Female"}
+                  {loading ? "Saving..." : "Complete"}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 3 && (
+            <div className="relative mt-6 p-12 text-center overflow-hidden">
+              {/* Sparkles */}
+              {Array.from({ length: 20 }, (_, i) => (
+                <div
+                  key={`sparkle-${i}`}
+                  className="absolute w-2 h-2 bg-yellow-400 rounded-full animate-pulse"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 2000}ms`,
+                    animationDuration: `${1 + Math.random() * 2}s`
+                  }}
+                />
               ))}
+
+              <div className="relative z-10">
+                <div className="text-5xl mb-2 animate-bounce">🎉</div>
+                <h2 className="text-2xl font-bold mb-2">Congratulations!</h2>
+                <p className="">You have successfully completed onboarding</p>
+              </div>
             </div>
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={handleNext}
-                disabled={!gender}
-                className="px-6 py-2 bg-gray-800 text-white rounded-xl disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-center">Select up to 3 topics</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {topics.map(topic => (
-                <button
-                  key={topic.id}
-                  onClick={() => toggleTopic(topic.id)}
-                  className={`p-4 rounded-2xl border ${
-                    selectedTopics.includes(topic.id) ? "border-black bg-gray-100" : "border-gray-300"
-                  }`}
-                >
-                  <div>{topic.icon}</div>
-                  <div>{topic.name}</div>
-                </button>
-              ))}
-            </div>
-            <div className="flex justify-between mt-4">
-              <button onClick={handleBack} className="px-6 py-2 border rounded-xl">
-                Back
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={loading || selectedTopics.length === 0}
-                className="px-6 py-2 bg-gray-800 text-white rounded-xl disabled:opacity-50"
-              >
-                {loading ? "Saving..." : "Complete"}
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
+      </div>
+
+      {/* Image */}
+      <div className="w-full h-full">
+        <img
+          src="/img/onboarding.png"
+          alt="Onboarding Illustration"
+          className="w-full h-full object-cover"
+        />
       </div>
     </div>
   );

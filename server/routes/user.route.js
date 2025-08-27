@@ -202,23 +202,42 @@ router.post('/onboarding', async (req, res) => {
       where: { email },
       data: {
         onboarded: true,
-        gender: gender,
-        userTopics: {
-          deleteMany: {},
-          create: topics.map(topicId => ({
-            topic: { connect: { id: topicId } }
-          }))
+        gender: gender
+      }
+    });
+
+    // Xóa user_topics cũ và tạo mới
+    await prisma.user_topics.deleteMany({
+      where: { user_id: updatedUser.id }
+    });
+
+    // Tạo user_topics mới
+    for (const topicId of topics) {
+      await prisma.user_topics.create({
+        data: {
+          user_id: updatedUser.id,
+          topic_id: parseInt(topicId)
+          // Prisma tự động set createdAt và updatedAt
         }
-      },
+      });
+    }
+
+    // Fetch user với user_topics để response
+    const userWithTopics = await prisma.users.findUnique({
+      where: { id: updatedUser.id },
       include: { 
-        userTopics: { include: { topic: true } } 
+        userTopics: { 
+          include: { 
+            topic: true 
+          } 
+        } 
       }
     });
 
     res.status(200).json({
       success: true,
       message: 'Onboarding completed successfully',
-      user: updatedUser
+      user: userWithTopics
     });
     
     console.log('Onboarding completed for user:', updatedUser.email, 'onboarded:', updatedUser.onboarded);
@@ -278,57 +297,8 @@ router.post('/reset-onboarding', async (req, res) => {
   }
 });
 
-router.get("/:id/feed", async (req, res) => {
-  const userId = Number(req.params.id);
-  if (!userId) return res.status(400).json({ message: "Invalid user ID" });
-
-  try {
-    // Lấy các topic của user
-    const userTopics = await prisma.user_topics.findMany({
-      where: { user_id: userId },
-      select: { topic_id: true },
-    });
-    const topicIds = userTopics.map(ut => ut.topic_id);
-
-    // Lấy posts theo topic
-    const posts = await prisma.posts.findMany({
-      where: {
-        postTags: {
-          some: {
-            tag_id: { in: topicIds },
-          },
-        },
-      },
-      include: {
-        postTags: {
-          include: {
-            tag: true,
-          },
-        },
-        users: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    });
-
-    const postsWithTags = posts.map(post => ({
-      id: post.id,
-      user_id: post.user_id,
-      user_name: post.user_name,
-      title: post.title,
-      content: post.content,
-      image_url: post.image_url,
-      dominant_color: post.dominant_color,
-      createdAt: post.createdAt,
-      tags: post.postTags.map(pt => pt.tag.name),
-    }));
-
-    res.json(postsWithTags);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error fetching feed" });
-  }
-});
+// Route này đã được chuyển sang feed.route.js
+// Xóa để tránh conflict
 
 
 // Google OAuth route

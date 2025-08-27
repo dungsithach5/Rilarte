@@ -46,8 +46,14 @@ const userSlice = createSlice({
         state.user = { ...state.user, ...action.payload };
       }
     },
+    
+    restoreOnboardedStatus: (state, action: PayloadAction<{ email: string; onboarded: boolean }>) => {
+      if (state.user && state.user.email === action.payload.email) {
+        state.user.onboarded = action.payload.onboarded;
+      }
+    },
   },
 });
 
-export const { loginSuccess, logout, updateUser } = userSlice.actions;
+export const { loginSuccess, logout, updateUser, restoreOnboardedStatus } = userSlice.actions;
 export default userSlice.reducer;

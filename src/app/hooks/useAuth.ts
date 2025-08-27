@@ -51,7 +51,8 @@ export function useAuth(requireAuth = true) {
                 name: session.user.name,
                 email: session.user.email,
                 image: session.user.image,
-                username: session.user.name
+                username: session.user.name,
+                onboarded: userData.user.onboarded // Lấy onboarded từ database
               }
             }));
             
@@ -59,7 +60,8 @@ export function useAuth(requireAuth = true) {
             localStorage.setItem('token', nextAuthToken);
             localStorage.setItem('user', JSON.stringify({
               ...session.user,
-              id: databaseId // Use database ID instead of OAuth ID
+              id: databaseId, // Use database ID instead of OAuth ID
+              onboarded: userData.user.onboarded // Lấy onboarded từ database
             }));
             
             console.log('✅ NextAuth session saved to Redux and localStorage with database ID');
@@ -75,7 +77,8 @@ export function useAuth(requireAuth = true) {
                 name: session.user.name,
                 email: session.user.email,
                 image: session.user.image,
-                username: session.user.name
+                username: session.user.name,
+                onboarded: false // Default to false nếu không fetch được từ DB
               }
             }));
           }
@@ -91,7 +94,8 @@ export function useAuth(requireAuth = true) {
               name: session.user.name,
               email: session.user.email,
               image: session.user.image,
-              username: session.user.name
+              username: session.user.name,
+              onboarded: false // Default to false nếu không fetch được từ DB
             }
           }));
         }

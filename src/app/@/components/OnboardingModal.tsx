@@ -120,7 +120,9 @@ export default function OnboardingModal() {
     
     // Check localStorage trực tiếp
     const localStorageUser = localStorage.getItem('user');
+    const userData = localStorage.getItem('user_data');
     console.log('LocalStorage user:', localStorageUser ? JSON.parse(localStorageUser) : 'No localStorage user');
+    console.log('User data:', userData ? JSON.parse(userData) : 'No user data');
     
     // Clear localStorage nếu user khác hoặc onboarded undefined
     if (localStorageUser) {
@@ -158,6 +160,17 @@ export default function OnboardingModal() {
       onboarded = user.onboarded;
       userEmail = user.email;
       console.log('Using localStorage data');
+    }
+    
+    // Kiểm tra user_data localStorage nếu các nguồn khác không có
+    if (onboarded === null || onboarded === undefined) {
+      if (userData && userEmail) {
+        const userInfo = JSON.parse(userData);
+        if (userInfo.email === userEmail) {
+          onboarded = userInfo.onboarded;
+          console.log('Using user_data localStorage data:', onboarded);
+        }
+      }
     }
     
     console.log('Onboarded status:', onboarded);

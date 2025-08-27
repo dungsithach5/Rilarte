@@ -1,9 +1,9 @@
 "use client";
 
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import Masonry from "react-masonry-css";
 import RotatingText from './@/components/RotatingText/RotatingText';
 import { ComposerComment } from "./@/components/model-comment/ComposerComment";
@@ -16,6 +16,7 @@ const breakpointColumnsObj = { default: 6, 1024: 2, 640: 2 };
 
 export default function FeedPage() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const reduxUser = useSelector((state: any) => state.user.user);
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
@@ -28,9 +29,51 @@ export default function FeedPage() {
       reduxUser,
       hasUser: !!reduxUser,
       onboarded: reduxUser?.onboarded,
-      userId: reduxUser?.id
+      userId: reduxUser?.id,
+      userEmail: reduxUser?.email,
+      userIdType: typeof reduxUser?.id,
+      reduxUserKeys: reduxUser ? Object.keys(reduxUser) : 'No keys'
     });
-  }, [reduxUser]);
+    
+    // Kiểm tra localStorage
+    const localStorageUser = localStorage.getItem('persist:root');
+    console.log('🔍 Redux Persist State:', localStorageUser ? JSON.parse(localStorageUser) : 'No persist state');
+    
+    // Kiểm tra NextAuth session
+    const sessionToken = localStorage.getItem('next-auth.session-token');
+    console.log('🔍 NextAuth Session Token:', sessionToken);
+    
+    // Restore onboarded status nếu có
+    if (reduxUser?.email && reduxUser.onboarded === undefined) {
+      const savedOnboarded = localStorage.getItem('user_onboarded');
+      console.log('🔍 Checking for saved onboarded status:', savedOnboarded);
+      if (savedOnboarded) {
+        const { email, onboarded } = JSON.parse(savedOnboarded);
+        console.log('🔍 Saved onboarded info:', { email, onboarded });
+        if (email === reduxUser.email) {
+          console.log('🔄 Restoring onboarded status:', onboarded);
+          dispatch({ type: 'user/restoreOnboardedStatus', payload: { email, onboarded } });
+        } else {
+          console.log('❌ Email mismatch:', { savedEmail: email, currentEmail: reduxUser.email });
+        }
+      } else {
+        console.log('❌ No saved onboarded status found - fetching from database');
+        // Fetch onboarded status từ database nếu không có trong localStorage
+        fetch(`http://localhost:5001/api/users/email/${reduxUser.email}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.user && data.user.onboarded !== undefined) {
+              console.log('🔄 Fetched onboarded status from database:', data.user.onboarded);
+              dispatch({ type: 'user/restoreOnboardedStatus', payload: { 
+                email: reduxUser.email, 
+                onboarded: data.user.onboarded 
+              }});
+            }
+          })
+          .catch(error => console.error('❌ Error fetching onboarded status:', error));
+      }
+    }
+  }, [reduxUser?.id, reduxUser?.onboarded, reduxUser?.email, dispatch]);
 
   // Redirect user chưa onboard
   useEffect(() => {
@@ -42,22 +85,61 @@ export default function FeedPage() {
       console.log('🔄 Redirecting to onboarding');
       router.replace("/onboarding");
     }
-  }, [reduxUser, router]);
+  }, [reduxUser?.onboarded]);
 
   // Fetch personalized feed
   useEffect(() => {
     console.log('🔄 Fetching feed for user:', reduxUser?.id);
     
-    if (!reduxUser || !reduxUser.onboarded) {
-      console.log('Cannot fetch feed:', { 
+    if (!reduxUser) {
+      console.log('❌ No redux user found');
+      return;
+    }
+    
+    // Nếu onboarded undefined, thử fetch user data từ backend
+    if (reduxUser.onboarded === undefined && reduxUser.email) {
+      console.log('🔄 Onboarded undefined, fetching user data from backend');
+      axios
+        .get(`http://localhost:5001/api/users/email/${reduxUser.email}`)
+        .then((res) => {
+          const backendUser = res.data.user;
+          console.log('✅ Backend user data:', backendUser);
+          
+          if (backendUser.onboarded === true) {
+            // User đã onboard, fetch feed
+            fetchFeed(backendUser.id);
+          } else {
+            console.log('❌ User not onboarded, redirecting to onboarding');
+            router.replace("/onboarding");
+          }
+        })
+        .catch((error) => {
+          console.error('❌ Error fetching user data:', error);
+        });
+      return;
+    }
+    
+    if (!reduxUser.onboarded) {
+      console.log('❌ Cannot fetch feed:', { 
         hasUser: !!reduxUser, 
         onboarded: reduxUser?.onboarded 
       });
       return;
     }
     
+    // Kiểm tra user ID có hợp lệ không
+    if (!reduxUser.id || typeof reduxUser.id !== 'number' || reduxUser.id <= 0) {
+      console.error('❌ Invalid user ID:', reduxUser.id);
+      return;
+    }
+    
+    fetchFeed(reduxUser.id);
+  }, [reduxUser?.id, reduxUser?.onboarded, reduxUser?.email]);
+  
+  // Helper function để fetch feed
+  const fetchFeed = useCallback((userId: number) => {
     axios
-      .get(`http://localhost:5001/api/users/${reduxUser.id}/feed`)
+      .get(`http://localhost:5001/api/users/${userId}/feed`)
       .then((res) => {
         console.log('✅ Feed fetched successfully:', res.data.length, 'posts');
         const mapped = res.data.map((item: any) => ({
@@ -73,7 +155,7 @@ export default function FeedPage() {
         console.error('❌ Error fetching feed:', error);
       })
       .finally(() => setIsLoading(false));
-  }, [reduxUser]);
+  }, [setPosts, setIsLoading]);
 
   // Compute popular tags
   useEffect(() => {
@@ -116,16 +198,6 @@ export default function FeedPage() {
   const filteredPosts = selectedTag
     ? posts.filter((post) => post.tags?.includes(selectedTag))
     : posts;
-
-  // Debug posts state
-  useEffect(() => {
-    console.log('🔍 Posts state:', {
-      totalPosts: posts.length,
-      filteredPosts: filteredPosts.length,
-      selectedTag,
-      isLoading
-    });
-  }, [posts, filteredPosts, selectedTag, isLoading]);
 
   return (
     <section className="mt-20">

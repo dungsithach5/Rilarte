@@ -7,13 +7,14 @@ import storage from 'redux-persist/lib/storage';
 const persistConfig = {
   key: 'root',
   storage,
+  whitelist: ['user'], // Chỉ persist user state
 }
 
-const persistedReducer = persistReducer(persistConfig, userReducer);
+const persistedUserReducer = persistReducer(persistConfig, userReducer);
 
 export const store = configureStore({
   reducer: {
-    user: persistedReducer,
+    user: persistedUserReducer,
     search: searchReducer,
   },
   middleware: (getDefaultMiddleware) =>

@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const { testSendMail, resetPassword, login, register, followUser, unfollowUser, searchUsers, sendOtp, verifyOtp, getUserByEmail, googleAuth } = require('../controllers/user.controller');
+const { testSendMail, resetPassword, login, register, followUser, unfollowUser, searchUsers, sendOtp, verifyOtp, getUserByEmail, googleAuth, getUsersByIds } = require('../controllers/user.controller');
 
 // Follow user
 router.post('/follow/:id', authMiddleware, followUser);
@@ -68,6 +68,9 @@ router.get('/public', async (req, res) => {
     res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách người dùng' });
   }
 });
+
+// Get users by IDs (no auth required)
+router.get('/batch', getUsersByIds);
 
 // Get public user info by ID (no auth required)
 router.get('/public/:id', async (req, res) => {

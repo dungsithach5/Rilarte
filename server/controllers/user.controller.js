@@ -716,3 +716,33 @@ exports.googleAuth = async (req, res) => {
     });
   }
 };
+
+exports.getUsersByIds = async (req, res) => {
+    try {
+        const { ids } = req.query;
+        if (!ids) {
+            return res.status(400).json({ message: 'IDs parameter is required' });
+        }
+
+        const userIds = ids.split(',').map(id => Number(id)).filter(id => !isNaN(id));
+        if (userIds.length === 0) {
+            return res.status(400).json({ message: 'No valid IDs provided' });
+        }
+
+        const users = await prisma.users.findMany({
+            where: {
+                id: { in: userIds }
+            },
+            select: {
+                id: true,
+                username: true,
+                avatar_url: true
+            }
+        });
+
+        res.status(200).json(users);
+    } catch (error) {
+        console.error('❌ Error in getUsersByIds:', error);
+        res.status(500).json({ message: 'Error fetching users', error: error.message });
+    }
+};

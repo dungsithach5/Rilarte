@@ -21,10 +21,13 @@ const handler = NextAuth({
           (session.user as any).onboarded = (token as any).onboarded || false;
           (session.user as any).gender = (token as any).gender || "";
           console.log('Session updated:', session.user);
+        } else {
+          console.log('No user ID in token, session:', session);
         }
         return session;
       } catch (error) {
         console.error('Session callback error:', error);
+        // Return session even if there's an error
         return session;
       }
     },
@@ -35,37 +38,48 @@ const handler = NextAuth({
           provider: account?.provider
         });
 
-        // Gọi API backend để tạo/cập nhật user
-        const response = await fetch('http://localhost:5001/api/users/auth/google', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: user.email,
-            name: user.name,
-            image: user.image,
-            provider: account?.provider,
-            providerAccountId: account?.providerAccountId
-          })
-        });
+        // Kiểm tra xem backend có hoạt động không
+        try {
+          // Gọi API backend để tạo/cập nhật user
+          const response = await fetch('http://localhost:5001/api/users/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: user.email,
+              name: user.name,
+              image: user.image,
+              provider: account?.provider,
+              providerAccountId: account?.providerAccountId
+            })
+          });
 
-        if (response.ok) {
-          const userData = await response.json();
-          console.log('User created/updated:', userData);
-          
-          // Cập nhật user.id với ID từ server
-          if (userData.success && userData.user?.id) {
-            user.id = userData.user.id;
+          if (response.ok) {
+            const userData = await response.json();
+            console.log('User created/updated:', userData);
+            
+            // Cập nhật user.id với ID từ server
+            if (userData.success && userData.user?.id) {
+              user.id = userData.user.id;
+            }
+            
+            return true;
+          } else {
+            const errorData = await response.text();
+            console.error('Failed to create/update user:', response.status, errorData);
+            // Không return false, để user vẫn có thể sign in
+            console.log('Backend error, but allowing sign in to continue');
           }
-          
-          return true;
-        } else {
-          const errorData = await response.text();
-          console.error('Failed to create/update user:', response.status, errorData);
-          return false;
+        } catch (backendError) {
+          console.error('Backend connection error:', backendError);
+          // Không return false, để user vẫn có thể sign in
+          console.log('Backend connection failed, but allowing sign in to continue');
         }
+        
+        // Nếu backend không hoạt động, vẫn cho phép sign in
+        return true;
       } catch (error) {
         console.error('Sign in error:', error);
-        return false;
+        return true; // Luôn cho phép sign in
       }
     },
     async jwt({ token, user, account, trigger }) {
@@ -86,8 +100,10 @@ const handler = NextAuth({
             }
           } catch (error) {
             console.error('Failed to get user data:', error);
+            // Set default values nếu không thể kết nối backend
             (token as any).onboarded = false;
             (token as any).gender = "";
+            console.log('Using default values due to backend connection error');
           }
         }
         

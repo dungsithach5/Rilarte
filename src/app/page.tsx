@@ -22,9 +22,18 @@ export default function FeedPage() {
   const [popularTags, setPopularTags] = useState<{ name: string; image: string }[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 FeedPage Debug:', {
+      reduxUser,
+      hasUser: !!reduxUser,
+      onboarded: reduxUser?.onboarded,
+      userId: reduxUser?.id
+    });
+  }, [reduxUser]);
+
   // Redirect user chưa onboard
   useEffect(() => {
-    if (!reduxUser) return;
     if (reduxUser.onboarded === false) {
       router.replace("/onboarding");
     }
@@ -32,7 +41,16 @@ export default function FeedPage() {
 
   // Fetch personalized feed
   useEffect(() => {
-    if (!reduxUser || !reduxUser.onboarded) return;
+    console.log('🔄 Fetching feed for user:', reduxUser?.id);
+    
+    if (!reduxUser || !reduxUser.onboarded) {
+      console.log('Cannot fetch feed:', { 
+        hasUser: !!reduxUser, 
+        onboarded: reduxUser?.onboarded 
+      });
+      return;
+    }
+    
     axios
       .get(`http://localhost:5001/api/users/${reduxUser.id}/feed`)
       .then((res) => {
@@ -45,7 +63,9 @@ export default function FeedPage() {
 
         setPosts(shuffledPosts);
       })
-      .catch(console.error)
+      .catch((error) => {
+        console.error('❌ Error fetching feed:', error);
+      })
       .finally(() => setIsLoading(false));
   }, [reduxUser]);
 
@@ -90,6 +110,16 @@ export default function FeedPage() {
   const filteredPosts = selectedTag
     ? posts.filter((post) => post.tags?.includes(selectedTag))
     : posts;
+
+  // Debug posts state
+  useEffect(() => {
+    console.log('🔍 Posts state:', {
+      totalPosts: posts.length,
+      filteredPosts: filteredPosts.length,
+      selectedTag,
+      isLoading
+    });
+  }, [posts, filteredPosts, selectedTag, isLoading]);
 
   return (
     <section className="mt-20">

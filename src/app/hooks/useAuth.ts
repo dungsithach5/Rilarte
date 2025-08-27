@@ -29,27 +29,75 @@ export function useAuth(requireAuth = true) {
     if (session?.user) {
       console.log('🔐 Saving NextAuth session to Redux and localStorage');
       
-      // Use NextAuth's JWT token instead of mock token
-      const nextAuthToken = `nextauth_jwt_${session.user.id}`;
-      
-      // Always save to Redux store (overwrite existing token)
-      dispatch(loginSuccess({
-        avatar: session.user.image || '/img/user.png',
-        token: nextAuthToken,
-        user: {
-          id: session.user.id,
-          name: session.user.name,
-          email: session.user.email,
-          image: session.user.image,
-          username: session.user.name
+      // Get database ID from backend using email
+      const fetchDatabaseUser = async () => {
+        try {
+          const response = await fetch(`http://localhost:5001/api/users/email/${session.user.email}`);
+          if (response.ok) {
+            const userData = await response.json();
+            const databaseId = userData.user.id;
+            
+            console.log('🔍 Database user found:', { email: session.user.email, databaseId });
+            
+            // Use database ID for token and user object
+            const nextAuthToken = `nextauth_jwt_${databaseId}`;
+            
+            // Always save to Redux store (overwrite existing token)
+            dispatch(loginSuccess({
+              avatar: session.user.image || '/img/user.png',
+              token: nextAuthToken,
+              user: {
+                id: databaseId, // Use database ID instead of OAuth ID
+                name: session.user.name,
+                email: session.user.email,
+                image: session.user.image,
+                username: session.user.name
+              }
+            }));
+            
+            // Always save to localStorage for API requests
+            localStorage.setItem('token', nextAuthToken);
+            localStorage.setItem('user', JSON.stringify({
+              ...session.user,
+              id: databaseId // Use database ID instead of OAuth ID
+            }));
+            
+            console.log('✅ NextAuth session saved to Redux and localStorage with database ID');
+          } else {
+            console.error('❌ Failed to fetch database user:', response.status);
+            // Fallback to OAuth ID if backend fails
+            const nextAuthToken = `nextauth_jwt_${session.user.id}`;
+            dispatch(loginSuccess({
+              avatar: session.user.image || '/img/user.png',
+              token: nextAuthToken,
+              user: {
+                id: session.user.id,
+                name: session.user.name,
+                email: session.user.email,
+                image: session.user.image,
+                username: session.user.name
+              }
+            }));
+          }
+        } catch (error) {
+          console.error('❌ Error fetching database user:', error);
+          // Fallback to OAuth ID if backend fails
+          const nextAuthToken = `nextauth_jwt_${session.user.id}`;
+          dispatch(loginSuccess({
+            avatar: session.user.image || '/img/user.png',
+            token: nextAuthToken,
+            user: {
+              id: session.user.id,
+              name: session.user.name,
+              email: session.user.email,
+              image: session.user.image,
+              username: session.user.name
+            }
+          }));
         }
-      }));
+      };
       
-      // Always save to localStorage for API requests
-      localStorage.setItem('token', nextAuthToken);
-      localStorage.setItem('user', JSON.stringify(session.user));
-      
-      console.log('✅ NextAuth session saved to Redux and localStorage');
+      fetchDatabaseUser();
     }
   }, [session, dispatch]);
 

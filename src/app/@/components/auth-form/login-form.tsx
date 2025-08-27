@@ -201,7 +201,7 @@ export function LoginForm({
           className="w-full cursor-pointer" 
           type="button"
           onClick={handleGoogleLogin}
-          disabled={loading}
+          disabled
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

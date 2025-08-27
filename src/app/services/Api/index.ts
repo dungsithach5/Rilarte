@@ -40,7 +40,7 @@ API.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error(' Request interceptor error:', error);
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -48,27 +48,31 @@ API.interceptors.request.use(
 // Add response interceptor for better error handling
 API.interceptors.response.use(
   (response) => {
-    console.log(' API Response:', response.status, response.config.url);
+    console.log('API Response:', response.status, response.config.url);
     return response;
   },
   (error) => {
-    console.error(' API Error:', {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      url: error.config?.url,
-      method: error.config?.method,
-      timeout: error.code === 'ECONNABORTED' ? 'Request timeout' : 'No timeout'
-    });
+    // Log basic error information safely
+    try {
+      console.error('API Error:', {
+        message: error?.message || 'Unknown error',
+        status: error?.response?.status || 'No status',
+        url: error?.config?.url || 'No URL',
+        method: error?.config?.method || 'No method'
+      });
+    } catch (logError) {
+      // Fallback logging if the above fails
+      console.error('API Error (fallback):', error?.message || 'Unknown error');
+    }
     
     // Provide better error messages
-    if (error.code === 'ECONNABORTED') {
+    if (error?.code === 'ECONNABORTED') {
       error.message = 'Request timeout - Server không phản hồi trong thời gian quy định';
-    } else if (error.code === 'ERR_NETWORK') {
+    } else if (error?.code === 'ERR_NETWORK') {
       error.message = 'Lỗi kết nối mạng - Không thể kết nối đến server';
-    } else if (error.response?.status === 404) {
+    } else if (error?.response?.status === 404) {
       error.message = 'API endpoint không tồn tại';
-    } else if (error.response?.status >= 500) {
+    } else if (error?.response?.status >= 500) {
       error.message = 'Lỗi server - Vui lòng thử lại sau';
     }
     

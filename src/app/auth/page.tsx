@@ -17,7 +17,7 @@ const images = [
 export default function LoginPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const mode = searchParams.get("mode") || "login"
+  const mode = searchParams?.get("mode") || "login"
   const [index, setIndex] = useState(0)
 
   const isLogin = mode === "login"

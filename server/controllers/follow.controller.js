@@ -60,8 +60,6 @@ exports.createFollow = async (req, res) => {
       data: {
         follower_id,
         following_id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       }
     });
 

@@ -34,7 +34,12 @@ export default function FeedPage() {
 
   // Redirect user chưa onboard
   useEffect(() => {
+    if (!reduxUser) {
+      console.log('❌ No redux user found');
+      return;
+    }
     if (reduxUser.onboarded === false) {
+      console.log('🔄 Redirecting to onboarding');
       router.replace("/onboarding");
     }
   }, [reduxUser, router]);
@@ -54,6 +59,7 @@ export default function FeedPage() {
     axios
       .get(`http://localhost:5001/api/users/${reduxUser.id}/feed`)
       .then((res) => {
+        console.log('✅ Feed fetched successfully:', res.data.length, 'posts');
         const mapped = res.data.map((item: any) => ({
           ...item,
           slug: createPostSlug(item.title, item.id),

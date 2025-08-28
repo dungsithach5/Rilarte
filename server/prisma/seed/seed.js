@@ -169,12 +169,16 @@ async function main() {
   // Fake 50 posts
   for (let i = 0; i < 50; i++) {
     const randomUser = users[Math.floor(Math.random() * users.length)];
-    const randomTag = faker.helpers.arrayElement(Object.keys(topicTags));
 
-    // Lấy ảnh từ Pexels
+    // Random topic & tag
+    const randomTopic = faker.helpers.arrayElement(Object.keys(topicTags));
+    const randomTag = faker.helpers.arrayElement(topicTags[randomTopic]);
+    const query = `${randomTopic} ${randomTag}`;
+
+    // Lấy ảnh từ Pexels API theo chủ đề
     const imageUrl =
-      (await getPexelsImage(randomTag)) ||
-      `https://source.unsplash.com/random/800x600/?${randomTag}`;
+      (await getPexelsImage(query)) ||
+      "https://images.pexels.com/photos/15286/pexels-photo.jpg";
 
     const dominantColor = await getDominantColor(imageUrl);
 
@@ -234,10 +238,10 @@ async function main() {
         },
       });
     }
+
   }
 
-
-  console.log('✅ Đã seed xong 10 users, 50 posts và nhiều tags theo topics!');
+  console.log('🎉 Đã seed xong 10 users, 50 posts và nhiều tags theo topics!');
 }
 
 main()

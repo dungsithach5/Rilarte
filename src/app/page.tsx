@@ -8,6 +8,8 @@ import { updateUser } from "./context/userSlice";
 import { useSession } from "next-auth/react";
 import Masonry from "react-masonry-css";
 import RotatingText from './@/components/RotatingText/RotatingText';
+import SkeletonMasonry from "./@/components/skeleton-post";
+
 import { ComposerComment } from "./@/components/model-comment/ComposerComment";
 import SkeletonPost from "./@/components/skeleton-post";
 import { createPostSlug } from "./../lib/utils";
@@ -229,15 +231,7 @@ export default function FeedPage() {
       {/* Posts */}
       <section className="mt-6 pb-20">
         {isLoading ? (
-          <Masonry
-            breakpointCols={breakpointColumnsObj}
-            className="flex gap-4"
-            columnClassName="flex flex-col gap-4"
-          >
-            {Array.from({ length: 20 }).map((_, i) => (
-              <SkeletonPost key={i} index={i} />
-            ))}
-          </Masonry>
+          <SkeletonMasonry count={20} />
         ) : (
           <Masonry
             breakpointCols={breakpointColumnsObj}

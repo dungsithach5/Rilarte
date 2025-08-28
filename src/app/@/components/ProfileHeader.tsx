@@ -142,7 +142,7 @@ export default function ProfileHeader({ targetUserId, onMessageClick }: ProfileH
           <h2>{stats.followers} followers</h2>
           <h2>{stats.following} following</h2>
         </div>
-        {targetUser?.bio && <p className="text-gray-300 mt-2">{targetUser.bio}</p>}
+        {targetUser?.bio && <p className="text-gray-500 mt-2">{targetUser.bio}</p>}
       </div>
 
       {!isOwnProfile && targetUser && (

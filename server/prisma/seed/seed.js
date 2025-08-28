@@ -150,7 +150,7 @@ async function main() {
   const users = [];
 
   // Fake 10 users
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 20; i++) {
     const user = await prisma.users.create({
       data: {
         username: faker.internet.userName(),
@@ -167,7 +167,7 @@ async function main() {
   }
 
   // Fake 50 posts
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 100; i++) {
     const randomUser = users[Math.floor(Math.random() * users.length)];
 
     // Random topic & tag

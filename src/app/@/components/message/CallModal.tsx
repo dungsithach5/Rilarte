@@ -122,12 +122,41 @@ const CallModal: React.FC<CallModalProps> = ({
   // Initialize video when modal opens for video calls
   useEffect(() => {
     if (isOpen && callType === 'video') {
-      // Request camera and microphone permissions
-      navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: true 
-      }).then(stream => {
+      // Request camera and microphone permissions with better audio constraints
+      const mediaConstraints = {
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+          channelCount: 1
+        },
+        video: {
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+          frameRate: { ideal: 30, max: 60 }
+        }
+      };
+
+      navigator.mediaDevices.getUserMedia(mediaConstraints).then(stream => {
         localStreamRef.current = stream;
+        
+        // Log audio tracks for debugging
+        const audioTracks = stream.getAudioTracks();
+        const videoTracks = stream.getVideoTracks();
+        
+        // Initially disable audio tracks until call is accepted
+        audioTracks.forEach((track, index) => {
+          // Disable audio track initially
+          track.enabled = false;
+        });
+        
+        videoTracks.forEach((track, index) => {
+          // Keep video track enabled for preview
+          if (!track.enabled) {
+            track.enabled = true;
+          }
+        });
         
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
@@ -150,18 +179,44 @@ const CallModal: React.FC<CallModalProps> = ({
 
         // Add local stream tracks to peer connection
         stream.getTracks().forEach(track => {
+          // Add track as-is (audio will be disabled, video enabled)
           peerConnection.addTrack(track, stream);
         });
 
         // Handle incoming remote stream
         peerConnection.ontrack = (event) => {
-          if (remoteVideoRef.current) {
+          if (remoteVideoRef.current && event.streams[0]) {
             remoteVideoRef.current.srcObject = event.streams[0];
             
             // Auto-play remote video
             remoteVideoRef.current.play().catch(error => {
               // Remote video play error (expected)
             });
+            
+            // Log remote stream tracks
+            const remoteTracks = event.streams[0].getTracks();
+            remoteTracks.forEach((track, index) => {
+              // Initially disable remote audio until call is accepted
+              if (track.kind === 'audio') {
+                track.enabled = false;
+              } else if (track.kind === 'video') {
+                // Keep video enabled
+                if (!track.enabled) {
+                  track.enabled = true;
+                }
+              }
+            });
+            
+            // Check if we have audio and video in the remote stream
+            const remoteAudioTracks = event.streams[0].getAudioTracks();
+            const remoteVideoTracks = event.streams[0].getVideoTracks();
+            
+            if (remoteAudioTracks.length === 0) {
+              console.warn('No audio tracks found in remote stream!');
+            }
+            if (remoteVideoTracks.length === 0) {
+              console.warn('No video tracks found in remote stream!');
+            }
           }
         };
 
@@ -180,7 +235,19 @@ const CallModal: React.FC<CallModalProps> = ({
 
         // Handle connection state changes
         peerConnection.onconnectionstatechange = () => {
-          // Connection state changed
+          const state = peerConnection.connectionState;
+          
+          if (state === 'connected') {
+            setIsCallConnected(true);
+          } else if (state === 'failed' || state === 'closed') {
+            setIsCallActive(false);
+            setIsCallConnected(false);
+          }
+        };
+
+        // Handle ICE connection state
+        peerConnection.oniceconnectionstatechange = () => {
+          // ICE connection state monitoring
         };
 
         // For outgoing calls, create and send offer
@@ -200,11 +267,12 @@ const CallModal: React.FC<CallModalProps> = ({
               }
             })
             .catch(error => {
-              // Failed to create offer
+              console.error('Failed to create offer:', error);
             });
         }
 
       }).catch(error => {
+        console.error('Failed to get user media:', error);
         alert('Không thể truy cập camera/microphone. Vui lòng kiểm tra quyền truy cập.');
       });
     }
@@ -221,7 +289,7 @@ const CallModal: React.FC<CallModalProps> = ({
         peerConnectionRef.current = null;
       }
     };
-  }, [isOpen, callType, isIncoming, targetUserId]);
+  }, [isOpen, callType, isIncoming, targetUserId, socket]);
 
   // Call duration timer
   useEffect(() => {
@@ -250,8 +318,11 @@ const CallModal: React.FC<CallModalProps> = ({
     // For incoming calls, we need to handle the offer
     if (isIncoming && callType === 'video' && peerConnectionRef.current) {
       try {
+        
         // Create answer
         const answer = await peerConnectionRef.current.createAnswer();
+        
+        // Set local description
         await peerConnectionRef.current.setLocalDescription(answer);
         
         // Send answer to remote peer via Socket.IO
@@ -263,8 +334,34 @@ const CallModal: React.FC<CallModalProps> = ({
           });
         }
         
+        // Enable all audio tracks after accepting call
+        if (localStreamRef.current) {
+          const audioTracks = localStreamRef.current.getAudioTracks();
+          const videoTracks = localStreamRef.current.getVideoTracks();
+          
+          audioTracks.forEach((track, index) => {
+            track.enabled = true;
+          });
+          
+          videoTracks.forEach((track, index) => {
+            if (!track.enabled) {
+              track.enabled = true;
+            }
+          });
+        }
+        
+        // Enable remote audio tracks if available
+        if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
+          const remoteStream = remoteVideoRef.current.srcObject as MediaStream;
+          const remoteAudioTracks = remoteStream.getAudioTracks();
+          
+          remoteAudioTracks.forEach((track, index) => {
+            track.enabled = true;
+          });
+        }
+        
       } catch (error) {
-        // Failed to create answer
+        console.error('Failed to create answer:', error);
       }
     }
     
@@ -313,21 +410,32 @@ const CallModal: React.FC<CallModalProps> = ({
   const handleIncomingOffer = useCallback(async (offer: RTCSessionDescriptionInit) => {
     if (peerConnectionRef.current && isIncoming) {
       try {
-        // Set remote description
+        // Set remote description first
         await peerConnectionRef.current.setRemoteDescription(offer);
         
         // Create answer
         const answer = await peerConnectionRef.current.createAnswer();
+        
+        // Set local description
         await peerConnectionRef.current.setLocalDescription(answer);
         
-        // TODO: Send answer back to remote peer via Socket.IO
-        // socket.emit('call_answer', { answer: answer });
+        // Send answer back to remote peer via Socket.IO
+        if (socket) {
+          socket.emit('call_answer', { 
+            answer: answer,
+            targetUserId: targetUserId || 'unknown'
+          });
+        } else {
+          console.warn('Socket not available to send answer');
+        }
         
       } catch (error) {
-        // Failed to handle incoming offer
+        console.error('Failed to handle incoming offer:', error);
       }
+    } else {
+      console.warn('Cannot handle offer: peerConnection not ready or not incoming call');
     }
-  }, [isIncoming]);
+  }, [isIncoming, socket, targetUserId]);
 
   // Handle incoming answer from remote peer (for outgoing calls)
   const handleIncomingAnswer = useCallback(async (answer: RTCSessionDescriptionInit) => {
@@ -339,12 +447,19 @@ const CallModal: React.FC<CallModalProps> = ({
         // Now the call is connected!
         setIsCallConnected(true);
         
-        // The remote stream should now come through the peer connection
-        // No need for mock stream anymore
+        // Enable audio tracks after receiving answer
+        if (localStreamRef.current) {
+          const audioTracks = localStreamRef.current.getAudioTracks();
+          audioTracks.forEach((track, index) => {
+            track.enabled = true;
+          });
+        }
         
       } catch (error) {
-        // Failed to handle incoming answer
+        console.error('Failed to handle incoming answer:', error);
       }
+    } else {
+      console.warn('Cannot handle answer: peerConnection not ready or incoming call');
     }
   }, [isIncoming]);
 
@@ -354,8 +469,10 @@ const CallModal: React.FC<CallModalProps> = ({
       try {
         await peerConnectionRef.current.addIceCandidate(candidate);
       } catch (error) {
-        // Failed to add ICE candidate
+        console.error('Failed to add ICE candidate:', error);
       }
+    } else {
+      console.warn('Cannot add ICE candidate: peerConnection not ready');
     }
   }, []);
 
@@ -367,6 +484,8 @@ const CallModal: React.FC<CallModalProps> = ({
     const handleCallAnswer = (data: any) => {
       if (data.answer) {
         handleIncomingAnswer(data.answer);
+      } else {
+        console.warn('Received call answer without answer data:', data);
       }
     };
 
@@ -374,6 +493,8 @@ const CallModal: React.FC<CallModalProps> = ({
     const handleIncomingCall = (data: any) => {
       if (data.offer) {
         handleIncomingOffer(data.offer);
+      } else {
+        console.warn('Received incoming call without offer data:', data);
       }
     };
 
@@ -381,6 +502,8 @@ const CallModal: React.FC<CallModalProps> = ({
     const handleIceCandidate = (data: any) => {
       if (data.candidate) {
         handleIncomingIceCandidate(data.candidate);
+      } else {
+        console.warn('Received ICE candidate without candidate data:', data);
       }
     };
 
@@ -612,6 +735,6 @@ const CallModal: React.FC<CallModalProps> = ({
     </>,
     document.body
   );
-};
-
+  };
+  
 export default CallModal; 

@@ -48,7 +48,7 @@ export default function ColorPalette({ imageUrl }: ColorPaletteProps) {
         {palette.map((color, i) => (
           <div
             key={i}
-            className="rounded-lg border border-gray-300 w-8 h-8"
+            className="rounded-full border border-gray-300 w-8 h-8"
             style={{ backgroundColor: `rgb(${color[0]}, ${color[1]}, ${color[2]})` }}
             title={`rgb(${color[0]}, ${color[1]}, ${color[2]})`}
           />

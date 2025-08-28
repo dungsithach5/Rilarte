@@ -20,7 +20,7 @@ export default function FeedPage() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { data: session, status } = useSession();
-  const reduxUser = useSelector((state: any) => state.user.user);
+  const reduxUser = useSelector((state: any) => state.user?.user);
   const reduxPersist = useSelector((state: any) => state._persist);
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
@@ -49,27 +49,6 @@ export default function FeedPage() {
     // Ưu tiên session onboarded status
     if (session?.user?.onboarded === true) {
       return;
-    }
-    
-    // Kiểm tra xem user có thực sự cần onboarding không
-    if (session?.user?.email && reduxUser?.email) {
-      const sameUser = session.user.email === reduxUser.email;
-      if (sameUser && reduxUser.onboarded === true) {
-        return;
-      }
-    }
-    
-    // Kiểm tra localStorage onboarded status
-    const savedOnboarded = localStorage.getItem('user_onboarded');
-    if (savedOnboarded) {
-      try {
-        const { email, onboarded } = JSON.parse(savedOnboarded);
-        if (email === session?.user?.email && onboarded === true) {
-          return;
-        }
-      } catch (error) {
-        console.error('Error parsing saved onboarded status:', error);
-      }
     }
     
     // Nếu session không có onboarded, kiểm tra Redux

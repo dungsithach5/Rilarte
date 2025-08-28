@@ -141,7 +141,7 @@ export default function SearchInput({ onSearch, initialKeyword = "" }: SearchInp
         <input
           type="text"
           placeholder="Search Elarte..."
-          className="w-full rounded-full bg-gray-100 px-6 py-3 pr-10"
+          className="w-full rounded-full bg-gray-100 px-6 py-2 pr-10"
           value={inputValue}
           onChange={handleInputChange}
           onFocus={handleInputFocus}

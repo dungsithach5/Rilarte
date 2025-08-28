@@ -121,7 +121,7 @@ async function main() {
         username: faker.internet.userName(),
         email: faker.internet.email(),
         password: faker.internet.password(),
-        bio: faker.lorem.sentence(),
+        bio: faker.company.catchPhrase(),
         avatar_url: faker.image.avatar(),
         onboarded: true,
         createdAt: new Date(),
@@ -144,8 +144,8 @@ async function main() {
       data: {
         user_id: randomUser.id,
         user_name: randomUser.username,
-        title: faker.lorem.sentence(),
-        content: faker.lorem.paragraphs(2),
+        title: faker.hacker.phrase(),
+        content: Array.from({ length: 3 }, () => faker.company.catchPhrase()).join(". "),
         image_url: imageUrl,
         dominant_color: dominantColor,
         createdAt: new Date(),
@@ -163,7 +163,35 @@ async function main() {
         },
       });
     }
+
+    const numComments = Math.floor(Math.random() * 2) + 1;
+    for (let j = 0; j < numComments; j++) {
+      const commentUser = users[Math.floor(Math.random() * users.length)];
+      await prisma.comments.create({
+        data: {
+          post_id: post.id,
+          user_id: commentUser.id,
+          content: faker.hacker.phrase(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+    }
+  
+    const numLikes = Math.floor(Math.random() * 21);
+    const shuffledUsers = [...users].sort(() => 0.5 - Math.random()).slice(0, numLikes);
+  
+    for (const likeUser of shuffledUsers) {
+      await prisma.likes.create({
+        data: {
+          post_id: post.id,
+          user_id: likeUser.id,
+          createdAt: new Date(),
+        },
+      });
+    }
   }
+
 
   console.log('✅ Đã seed xong 10 users, 50 posts và nhiều tags theo topics!');
 }

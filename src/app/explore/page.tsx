@@ -207,7 +207,7 @@ export default function ExplorePage() {
       </section>
 
       {/* Filter & Tags */}
-      <section className="w-full mt-12 flex flex-col gap-4">
+      <section className="w-full mt-12 flex flex-col gap-4 overflow-x-hidden">
         <TagCarousel
           tags={popularTags}
           selectedTag={selectedTag}
@@ -216,7 +216,7 @@ export default function ExplorePage() {
       </section>
 
       {/* Posts */}
-      <section className="mt-6 pb-20">
+      <section className="mt-4 pb-20">
         {violation ? (
           <div className="mt-12 text-center w-full flex justify-center items-center">
             <div className="flex flex-col justify-center items-center space-y-6">

@@ -61,12 +61,6 @@ export function NavBar() {
 
       {(session || isAuthenticated) ? (
         <div className="flex items-center gap-4">
-          <Link 
-            href="/users" 
-            className="px-4 py-2 text-sm text-gray-700 hover:text-black transition-colors"
-          >
-            Users
-          </Link>
           <DropdownUser
             avatar={
               <img
@@ -76,6 +70,7 @@ export function NavBar() {
               />
             }
             userId={currentUserId}
+            username={user?.username || session?.user?.name || "user"}
           />
         </div>
       ) : (

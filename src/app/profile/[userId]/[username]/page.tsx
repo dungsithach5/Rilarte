@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
-import ProfileHeader from '../../@/components/ProfileHeader';
-import ProfileTabs from '../../@/components/ProfileTabs';
-import DrawerChat from '../../@/components/message/DrawerChat';
+import ProfileHeader from '../../../@/components/ProfileHeader';
+import ProfileTabs from '../../../@/components/ProfileTabs';
+import DrawerChat from '../../../@/components/message/DrawerChat';
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -58,12 +58,12 @@ export default function UserProfilePage() {
       <ProfileTabs targetUserId={userId} />
       
       {/* Chat Drawer - Sử dụng trực tiếp DrawerChat */}
-      <DrawerChat 
+      {/* <DrawerChat 
         isOpen={isChatOpen}
         onClose={handleChatClose}
         selectedUserId={selectedChatUser?.id}
         selectedUsername={selectedChatUser?.username}
-      />
+      /> */}
     </main>
   )
 } 

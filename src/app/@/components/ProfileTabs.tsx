@@ -9,10 +9,8 @@ import {
   TabsContent,
 } from "../components/tabs";
 import { ComposerComment } from "./model-comment/ComposerComment";
-import { fetchPosts, fetchPostsByUserId } from "../../services/Api/posts";
-import { getSavedPosts } from "../../services/Api/savedPosts";
 import { useAuth } from "../../hooks/useAuth";
-import SkeletonPost from "./skeleton-post";
+import SkeletonMasonry from "../components/skeleton-post";
 import API from "../../services/Api";
 
 const breakpointColumnsObj = {
@@ -32,110 +30,92 @@ export default function ProfileTabs({ targetUserId }: ProfileTabsProps) {
   const [activeTab, setActiveTab] = useState("post");
   const { user, session } = useAuth(true);
 
-  // Xác định user ID để load posts
   const currentUserId = user?.id || session?.user?.id;
   const targetId = targetUserId || currentUserId?.toString();
   const isOwnProfile = !targetUserId || currentUserId?.toString() === targetUserId;
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-
+    const timeout = setTimeout(() => setIsLoading(false), 1500);
     return () => clearTimeout(timeout);
   }, []);
 
+  // --- Load posts ---
   useEffect(() => {
     const loadPosts = async () => {
+      setIsLoading(true);
       try {
-        console.log('=== PROFILE TABS DEBUG ===');
-        console.log('User from useAuth:', user);
-        console.log('Session from useAuth:', session);
-        console.log('Current User ID:', currentUserId);
-        console.log('Target User ID:', targetId);
-        console.log('Is Own Profile:', isOwnProfile);
-        
-        if (!targetId) {
-          console.log('No target ID found, loading all posts');
-          const data = await fetchPosts("");
-          const mapped = data.map((item: any) => ({
-            id: item.id,
-            user_id: item.user_id,
-            name: user?.username || user?.name,
-            title: item.title,
-            content: item.content,
-            image_url: item.image_url,
-            likeCount: item.likeCount || 0,
-            download_protected: item.download_protected,
-          }));
-          setPosts(mapped);
-        } else {
-          console.log('Loading posts for target ID:', targetId);
-          const data = await fetchPostsByUserId(Number(targetId));
-          const mapped = data.map((item: any) => ({
-            id: item.id,
-            user_id: item.user_id,
-            name: user?.username || user?.name || item.user_name,
-            title: item.title,
-            content: item.content,
-            image_url: item.image_url,
-            likeCount: item.likeCount || 0,
-            download_protected: item.download_protected,
-          }));
-          setPosts(mapped);
-          console.log('Target user posts loaded:', mapped.length, 'posts');
-        }
+        const params: any = {};
+        if (targetId) params.user_id = targetId;
+
+        const response = await API.get("/posts", { params });
+        const edges = response.data.edges || [];
+
+        const mappedPosts = edges.map((e: any) => ({
+          ...e.node,
+          id: e.node.id,
+        }));
+
+        setPosts(mappedPosts);
       } catch (err) {
-        console.error("Error loading posts", err);
+        console.error("Error loading posts:", err);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadPosts();
-  }, [user, session, targetId, isOwnProfile]);
-
-  // Load saved posts when needed (chỉ cho profile của chính mình)
+    // Chỉ track targetId (string), không track object user/session trực tiếp
+  }, [targetId]);
+  
+  // --- Load saved posts ---
   useEffect(() => {
     const loadSavedPosts = async () => {
-      if (activeTab === "saved" && isOwnProfile) {
-        if (currentUserId) {
-          try {
-            console.log('Loading saved posts for current user ID:', currentUserId);
-            const data = await getSavedPosts(Number(currentUserId));
-            const mapped = data.map((item: any) => ({
-              id: item.id,
-              user_id: item.user_id,
-              name: user?.username || user?.name || item.user_name,
-              title: item.title,
-              content: item.content,
-              image_url: item.image_url,
-              likeCount: item.likeCount || 0,
-              download_protected: item.download_protected,
-            }));
-            setSavedPosts(mapped);
-            console.log('Saved posts loaded:', mapped.length, 'posts');
-          } catch (err) {
-            console.error("Error loading saved posts", err);
-          }
-        }
+      if (!isOwnProfile || activeTab !== "saved") return;
+
+      setIsLoading(true);
+      try {
+        if (!currentUserId) return;
+        const response = await API.get(`/saved-posts`, {
+          params: { user_id: currentUserId },
+        });
+        setSavedPosts(response.data || []);
+      } catch (err) {
+        console.error("Error loading saved posts:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     loadSavedPosts();
-  }, [activeTab, user, session, currentUserId, isOwnProfile]);
+  }, [activeTab, currentUserId, isOwnProfile]);
 
   const handleDeletePost = async (postId: number) => {
-    // Chỉ cho phép xóa post của chính mình
     if (!isOwnProfile) return;
-    
     try {
       await API.delete(`/posts/${postId}`);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
+      setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
     } catch (err) {
-      console.error("Error deleting post", err);
+      console.error("Error deleting post:", err);
     }
   };
+
+  const renderPosts = (postArray: any[]) => (
+    <Masonry
+      breakpointCols={breakpointColumnsObj}
+      className="flex gap-4"
+      columnClassName="flex flex-col"
+    >
+      {postArray.map((post) => (
+        <ComposerComment
+          key={post.id}
+          post={post}
+          currentUserId={currentUserId ? Number(currentUserId) : undefined}
+          onDelete={isOwnProfile ? handleDeletePost : undefined}
+        />
+      ))}
+    </Masonry>
+  );
 
   return (
     <Tabs defaultValue="post" onValueChange={setActiveTab} className="mt-6 px-6">
@@ -145,75 +125,15 @@ export default function ProfileTabs({ targetUserId }: ProfileTabsProps) {
       </TabsList>
 
       <TabsContent value="post">
-        {isLoading ? (
-          <Masonry
-            breakpointCols={breakpointColumnsObj}
-            className="flex gap-4"
-            columnClassName="flex flex-col gap-4"
-          >
-            {Array.from({ length: 20 }).map((_, i) => (
-              <SkeletonPost key={i} index={i} />
-            ))}
-          </Masonry>
-        ) : (
-          <Masonry
-            breakpointCols={breakpointColumnsObj}
-            className="flex gap-4"
-            columnClassName="flex flex-col"
-          >
-            {posts.map((post) => {
-              console.log('=== PROFILE TABS POST DEBUG ===');
-              console.log('Rendering post:', post.id);
-              console.log('Current user ID:', currentUserId);
-              console.log('Is own profile:', isOwnProfile);
-              
-              return (
-                <ComposerComment
-                  key={post.id}
-                  post={post}
-                  currentUserId={currentUserId ? Number(currentUserId) : undefined}
-                  onDelete={isOwnProfile ? handleDeletePost : undefined}
-                />
-              );
-            })}
-          </Masonry>
-        )}
+        {isLoading ? <SkeletonMasonry count={20} /> : renderPosts(posts)}
       </TabsContent>
 
-      {/* Saved Posts - chỉ hiển thị cho profile của chính mình */}
       {isOwnProfile && (
         <TabsContent value="saved">
           {isLoading ? (
-            <Masonry
-              breakpointCols={breakpointColumnsObj}
-              className="flex gap-4"
-              columnClassName="flex flex-col gap-4"
-            >
-              {Array.from({ length: 10 }).map((_, i) => (
-                <SkeletonPost key={i} index={i} />
-              ))}
-            </Masonry>
+            <SkeletonMasonry count={20} />
           ) : savedPosts.length > 0 ? (
-            <Masonry
-              breakpointCols={breakpointColumnsObj}
-              className="flex gap-4"
-              columnClassName="flex flex-col"
-            >
-              {savedPosts.map((post) => {
-                console.log('=== SAVED POSTS DEBUG ===');
-                console.log('Rendering saved post:', post.id);
-                console.log('Current user ID:', currentUserId);
-                
-                return (
-                  <ComposerComment
-                    key={post.id}
-                    post={post}
-                    currentUserId={currentUserId ? Number(currentUserId) : undefined}
-                    onDelete={handleDeletePost}
-                  />
-                );
-              })}
-            </Masonry>
+            renderPosts(savedPosts)
           ) : (
             <div className="text-center py-12">
               <p className="text-gray-500">No saved posts yet</p>

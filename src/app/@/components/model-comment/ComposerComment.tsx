@@ -389,6 +389,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                     username={currentUserName}
                     avatar={currentUserAvatar}
                     size="lg"
+                    textColor="white"
                     className="flex items-center gap-2"
                   />
 
@@ -443,6 +444,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                     username={currentUserName}
                     avatar={currentUserAvatar}
                     size="md"
+                    textColor="black"
                     showName={true}
                     onClick={(e) => e.stopPropagation()}
                   />
@@ -506,7 +508,23 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                 </button>
               </div>
 
-              <div className="flex flex-col gap-4 mt-4">
+              <div className="flex flex-col gap-4">
+                {Array.isArray(currentPost.tags) && currentPost.tags.length > 0 && (
+                  <div className="mb-4">
+                    <Label className="block mb-2 text-sm font-semibold text-gray-700">Tags</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {currentPost.tags.map((tag: string, index: number) => (
+                        <span
+                          key={index}
+                          className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {comments.map((comment: any) => (
                   <div key={comment.id} className="flex items-start gap-3">
                     <HoverCardUser 
@@ -515,32 +533,19 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
                       username={comment.userInfo?.username || `user${comment.user_id}`} 
                       userId={comment.user_id}
                     />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{comment.userInfo?.name || `User ${comment.user_id}`}</p>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{comment.content}</p>
-                      <div className="flex items-center gap-2 mt-2">
+                    <div className="w-full flex justify-between gap-4">
+                      <div className="flex flex-col">
+                        <p className="text-sm font-medium">{comment.userInfo?.name || `User ${comment.user_id}`}</p>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{comment.content}</p>
+                      </div>
+                      <div className="flex items-center">
                         <CommentLikeButton commentId={comment.id} />
-                        <span className="text-xs text-gray-500">Reply</span>
+                        {/* <span className="text-xs text-gray-500">Reply</span> */}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              {Array.isArray(currentPost.tags) && currentPost.tags.length > 0 && (
-                <div className="mt-6">
-                  <Label className="block mb-2 text-sm font-semibold text-gray-700">Tags</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {currentPost.tags.map((tag: string, index: number) => (
-                      <span
-                        key={index}
-                        className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}

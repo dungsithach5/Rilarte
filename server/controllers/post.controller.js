@@ -80,8 +80,10 @@ async function getDominantColor(imageUrl) {
 
 exports.getAllPosts = async (req, res) => {
   try {
-    const { search, user_id } = req.query;
+    const { search, user_id, cursor, limit, color } = req.query;
     const keyword = typeof search === 'string' ? search : '';
+
+    const take = Math.min(Number(limit) || 20, 50);
 
     let where = {};
 
@@ -99,20 +101,34 @@ exports.getAllPosts = async (req, res) => {
           { content: { contains: keyword } },
         ],
       };
-      
-      // Combine với user_id nếu có
+
       if (user_id) {
-        where = {
-          ...where,
-          ...searchCondition
-        };
+        where = { ...where, ...searchCondition };
       } else {
         where = searchCondition;
       }
     }
 
+    if (color) {
+      where.dominant_color = color.toLowerCase();
+    }
+
+    // Parse cursor nếu có
+    let parsedCursor = undefined;
+    if (cursor) {
+      const [createdAtStr, id] = cursor.split('|');
+      parsedCursor = { createdAt: new Date(createdAtStr), id: Number(id) };
+    }
+
+    // Lấy posts cơ bản
     const posts = await prisma.posts.findMany({
       where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: take + 1,
+      ...(parsedCursor && {
+        cursor: { id: parsedCursor.id },
+        skip: 1,
+      }),
       select: {
         id: true,
         user_id: true,
@@ -121,7 +137,6 @@ exports.getAllPosts = async (req, res) => {
         content: true,
         image_url: true,
         dominant_color: true,
-        //chặn download
         download_protected: true,
         allow_download: true,
         watermark_enabled: true,
@@ -131,34 +146,46 @@ exports.getAllPosts = async (req, res) => {
         license_description: true,
         createdAt: true,
       },
-      orderBy: {
-        createdAt: 'desc'
-      }
     });
 
+    // Kiểm tra hasNextPage
+    const hasNextPage = posts.length > take;
+    const pageItems = hasNextPage ? posts.slice(0, -1) : posts;
+
+    // Thêm tags cho từng post
     const postsWithTags = await Promise.all(
-      posts.map(async post => {
+      pageItems.map(async (post) => {
         const postTags = await prisma.post_tags.findMany({
           where: { post_id: post.id },
-          include: {
-            tag: true,
-          },
+          include: { tag: true },
         });
-
-        const tags = postTags.map(pt => pt.tag.name);
+        const tags = postTags.map((pt) => pt.tag.name);
         return { ...post, tags };
       })
     );
 
-    res.status(200).json(postsWithTags);
+    const edges = postsWithTags.map((p) => ({
+      node: p,
+      cursor: `${p.createdAt.toISOString()}|${p.id}`,
+    }));
+
+    res.status(200).json({
+      edges,
+      pageInfo: {
+        hasNextPage,
+        endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null,
+      },
+      totalCount: await prisma.posts.count({ where }),
+    });
   } catch (error) {
-    console.error("Error fetching posts:", error);
+    console.error('Error fetching posts:', error);
     res.status(500).json({
       message: 'Error fetching posts',
       error: error.message || 'Unknown error',
     });
   }
 };
+
 
 exports.getPostById = async (req, res) => {
   try {

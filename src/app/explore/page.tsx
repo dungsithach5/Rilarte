@@ -3,19 +3,27 @@
 import API from "../services/Api";
 import { useEffect, useState } from "react";
 import Masonry from "react-masonry-css";
+import InfiniteScroll from "react-infinite-scroll-component";
 import { Frown } from "lucide-react";
-import RotatingText from '../@/components/RotatingText/RotatingText';
+import RotatingText from "../@/components/RotatingText/RotatingText";
 import { useSearchParams } from "next/navigation";
-import { fetchPosts, fetchPostsByColor } from "../services/Api/posts";
-import HeroSection from "../@/components/background/hero-section";
 import { fetchBannedKeywords } from "../services/Api/bannedKeywords";
 import { createPostSlug } from "../../lib/utils";
 import { ComposerComment } from "../@/components/model-comment/ComposerComment";
-import SkeletonPost from "../@/components/skeleton-post";
+import SkeletonMasonry from "../@/components/skeleton-post";
 import { useAuth } from "../hooks/useAuth";
 import TagCarousel from "../@/components/carousel-tag/tag-carousel";
 
 const breakpointColumnsObj = { default: 6, 1024: 2, 640: 2 };
+
+interface Post {
+  id: number;
+  title: string;
+  tags?: string[];
+  image_url?: string;
+  slug: string;
+  [key: string]: any;
+}
 
 export default function ExplorePage() {
   const searchParams = useSearchParams();
@@ -23,112 +31,94 @@ export default function ExplorePage() {
   const searchColor = searchParams?.get("color") || "";
 
   const [isLoading, setIsLoading] = useState(true);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [bannedKeywords, setBannedKeywords] = useState<string[]>([]);
   const [violation, setViolation] = useState(false);
-  const { user, session } = useAuth(true);
+  const { user } = useAuth(true);
   const [popularTags, setPopularTags] = useState<{ name: string; image: string }[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [hasInitialized, setHasInitialized] = useState(false);
+
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
 
   // Load banned keywords
   useEffect(() => {
     fetchBannedKeywords()
       .then(setBannedKeywords)
       .catch((error) => {
-        console.error('Error fetching banned keywords:', error);
+        console.error("Error fetching banned keywords:", error);
         setBannedKeywords([]);
       });
   }, []);
 
-  // Fetch initial posts when component mounts
-  useEffect(() => {
-    if (!hasInitialized) {
-      setIsLoading(true);
-      fetchPosts('')
-        .then((data) => {
-          if (!Array.isArray(data)) {
-            setPosts([]);
-            return;
-          }
-          
-          const mapped = data.map((item: any) => ({
-            ...item,
-            slug: `/post/${createPostSlug(item.title, item.id)}`,
-          }));
+  // Fetch posts (cursor-based)
+  const fetchMorePosts = async (reset = false) => {
+    try {
+      if (reset) setCursor(null);
 
-          // Chỉ shuffle một lần khi fetch data mới
-          const shuffledPosts = mapped.sort(() => Math.random() - 0.5);
+      const query = new URLSearchParams();
+      query.set("limit", "20");
+      if (cursor && !reset) query.set("cursor", cursor);
+      if (searchKeyword) query.set("search", searchKeyword);
+      if (searchColor) query.set("color", searchColor);
 
-          setPosts(shuffledPosts);
-          setHasInitialized(true);
-        })
-        .catch((error: any) => {
-          console.error('Error fetching initial posts:', {
-            message: error?.message || 'Unknown error',
-            status: error?.response?.status,
-            data: error?.response?.data
-          });
-          setPosts([]);
-        })
-        .finally(() => setIsLoading(false));
+      const res = await API.get(`/posts?${query.toString()}`);
+      const data = res.data;
+
+      if (!data?.edges || data.edges.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      const newPosts: Post[] = data.edges.map((e: any) => ({
+        ...e.node,
+        slug: `/post/${createPostSlug(e.node.title, e.node.id)}`,
+      }));
+
+      setPosts((prev) => (reset ? newPosts : [...prev, ...newPosts]));
+
+      // Update cursor & hasMore
+      setCursor(data.pageInfo?.endCursor || null);
+      setHasMore(data.pageInfo?.hasNextPage ?? newPosts.length === 20);
+
+      setViolation(false);
+    } catch (error: any) {
+      if (error?.response) {
+        console.error("API Error Response:", {
+          status: error.response.status,
+          data: error.response.data,
+          url: error.config?.url,
+        });
+      } else if (error?.request) {
+        console.error("API No Response:", error.request);
+      } else {
+        console.error("API Error:", error?.message || error);
+      }
+      setHasMore(false);
+    } finally {
+      setIsLoading(false);
     }
-  }, []); // Bỏ hasInitialized dependency để tránh loop
+  };
 
-  // Fetch posts by keyword or color
+  // Initial load or when search changes
   useEffect(() => {
-    // Chỉ fetch khi có search params
-    if (!searchKeyword && !searchColor) {
-      return;
-    }
-
-    const keyword = searchKeyword;
-    const color = searchColor;
-
-    const foundViolation = keyword && bannedKeywords.some((word) =>
-      keyword.toLowerCase().includes(word)
-    );
-
-    if (foundViolation) {
-      setViolation(true);
-      setPosts([]);
-      return;
+    if (searchKeyword) {
+      const foundViolation = bannedKeywords.some((word) =>
+        searchKeyword.toLowerCase().includes(word)
+      );
+      if (foundViolation) {
+        setViolation(true);
+        setPosts([]);
+        setHasMore(false);
+        return;
+      }
     }
 
     setIsLoading(true);
-
-    const fetcher = color ? fetchPostsByColor : fetchPosts;
-    const param = color || keyword;
-
-    fetcher(param)
-      .then((data) => {
-        if (!Array.isArray(data)) {
-          console.error('Invalid data format:', data);
-          setPosts([]);
-          return;
-        }
-        
-        const mapped = data.map((item: any) => ({
-          ...item,
-          slug: `/post/${createPostSlug(item.title, item.id)}`,
-        }));
-
-        // Chỉ shuffle một lần khi fetch data mới
-        const shuffledPosts = mapped.sort(() => Math.random() - 0.5);
-
-        setPosts(shuffledPosts);
-        setViolation(false);
-      })
-      .catch((error: any) => {
-        console.error('Error fetching posts:', {
-          message: error?.message || 'Unknown error',
-          status: error?.response?.status,
-          data: error?.response?.data
-        });
-        setPosts([]);
-      })
-      .finally(() => setIsLoading(false));
-  }, [searchKeyword, searchColor, bannedKeywords]); // Bỏ hasInitialized dependency
+    setCursor(null);
+    setHasMore(true);
+    fetchMorePosts(true);
+  }, [searchKeyword, searchColor, bannedKeywords]);
 
   // Popular tags
   useEffect(() => {
@@ -139,12 +129,10 @@ export default function ExplorePage() {
       const tags = post.tags || [];
       if (Array.isArray(tags)) {
         tags.forEach((tag: string) => {
-          if (tag && typeof tag === 'string' && tag.length > 3) {
+          if (tag && tag.length > 3) {
             if (!tagMap[tag]) tagMap[tag] = { count: 0, images: [] };
             tagMap[tag].count += 1;
-            if (post.image_url && typeof post.image_url === 'string') {
-              tagMap[tag].images.push(post.image_url);
-            }
+            if (post.image_url) tagMap[tag].images.push(post.image_url);
           }
         });
       }
@@ -154,29 +142,26 @@ export default function ExplorePage() {
       .sort((a, b) => b[1].count - a[1].count)
       .map(([name, data]) => ({
         name,
-        image: data.images.length > 0 
-          ? data.images[Math.floor(Math.random() * data.images.length)] 
+        image: data.images.length > 0
+          ? data.images[Math.floor(Math.random() * data.images.length)]
           : "/default.png",
       }))
       .slice(0, 15);
 
-    // Chỉ shuffle tags một lần khi posts thay đổi
-    const shuffledTags = sortedTags.sort(() => Math.random() - 0.5);
-
-    setPopularTags(shuffledTags);
+    setPopularTags(sortedTags.sort(() => Math.random() - 0.5));
   }, [posts]);
 
   const handleDeletePost = async (postId: number) => {
     try {
       await API.delete(`/posts/${postId}`);
-      setPosts(prev => prev.filter(p => p.id !== postId));
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
     } catch (err) {
       console.error("Error deleting post", err);
     }
   };
 
   const filteredPosts = selectedTag
-    ? posts.filter((post) => post.tags && Array.isArray(post.tags) && post.tags.includes(selectedTag))
+    ? posts.filter((post) => post.tags?.includes(selectedTag))
     : posts;
 
   return (
@@ -222,37 +207,40 @@ export default function ExplorePage() {
             <div className="flex flex-col justify-center items-center space-y-6">
               <Frown className="text-gray-400" size={120} />
               <div>
-                The topic you are looking for violates our <strong>Community Guidelines</strong>, 
-                <br />so we are currently unable to display the search results.
+                The topic you are looking for violates our <strong>Community Guidelines</strong>,
+                <br />
+                so we are currently unable to display the search results.
               </div>
             </div>
           </div>
-        ) : isLoading ? (
-          <Masonry
-            breakpointCols={breakpointColumnsObj}
-            className="flex gap-4"
-            columnClassName="flex flex-col gap-4"
-          >
-            {Array.from({ length: 20 }).map((_, i) => (
-              <SkeletonPost key={i} index={i} />
-            ))}
-          </Masonry>
         ) : (
-          <Masonry
-            breakpointCols={breakpointColumnsObj}
-            className="flex gap-4"
-            columnClassName="flex flex-col"
+          <InfiniteScroll
+            dataLength={filteredPosts.length}
+            next={() => fetchMorePosts(false)}
+            hasMore={hasMore}
+            loader={<SkeletonMasonry count={20} />}
+            endMessage={
+              <p className="text-center py-4 text-gray-500">
+                You have seen it all 👀
+              </p>
+            }
           >
-            {filteredPosts.map((post) => (
-              <ComposerComment
-                key={post.id}
-                post={post}
-                currentUserId={user?.id ? Number(user.id) : undefined}
-                onDelete={handleDeletePost}
-                relatedPosts={filteredPosts.filter((p) => p.id !== post.id)}
-              />
-            ))}
-          </Masonry>
+            <Masonry
+              breakpointCols={breakpointColumnsObj}
+              className="flex gap-4"
+              columnClassName="flex flex-col"
+            >
+              {filteredPosts.map((post) => (
+                <ComposerComment
+                  key={post.id}
+                  post={post}
+                  currentUserId={user?.id ? Number(user.id) : undefined}
+                  onDelete={handleDeletePost}
+                  relatedPosts={filteredPosts.filter((p) => p.id !== post.id)}
+                />
+              ))}
+            </Masonry>
+          </InfiniteScroll>
         )}
       </section>
     </section>

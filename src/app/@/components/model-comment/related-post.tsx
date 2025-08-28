@@ -110,11 +110,6 @@ export default function RelatedPosts({
                       likeCount={likeCount}
                       onToggle={handleLikeToggle}
                     />
-
-                    <BookmarkButton
-                      bookmarked={bookmarked}
-                      onToggle={() => setBookmarked(!bookmarked)}
-                    />
                   </div>
                 </div>
               </div>

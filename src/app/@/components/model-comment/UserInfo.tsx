@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useState, useEffect } from 'react';
+import slugify from 'slugify';
 
 interface UserInfoProps {
   userId?: number;
@@ -12,6 +13,7 @@ interface UserInfoProps {
   showName?: boolean;
   className?: string;
   onClick?: (e: React.MouseEvent) => void;
+  textColor?: 'black' | 'white';
 }
 
 export default function UserInfo({ 
@@ -21,7 +23,8 @@ export default function UserInfo({
   size = 'md',
   showName = true,
   className = '',
-  onClick
+  onClick,
+  textColor
 }: UserInfoProps) {
   const [userInfo, setUserInfo] = useState<{username: string, avatar: string} | null>(null);
   const [loading, setLoading] = useState(false);
@@ -60,11 +63,15 @@ export default function UserInfo({
     lg: 'text-base'
   };
 
-  const profileLink = userId ? `/profile/${userId}` : '/profile';
-  
+
   // Ưu tiên userInfo từ API, fallback về props
   const displayName = userInfo?.username || username || 'Unknown User';
   const displayAvatar = userInfo?.avatar || avatar || '/img/user.png';
+  const textColorClass = textColor === 'white' ? 'text-white' : 'text-black';
+
+const profileLink = userId
+  ? `/profile/${userId}/${slugify(displayName)}`
+  : '/profile';
 
   const handleClick = (e: React.MouseEvent) => {
     if (onClick) {
@@ -84,7 +91,7 @@ export default function UserInfo({
       </Avatar>
       
       {showName && (
-        <span className={`font-medium text-white ${textSizeClasses[size]}`}>
+        <span className={`font-medium ${textColorClass} ${textSizeClasses[size]}`}>
           {displayName}
         </span>
       )}

@@ -1,12 +1,33 @@
+import Masonry from "react-masonry-css";
 import { Skeleton } from "./ui/skeleton";
 
-export default function SkeletonPost({ index }: { index: number }) {
-  const heights = [150, 200, 250, 300, 180, 220, 270, 320];
-  const height = heights[index % heights.length];
+interface SkeletonMasonryProps {
+  count?: number;
+}
+
+export default function SkeletonMasonry({ count = 12 }: SkeletonMasonryProps) {
+  const randomHeights = Array.from({ length: count }, () =>
+    150 + Math.floor(Math.random() * 170)
+  );
+
+  const skeletons = randomHeights.map((height, i) => (
+    <Skeleton key={i} className="w-full rounded-lg" style={{ height }} />
+  ));
+
+  const breakpointColumnsObj = {
+    default: 6,
+    1100: 3,
+    700: 2,
+    500: 1,
+  };
 
   return (
-    <div className="break-inside-avoid w-full rounded-lg overflow-hidden">
-      <Skeleton className="w-full rounded-lg" style={{ height }} />
-    </div>
+    <Masonry
+      breakpointCols={breakpointColumnsObj}
+      className="flex gap-4"
+      columnClassName="flex flex-col gap-4"
+    >
+      {skeletons}
+    </Masonry>
   );
 }

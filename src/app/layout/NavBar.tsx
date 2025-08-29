@@ -11,7 +11,13 @@ import SearchInput from "../@/components/feature-search/search-input"
 
 export function NavBar() {
   const dispatch = useDispatch<AppDispatch>();
-  const { isAuthenticated, avatar, user } = useSelector((state: RootState) => state.user)
+  const userState = useSelector((state: RootState) => state.user);
+
+  // Destructure an toàn với giá trị mặc định
+  const isAuthenticated = userState?.isAuthenticated ?? false;
+  const avatar = userState?.avatar ?? "/img/user.png";
+  const user = userState?.user ?? null;
+
   const { data: session } = useSession()
   const router = useRouter()
 
@@ -40,13 +46,13 @@ export function NavBar() {
   };
 
   return (
-    <nav className="fixed z-50 bg-white w-full mx-auto flex items-center justify-between px-12 py-2">
+    <nav className="fixed z-50 bg-white w-full mx-auto flex items-center justify-between px-12 py-2 border-b">
       <div className="flex items-center gap-6">
         <Link href="/" className="text-3xl text-black font-[Alkaline]">
           Rilarte
         </Link>
 
-        <Link href="/explore" className="text-sm text-black">
+        <Link href="/explore" className="text-sm text-black font-semibold">
           Explore
         </Link>
       </div>
@@ -55,12 +61,6 @@ export function NavBar() {
 
       {(session || isAuthenticated) ? (
         <div className="flex items-center gap-4">
-          <Link 
-            href="/users" 
-            className="px-4 py-2 text-sm text-gray-700 hover:text-black transition-colors"
-          >
-            Users
-          </Link>
           <DropdownUser
             avatar={
               <img
@@ -70,6 +70,7 @@ export function NavBar() {
               />
             }
             userId={currentUserId}
+            username={user?.username || session?.user?.name || "user"}
           />
         </div>
       ) : (

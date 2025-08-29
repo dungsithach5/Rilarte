@@ -1,7 +1,7 @@
+require("dotenv").config();
 const { PrismaClient } = require('@prisma/client');
 const { faker } = require('@faker-js/faker');
 const prisma = new PrismaClient();
-
 const ColorThief = require('colorthief');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
@@ -40,6 +40,41 @@ async function getDominantColor(imageUrl) {
     return rgbToHex(r, g, b);
   } catch {
     return null;
+  }
+}
+
+// Hàm lấy ảnh từ Pexels API với kích thước ngẫu nhiên
+async function getPexelsImage(query) {
+  try {
+    const response = await fetch(
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=15`,
+      {
+        headers: {
+          Authorization: process.env.PEXELS_API_KEY,
+        },
+      }
+    );
+
+    if (!response.ok) return null;
+    const data = await response.json();
+
+    if (!data.photos || data.photos.length === 0) return null;
+
+    const randomPhoto = data.photos[Math.floor(Math.random() * data.photos.length)];
+
+    // random chọn size khác nhau để masonry đẹp
+    const sizes = [
+      randomPhoto.src.portrait,
+      randomPhoto.src.landscape,
+      randomPhoto.src.medium,
+      randomPhoto.src.original
+    ];
+
+    return sizes[Math.floor(Math.random() * sizes.length)];
+  } catch (err) {
+    console.error("❌ Error fetching Pexels image:", err);
+    // fallback ảnh mặc định
+    return "https://images.pexels.com/photos/15286/pexels-photo.jpg";
   }
 }
 
@@ -115,13 +150,13 @@ async function main() {
   const users = [];
 
   // Fake 10 users
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 20; i++) {
     const user = await prisma.users.create({
       data: {
         username: faker.internet.userName(),
         email: faker.internet.email(),
         password: faker.internet.password(),
-        bio: faker.lorem.sentence(),
+        bio: faker.company.catchPhrase(),
         avatar_url: faker.image.avatar(),
         onboarded: true,
         createdAt: new Date(),
@@ -132,20 +167,29 @@ async function main() {
   }
 
   // Fake 50 posts
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 100; i++) {
     const randomUser = users[Math.floor(Math.random() * users.length)];
-    const randomHeight = getRandomHeight();
-    const imageUrl = `https://picsum.photos/seed/${faker.string.uuid()}/400/${randomHeight}`;
 
-    // Lấy dominant color
+    // Random topic & tag
+    const randomTopic = faker.helpers.arrayElement(Object.keys(topicTags));
+    const randomTag = faker.helpers.arrayElement(topicTags[randomTopic]);
+    const query = `${randomTopic} ${randomTag}`;
+
+    // Lấy ảnh từ Pexels API theo chủ đề
+    const imageUrl =
+      (await getPexelsImage(query)) ||
+      "https://images.pexels.com/photos/15286/pexels-photo.jpg";
+
     const dominantColor = await getDominantColor(imageUrl);
 
     const post = await prisma.posts.create({
       data: {
         user_id: randomUser.id,
         user_name: randomUser.username,
-        title: faker.lorem.sentence(),
-        content: faker.lorem.paragraphs(2),
+        title: faker.hacker.phrase(),
+        content: Array.from({ length: 2 }, () =>
+          faker.commerce.productDescription()
+        ).join(". "),
         image_url: imageUrl,
         dominant_color: dominantColor,
         createdAt: new Date(),
@@ -163,9 +207,41 @@ async function main() {
         },
       });
     }
+
+    // Comments
+    const numComments = Math.floor(Math.random() * 3) + 1;
+    for (let j = 0; j < numComments; j++) {
+      const commentUser = users[Math.floor(Math.random() * users.length)];
+      await prisma.comments.create({
+        data: {
+          post_id: post.id,
+          user_id: commentUser.id,
+          content: faker.hacker.phrase(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    // Likes
+    const numLikes = Math.floor(Math.random() * 21);
+    const shuffledUsers = [...users]
+      .sort(() => 0.5 - Math.random())
+      .slice(0, numLikes);
+
+    for (const likeUser of shuffledUsers) {
+      await prisma.likes.create({
+        data: {
+          post_id: post.id,
+          user_id: likeUser.id,
+          createdAt: new Date(),
+        },
+      });
+    }
+
   }
 
-  console.log('✅ Đã seed xong 10 users, 50 posts và nhiều tags theo topics!');
+  console.log('🎉 Đã seed xong 10 users, 50 posts và nhiều tags theo topics!');
 }
 
 main()

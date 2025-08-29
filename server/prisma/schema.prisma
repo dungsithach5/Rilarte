@@ -112,16 +112,23 @@ model chat_rooms {
 }
 
 model notifications {
-  id        Int      @id @default(autoincrement())
-  user_id   Int
-  type      String   @db.VarChar(50)
-  content   String   @db.Text
-  is_read   Boolean  @default(false)
-  createdAt DateTime @db.DateTime(0)
-  updatedAt DateTime @db.DateTime(0)
-  users     users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "notifications_ibfk_1")
+  id                  Int      @id @default(autoincrement())
+  user_id             Int
+  type                String   @db.VarChar(50)
+  content             String   @db.Text
+  is_read             Boolean  @default(false)
+  related_user_id     Int?
+  related_post_id     Int?
+  related_comment_id  Int?
+  createdAt           DateTime @db.DateTime(0)
+  updatedAt           DateTime @db.DateTime(0)
+  users               users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "notifications_ibfk_1")
+  relatedUser         users?   @relation("notifications_related_user", fields: [related_user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id], map: "user_id")
+  @@index([related_user_id])
+  @@index([related_post_id])
+  @@index([related_comment_id])
 }
 
 model posts {
@@ -234,6 +241,7 @@ model users {
   messages_receiver_idTousers         messages[]           @relation("messages_receiver_idTousers")
   messages_sender_idTousers           messages[]           @relation("messages_sender_idTousers")
   notifications                       notifications[]
+  relatedNotifications               notifications[] @relation("notifications_related_user")
   posts                               posts[]
   report_posts                        report_posts[]
   saved_posts                         saved_posts[]

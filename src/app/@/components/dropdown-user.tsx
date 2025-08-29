@@ -15,12 +15,13 @@ import { Button } from "./ui/button-user";
 interface Props {
   avatar: React.ReactNode;
   userId?: number | string;
+  username?: string;
 }
 
-export default function DropdownMenuDemo({ avatar, userId }: Props) {
+export default function DropdownMenuDemo({ avatar, userId, username }: Props) {
   const dispatch = useDispatch()
   const router = useRouter();
-  const profileLink = userId ? `/profile/${userId}` : '/profile';
+  const profileLink = userId ? `/profile/${userId}/${username}` : '/profile';
 
   const handleLogout = async () => {
     dispatch(logout());

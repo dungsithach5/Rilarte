@@ -70,15 +70,55 @@ exports.createLike = async (req, res) => {
             });
             
             if (post && post.user_id && post.user_id !== user_id) {
-                await prisma.notificationss.create({
+                // Lấy username của user like
+                const likeUser = await prisma.users.findUnique({
+                    where: { id: user_id },
+                    select: { username: true, avatar_url: true }
+                });
+                
+                const notification = await prisma.notifications.create({
                     data: {
                         user_id: post.user_id,
-                        type: 'like',
-                        content: `User ${user_id} đã thích bài viết của bạn.`,
+                        type: 'post_like',
+                        content: `đã thích bài viết của bạn`,
+                        related_user_id: user_id,
+                        related_post_id: post_id,
                         is_read: false,
                         createdAt: new Date(),
                         updatedAt: new Date(),
                     }
+                });
+
+                // Emit notification via WebSocket
+                console.log('🔔 Creating notification for post like:', {
+                    postUserId: post.user_id,
+                    likeUserId: user_id,
+                    notificationId: notification.id
+                });
+                
+                if (global.emitNotification) {
+                    console.log('📡 Emitting WebSocket notification...');
+                    global.emitNotification(post.user_id, {
+                        id: notification.id,
+                        type: notification.type,
+                        content: notification.content,
+                        is_read: notification.is_read,
+                        createdAt: notification.createdAt,
+                        related_user_id: notification.related_user_id,
+                        related_post_id: notification.related_post_id
+                    });
+                } else {
+                    console.log('❌ global.emitNotification not available');
+                }
+                
+                // Log notification data for debugging
+                console.log('🔔 Notification data created:', {
+                    id: notification.id,
+                    type: notification.type,
+                    content: notification.content,
+                    user_id: notification.user_id,
+                    related_user_id: notification.related_user_id,
+                    related_post_id: notification.related_post_id
                 });
             }
         } catch (notificationError) {

@@ -20,6 +20,8 @@ export default function OnboardingModal() {
   const reduxUser = useSelector((state: any) => state.user.user);
   const dispatch = useDispatch();
   const router = useRouter();
+  
+
   const [currentStep, setCurrentStep] = useState(1);
   const [gender, setGender] = useState<string>("");
   const [topics, setTopics] = useState<Topic[]>([]);
@@ -27,10 +29,11 @@ export default function OnboardingModal() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (reduxUser?.onboarded) {
+    // Ưu tiên Redux user (database data) thay vì session
+    if (reduxUser?.onboarded === true) {
       router.push("/");
     }
-  }, [reduxUser, router]);
+  }, [reduxUser?.onboarded, router]);
 
   useEffect(() => {
     const fetchTopics = async () => {
@@ -60,9 +63,14 @@ export default function OnboardingModal() {
 
   const handleSubmit = async () => {
     if (selectedTopics.length === 0) return alert("Chọn ít nhất 1 topic!");
-    const email = session?.user?.email || reduxUser?.email;
-    if (!email) return alert("Không tìm thấy email user");
-
+    
+    // Ưu tiên Redux email (database data) thay vì session
+    const email = reduxUser?.email || session?.user?.email;
+    if (!email) {
+      alert("Không tìm thấy email user. Vui lòng login lại.");
+      return;
+    }
+    
     setLoading(true);
     try {
       const res = await submitOnboarding({
@@ -72,8 +80,14 @@ export default function OnboardingModal() {
       });
 
       if (res.success) {
+        // Update Redux state
         dispatch(updateUser({ onboarded: true }));
-        localStorage.setItem("user", JSON.stringify({ ...reduxUser, onboarded: true }));
+        
+        // Update localStorage chỉ cho user hiện tại
+        if (reduxUser) {
+          const updatedUser = { ...reduxUser, onboarded: true };
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+        }
 
         setCurrentStep(3);
 

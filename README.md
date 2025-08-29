@@ -1,36 +1,143 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🌐 Social Media App
 
-## Getting Started
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
 
-First, run the development server:
+## 🚀 Introduction
+
+Social Media App is a modern social networking platform where users can share posts, interact with friends, and explore exciting content. The app is built with cutting-edge technologies like **Next.js**, **React**, **TypeScript**, and **Tailwind CSS** to deliver a smooth and efficient user experience.
+
+---
+
+## ✨ Key Features
+
+### 📝 **Post Management**
+- Create posts with images, content, and tags.
+- Support for watermarking images to protect copyrights.
+- Download protection options for images.
+
+### 🧑‍🤝‍🧑 **Social Interaction**
+- **Follow/Unfollow**: Connect with friends and other users.
+- **Like/Comment**: Like and comment on posts.
+- **Notifications**: Receive updates for new interactions.
+
+### 🔒 **Authentication and Security**
+- Login via Google OAuth or email accounts.
+- Support for OTP-based email verification.
+- Secure password reset functionality.
+
+### 🎨 **Explore and Personalization**
+- **Onboarding**: Choose gender and interests for personalized content.
+- **Explore**: Search posts by keywords, colors, or tags.
+- **Profile Page**: Display personal information and posts.
+
+### 📞 **Messaging and Video Calls**
+- Support for direct messaging (DM).
+- Voice and video calls with real-time connection status.
+
+### 📊 **Admin Panel**
+- Manage users, posts, and reported violations.
+- Seed fake data for testing purposes.
+
+---
+
+## 🛠️ Technologies Used
+
+| Technology      | Description                                                          |
+|-----------------|----------------------------------------------------------------------|
+| **Next.js**     | A powerful React framework for SSR and SEO.                         |
+| **React**       | A UI library for building user interfaces.                          |
+| **TypeScript**  | A statically typed language to reduce errors and improve efficiency.|
+| **Tailwind CSS**| A utility-first CSS framework for beautiful designs.                |
+| **Prisma**      | A modern ORM for database management.                               |
+| **Node.js**     | A fast and scalable backend platform.                               |
+| **Express**     | A simple and flexible backend framework.                            |
+| **Nodemailer**  | For sending OTPs and email notifications.                          |
+| **Multer**      | For handling file uploads.                                         |
+| **Sharp**       | For adding watermarks to images.                                   |
+
+---
+
+## 📚 Getting Started
+
+### 1️⃣ **Installation**
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/your-repo/social-media-app.git
+cd social-media-app
+npm install
+```
+
+### 2️⃣ **Configuration**
+Create a `.env` file and add the required environment variables:
+
+```env
+DATABASE_URL=your-database-url
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-email-password
+PEXELS_API_KEY=your-pexels-api-key
+```
+
+### 3️⃣ **Run the Application**
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open your browser at [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🧪 Testing
 
-## Learn More
+Run automated tests:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm test
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📦 Deployment
 
-## Deploy on Vercel
+The app can be easily deployed on [Vercel](https://vercel.com/):
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Connect the repository to Vercel.
+2. Configure environment variables in Vercel.
+3. Click "Deploy" to launch the app.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 📸 Screenshots
+
+### Homepage
+![Homepage](https://via.placeholder.com/800x400)
+
+### Profile Page
+![Profile Page](https://via.placeholder.com/800x400)
+
+---
+
+## 🤝 Contributions
+
+We welcome contributions from the community! Feel free to create a **Pull Request** or open an **Issue** to discuss.
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## 💌 Contact
+
+- **Email**: support@socialmediaapp.com
+- **Website**: [socialmediaapp.com](https://socialmediaapp.com)

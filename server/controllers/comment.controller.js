@@ -54,24 +54,61 @@ exports.createComment = async (req, res) => {
 
         // Tạo notification cho chủ post hoặc chủ comment cha
         let targetUserId = null;
+        let notificationContent = '';
+        let notificationType = '';
+        
         if (parent_id) {
-            const parentComment = await prisma.comments.findUnique({ where: { id: parent_id } });
+            const parentComment = await prisma.comments.findUnique({ 
+                where: { id: parent_id },
+                include: { users: { select: { username: true } } }
+            });
             targetUserId = parentComment?.user_id;
+            notificationContent = `đã trả lời bình luận của bạn`;
+            notificationType = 'comment_reply';
         } else {
-            const post = await prisma.posts.findUnique({ where: { id: post_id } });
+            const post = await prisma.posts.findUnique({ 
+                where: { id: post_id },
+                include: { users: { select: { username: true } } }
+            });
             targetUserId = post?.user_id;
+            notificationContent = `đã bình luận vào bài viết của bạn`;
+            notificationType = 'comment';
         }
+        
         if (targetUserId && targetUserId !== user_id) {
-            await prisma.notificationss.create({
+            // Lấy username của user comment
+            const commentUser = await prisma.users.findUnique({
+                where: { id: user_id },
+                select: { username: true, avatar_url: true }
+            });
+            
+            const notification = await prisma.notifications.create({
                 data: {
                     user_id: targetUserId,
-                    type: 'comment',
-                    content: `User ${user_id} đã bình luận vào nội dung của bạn.`,
+                    type: notificationType,
+                    content: notificationContent,
+                    related_user_id: user_id,
+                    related_post_id: post_id,
+                    related_comment_id: newComment.id,
                     is_read: false,
                     createdAt: new Date(),
                     updatedAt: new Date(),
                 }
             });
+
+            // Emit notification via WebSocket
+            if (global.emitNotification) {
+                global.emitNotification(targetUserId, {
+                    id: notification.id,
+                    type: notification.type,
+                    content: notification.content,
+                    is_read: notification.is_read,
+                    createdAt: notification.createdAt,
+                    related_user_id: notification.related_user_id,
+                    related_post_id: notification.related_post_id,
+                    related_comment_id: notification.related_comment_id
+                });
+            }
         }
 
         res.status(201).json(newComment);

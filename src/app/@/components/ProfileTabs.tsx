@@ -75,10 +75,13 @@ export default function ProfileTabs({ targetUserId }: ProfileTabsProps) {
       setIsLoading(true);
       try {
         if (!currentUserId) return;
-        const response = await API.get(`/saved-posts`, {
-          params: { user_id: currentUserId },
-        });
-        setSavedPosts(response.data || []);
+        const response = await API.get(`/saved-posts/user/${currentUserId}`);
+        const edges = response.data.edges || [];
+        const mappedPosts = edges.map((e: any) => ({
+          ...e.node,
+          id: e.node.id,
+        }));
+        setSavedPosts(mappedPosts);
       } catch (err) {
         console.error("Error loading saved posts:", err);
       } finally {

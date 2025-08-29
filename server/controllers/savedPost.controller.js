@@ -101,60 +101,92 @@ exports.unsavePost = async (req, res) => {
 exports.getSavedPosts = async (req, res) => {
   try {
     const { user_id } = req.params;
+    const { cursor, limit } = req.query;
 
     if (!user_id) {
-      return res.status(400).json({ 
-        message: 'User ID is required' 
+      return res.status(400).json({
+        message: "User ID is required",
       });
     }
 
+    const take = Math.min(Number(limit) || 20, 50);
+
+    // Parse cursor nếu có
+    let parsedCursor = undefined;
+    if (cursor) {
+      const [createdAtStr, id] = cursor.split("|");
+      parsedCursor = { createdAt: new Date(createdAtStr), id: Number(id) };
+    }
+
+    // Query saved_posts + include post
     const savedPosts = await prisma.saved_posts.findMany({
-      where: {
-        user_id: Number(user_id)
-      },
+      where: { user_id: Number(user_id) },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: take + 1,
+      ...(parsedCursor && {
+        cursor: { id: parsedCursor.id },
+        skip: 1,
+      }),
       include: {
         post: {
-          include: {
+          select: {
+            id: true,
+            user_id: true,
+            user_name: true,
+            title: true,
+            content: true,
+            image_url: true,
+            dominant_color: true,
+            download_protected: true,
+            allow_download: true,
+            watermark_enabled: true,
+            watermark_text: true,
+            watermark_position: true,
+            license_type: true,
+            license_description: true,
+            createdAt: true,
             postTags: {
-              include: {
-                tag: true
-              }
-            }
-          }
-        }
+              include: { tag: true },
+            },
+          },
+        },
       },
-      orderBy: {
-        createdAt: 'desc'
-      }
     });
 
-    // Transform data để match với format posts
-    const transformedPosts = savedPosts.map(savedPost => {
-      const post = savedPost.post;
-      const tags = post.postTags.map(pt => pt.tag.name);
-      
+    const hasNextPage = savedPosts.length > take;
+    const pageItems = hasNextPage ? savedPosts.slice(0, -1) : savedPosts;
+
+    // Map lại format giống getAllPosts
+    const postsWithTags = pageItems.map((saved) => {
+      const post = saved.post;
+      const tags = post.postTags.map((pt) => pt.tag.name);
       return {
-        id: post.id,
-        user_id: post.user_id,
-        user_name: post.user_name,
-        title: post.title,
-        content: post.content,
-        image_url: post.image_url,
-        createdAt: post.createdAt,
-        updatedAt: post.updatedAt,
+        ...post,
         tags,
-        savedAt: savedPost.createdAt
+        savedAt: saved.createdAt, // thời điểm user save
       };
     });
 
-    console.log(`Retrieved ${transformedPosts.length} saved posts for user ${user_id}`);
-    res.status(200).json(transformedPosts);
+    const edges = postsWithTags.map((p) => ({
+      node: p,
+      cursor: `${p.createdAt.toISOString()}|${p.id}`,
+    }));
 
+    res.status(200).json({
+      edges,
+      pageInfo: {
+        hasNextPage,
+        endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null,
+      },
+      totalCount: await prisma.saved_posts.count({
+        where: { user_id: Number(user_id) },
+      }),
+    });
   } catch (error) {
-    console.error('Error getting saved posts:', error);
-    res.status(500).json({ 
-      message: 'Error getting saved posts', 
-      error: error.message 
+    console.error("Error getting saved posts:", error);
+    res.status(500).json({
+      message: "Error getting saved posts",
+      error: error.message,
     });
   }
 };

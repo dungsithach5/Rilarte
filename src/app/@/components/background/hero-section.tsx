@@ -18,7 +18,7 @@ export default function HeroSection({ title, description }: HeroSectionProps) {
     { id: 2, src: "/img/hero3.png", alt: "Image 2" },
     { id: 1, src: "/img/hero2.png", alt: "Image 1" },
     { id: 6, src: "/img/hero1.png", alt: "Image 6" },
-    { id: 4, src: "/img/hero4.jpeg", alt: "Image 4" },
+    { id: 4, src: "/img/hero4.png", alt: "Image 4" },
     { id: 3, src: "/img/slide1.png", alt: "Image 3" },
     { id: 5, src: "/img/slide2.png", alt: "Image 5" },
   ];

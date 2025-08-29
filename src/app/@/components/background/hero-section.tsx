@@ -1,30 +1,65 @@
 import React from 'react';
+import Masonry from 'react-masonry-css';
 import RotatingText from '../RotatingText/RotatingText';
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  title: string
+  description: string
+}
+
+export default function HeroSection({ title, description }: HeroSectionProps) {
+  const breakpointColumnsObj = {
+    default: 3, 
+    768: 2, 
+    480: 1     
+  };
+
+  const images = [
+    { id: 2, src: "/img/hero3.png", alt: "Image 2" },
+    { id: 1, src: "/img/hero2.png", alt: "Image 1" },
+    { id: 6, src: "/img/hero1.png", alt: "Image 6" },
+    { id: 4, src: "/img/hero4.jpeg", alt: "Image 4" },
+    { id: 3, src: "/img/slide1.png", alt: "Image 3" },
+    { id: 5, src: "/img/slide2.png", alt: "Image 5" },
+  ];
+
   return (
-    <section className="w-full overflow-hidden flex justify-center items-center">
-      <div className="flex flex-col px-6 justify-center items-center text-center">
-        <h1 className="font-bold leading-tight text-2xl md:text-3xl lg:text-4xl flex flex-wrap items-center gap-2">
-          Explore your{" "}
-          <RotatingText
-            texts={["creative", "vivid", "pure", "real", "fluid", "cool", "artsy"]}
-            mainClassName="px-2 sm:px-2 md:px-5 bg-black text-white overflow-hidden py-0.5 sm:py-1 md:py-1 justify-center rounded-xl"
-            staggerFrom="last"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "-120%" }}
-            staggerDuration={0.025}
-            splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1 md:pb-1"
-            transition={{ type: "spring", damping: 30, stiffness: 400 }}
-            rotationInterval={2500}
-          />
-          energy
-        </h1>
-        <p className="text-sm md:text-xl text-gray-800 mt-4 max-w-2xl mx-auto">
-          Discover new visuals, trending topics, and inspirations across the platform.
-        </p>
+    <div className="flex justify-center items-center max-h-[80vh] p-4 mt-20">
+      <div className="w-full max-w-7xl flex flex-col justify-start">
+        <div className="flex flex-col md:flex-row flex-grow justify-between items-stretch h-full">
+          <div className="flex flex-col items-start justify-center text-left max-w-xl md:pr-8 mb-8 md:mb-0">
+            <h1 className="font-bold leading-tight text-3xl md:text-4xl lg:text-5xl text-gray-900 mb-4">
+              {title}
+            </h1>
+            <p className="text-gray-600 text-base md:text-lg mb-6">
+              {description}
+            </p>
+            <div className="flex space-x-4">
+              <button className="bg-black text-white font-semibold py-2 px-6 rounded-full hover:bg-gray-800 transition duration-300">
+                Create Now
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 h-full flex flex-col justify-between"> 
+            <Masonry
+              breakpointCols={breakpointColumnsObj}
+              className="flex w-auto ml-16 h-full"
+              columnClassName="pl-4 bg-clip-padding"
+            >
+              {images.map(image => (
+                <div key={image.id} className="mb-2">
+                  <img 
+                    src={image.src} 
+                    alt={image.alt} 
+                    className="w-full h-auto object-cover rounded-xl" 
+                  />
+                </div>
+              ))}
+            </Masonry>
+          </div>
+        </div>
       </div>
-    </section>
+    </div>
   );
-};
+}

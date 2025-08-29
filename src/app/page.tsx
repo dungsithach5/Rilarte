@@ -14,6 +14,8 @@ import { ComposerComment } from "./@/components/model-comment/ComposerComment";
 import SkeletonPost from "./@/components/skeleton-post";
 import { createPostSlug } from "./../lib/utils";
 import TagCarousel from "./@/components/carousel-tag/tag-carousel";
+import Herosection from "./@/components/background/hero-section"
+
 
 
 const breakpointColumnsObj = { default: 6, 1024: 2, 640: 2 };
@@ -193,31 +195,10 @@ export default function FeedPage() {
   return (
     <section className="mt-20 px-12">
       {/* Banner */}
-      <section className="w-full overflow-hidden">
-        <div className="flex h-full flex-col">
-          <h1 className="font-bold leading-tight text-3xl flex flex-wrap items-center gap-2">
-            Unleash your{" "}
-            <RotatingText
-              texts={["creative", "vivid", "pure", "real", "fluid", "cool", "artsy"]}
-              mainClassName="px-2 sm:px-2 md:px-5 bg-black text-white overflow-hidden py-0.5 sm:py-1 md:py-1 justify-center rounded-xl"
-              staggerFrom="last"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "-120%" }}
-              staggerDuration={0.025}
-              splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1 md:pb-1"
-              transition={{ type: "spring", damping: 30, stiffness: 400 }}
-              rotationInterval={2500}
-            />
-            energy
-          </h1>
-          <p className="text-sm md:text-lg text-gray-800">
-            Step into a world where visuals speak and creativity knows no limits 
-            <br />
-            a space to express, inspire, and connect through art.
-          </p>
-        </div>
-      </section>
+      <Herosection 
+        title="Turn your space into a reflection of your creativity"
+        description="Personalize every detail and let your creativity define your profile."
+      />
 
       {/* Filter & Tags */}
       <section className="w-full mt-12 flex flex-col gap-4">

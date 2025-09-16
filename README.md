@@ -117,11 +117,12 @@ The app can be easily deployed on [Vercel](https://vercel.com/):
 
 ## 📸 Screenshots
 
-### Homepage
-![Homepage](https://via.placeholder.com/800x400)
+![Homepage](/public/screenshot/screen3.png)
 
-### Profile Page
-![Profile Page](https://via.placeholder.com/800x400)
+![Auth Page](/public/screenshot/screen1.png)
+
+![Auth Page](/public/screenshot/screen2.png)
+
 
 ---
 
